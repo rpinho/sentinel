@@ -312,7 +312,7 @@ def triage_firing(
             f"no cached triage response for {request.prompt_hash} and OPENAI_API_KEY is absent"
         )
     live_client = client or cast(OpenAIClient, OpenAI(api_key=resolved_key))
-    response = live_client.responses.create(**dict(request.api_payload))
+    response = _create_response(live_client, request.api_payload)
     output_text = getattr(response, "output_text", None)
     if not isinstance(output_text, str) or not output_text.strip():
         raise TriageResponseError(
@@ -382,6 +382,16 @@ def _run_from_record(
             else None
         ),
     )
+
+
+def _create_response(
+    client: OpenAIClient, api_payload: Mapping[str, Any]
+) -> Any:
+    """Send API-supported fields that the installed SDK has not typed yet."""
+
+    sdk_payload = dict(api_payload)
+    seed = sdk_payload.pop("seed")
+    return client.responses.create(**sdk_payload, extra_body={"seed": seed})
 
 
 def _read_record(path: Path, request: TriageRequest) -> dict[str, Any]:

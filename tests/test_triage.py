@@ -138,6 +138,9 @@ def test_live_response_is_cached_as_fixture_and_replays_without_key(
     assert replay.replayed is True
     assert replay.output == live.output
     assert len(client.responses.calls) == 1
+    assert "temperature" not in client.responses.calls[0]
+    assert "seed" not in client.responses.calls[0]
+    assert client.responses.calls[0]["extra_body"] == {"seed": BEST_EFFORT_SEED}
 
 
 def test_no_feedback_changes_exact_prompt_hash() -> None:
