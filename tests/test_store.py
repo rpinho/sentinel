@@ -43,6 +43,15 @@ def test_event_ingestion_is_idempotent_and_round_trips(tmp_path: Path) -> None:
         assert store.list_events(entity="webpack/webpack") == [event]
 
 
+def test_store_creates_database_parent_directory(tmp_path: Path) -> None:
+    database = tmp_path / "nested" / "sentinel.duckdb"
+
+    with SentinelStore(database):
+        pass
+
+    assert database.exists()
+
+
 def test_feedback_is_append_only_and_only_latest_correction_is_relevant(
     tmp_path: Path,
 ) -> None:

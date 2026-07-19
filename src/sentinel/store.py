@@ -121,6 +121,8 @@ class SentinelStore:
 
     def __init__(self, path: Path | str = Path("sentinel.duckdb")) -> None:
         self.path = str(path)
+        if self.path != ":memory:":
+            Path(self.path).parent.mkdir(parents=True, exist_ok=True)
         self.connection = duckdb.connect(self.path)
         self._initialize()
 
