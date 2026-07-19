@@ -18,6 +18,7 @@ FeedbackOutcome = Literal[
     "true_positive", "false_positive", "false_negative", "needs_review"
 ]
 FeedbackVerdict = Literal["TRUE", "FALSE", "UNRESOLVED"]
+TriageMode = Literal["full", "no_agent", "no_feedback"]
 FEEDBACK_OUTCOMES = frozenset(
     {"true_positive", "false_positive", "false_negative", "needs_review"}
 )
@@ -93,6 +94,41 @@ class Feedback:
     def __post_init__(self) -> None:
         object.__setattr__(self, "ts", parse_timestamp(self.ts))
         object.__setattr__(self, "created_at", parse_timestamp(self.created_at))
+
+
+@dataclass(frozen=True, slots=True)
+class TriageRecord:
+    triage_id: str
+    firing_id: str
+    mode: TriageMode
+    real: bool | None
+    cause: str | None
+    culprit_ref: str | None
+    confidence: float | None
+    evidence_quotes: tuple[str, ...]
+    model: str | None
+    requested_model: str | None
+    prompt_hash: str | None
+    cache_hit: bool
+    replayed: bool
+    input_max_ts: datetime | None
+    response_id: str | None
+    created_at: datetime = field(default_factory=_utc_now)
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "evidence_quotes", tuple(self.evidence_quotes))
+        object.__setattr__(self, "created_at", parse_timestamp(self.created_at))
+        if self.input_max_ts is not None:
+            object.__setattr__(self, "input_max_ts", parse_timestamp(self.input_max_ts))
+        if self.mode not in {"full", "no_agent", "no_feedback"}:
+            raise ValueError(f"unsupported triage mode: {self.mode}")
+        if self.confidence is not None and not 0 <= self.confidence <= 1:
+            raise ValueError("triage confidence must be between zero and one")
+        if self.mode == "no_agent" and any(
+            value is not None
+            for value in (self.real, self.cause, self.culprit_ref, self.confidence, self.model)
+        ):
+            raise ValueError("no-agent triage records cannot contain an agent conclusion")
 
 
 @dataclass(frozen=True, slots=True)
@@ -191,6 +227,25 @@ class SentinelStore:
                 supersedes_feedback_id VARCHAR
             );
 
+            CREATE TABLE IF NOT EXISTS triage_results (
+                triage_id VARCHAR PRIMARY KEY,
+                firing_id VARCHAR NOT NULL,
+                mode VARCHAR NOT NULL CHECK (mode IN ('full', 'no_agent', 'no_feedback')),
+                real BOOLEAN,
+                cause VARCHAR,
+                culprit_ref VARCHAR,
+                confidence DOUBLE,
+                evidence_quotes JSON NOT NULL,
+                model VARCHAR,
+                requested_model VARCHAR,
+                prompt_hash VARCHAR,
+                cache_hit BOOLEAN NOT NULL,
+                replayed BOOLEAN NOT NULL,
+                input_max_ts TIMESTAMPTZ,
+                response_id VARCHAR,
+                created_at TIMESTAMPTZ NOT NULL
+            );
+
             CREATE TABLE IF NOT EXISTS ingestion_windows (
                 source VARCHAR NOT NULL,
                 entity VARCHAR NOT NULL,
@@ -208,6 +263,8 @@ class SentinelStore:
             CREATE INDEX IF NOT EXISTS firings_entity_ts_idx ON firings(entity, ts);
             CREATE INDEX IF NOT EXISTS feedback_entity_created_idx
                 ON feedback(entity, created_at);
+            CREATE INDEX IF NOT EXISTS triage_firing_mode_idx
+                ON triage_results(firing_id, mode, created_at);
             CREATE INDEX IF NOT EXISTS ingestion_entity_window_idx
                 ON ingestion_windows(entity, window_start, window_end);
             """
@@ -365,6 +422,68 @@ class SentinelStore:
         ).fetchall()
         return [_row_to_firing(row) for row in rows]
 
+    def insert_triage_result(self, result: TriageRecord) -> bool:
+        """Persist one mode-specific scorecard result without overwriting another."""
+
+        if self.get_firing(result.firing_id) is None:
+            raise ValueError(f"unknown firing_id: {result.firing_id}")
+        before = self.connection.execute(
+            "SELECT count(*) FROM triage_results WHERE triage_id = ?", [result.triage_id]
+        ).fetchone()[0]
+        self.connection.execute(
+            """
+            INSERT INTO triage_results VALUES (
+                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+            ) ON CONFLICT (triage_id) DO NOTHING
+            """,
+            [
+                result.triage_id,
+                result.firing_id,
+                result.mode,
+                result.real,
+                result.cause,
+                result.culprit_ref,
+                result.confidence,
+                json.dumps(list(result.evidence_quotes), ensure_ascii=False),
+                result.model,
+                result.requested_model,
+                result.prompt_hash,
+                result.cache_hit,
+                result.replayed,
+                result.input_max_ts,
+                result.response_id,
+                result.created_at,
+            ],
+        )
+        return before == 0
+
+    def list_triage_results(
+        self,
+        *,
+        firing_id: str | None = None,
+        mode: TriageMode | None = None,
+    ) -> list[TriageRecord]:
+        clauses: list[str] = []
+        parameters: list[Any] = []
+        if firing_id:
+            clauses.append("firing_id = ?")
+            parameters.append(firing_id)
+        if mode:
+            clauses.append("mode = ?")
+            parameters.append(mode)
+        where = " WHERE " + " AND ".join(clauses) if clauses else ""
+        rows = self.connection.execute(
+            _TRIAGE_SELECT + where + " ORDER BY created_at DESC, triage_id DESC",
+            parameters,
+        ).fetchall()
+        return [_row_to_triage(row) for row in rows]
+
+    def latest_triage_result(
+        self, firing_id: str, *, mode: TriageMode | None = None
+    ) -> TriageRecord | None:
+        results = self.list_triage_results(firing_id=firing_id, mode=mode)
+        return results[0] if results else None
+
     def record_ingestion_window(self, window: IngestionWindow) -> None:
         """Record source coverage; a repeat fetch replaces only this status record."""
 
@@ -454,6 +573,9 @@ class SentinelStore:
         firing = self.get_firing(firing_id)
         if firing is None:
             raise ValueError(f"unknown firing_id: {firing_id}")
+        triage = self.latest_triage_result(firing_id, mode="full")
+        if triage is None:
+            triage = self.latest_triage_result(firing_id, mode="no_feedback")
         feedback = Feedback(
             feedback_id=str(uuid4()),
             firing_id=firing.firing_id,
@@ -462,8 +584,8 @@ class SentinelStore:
             metric_id=firing.metric_id,
             outcome=outcome,
             verdict=_verdict_for(outcome),
-            hypothesis=firing.hypothesis,
-            confidence=firing.confidence,
+            hypothesis=triage.cause if triage else firing.hypothesis,
+            confidence=triage.confidence if triage else firing.confidence,
             corrected_cause=corrected_cause,
             reason_code=reason_code,
             note=note,
@@ -679,6 +801,13 @@ SELECT feedback_id, firing_id, ts, entity, metric_id, outcome, verdict,
 FROM feedback
 """
 
+_TRIAGE_SELECT = """
+SELECT triage_id, firing_id, mode, real, cause, culprit_ref, confidence,
+       evidence_quotes, model, requested_model, prompt_hash, cache_hit, replayed,
+       input_max_ts, response_id, created_at
+FROM triage_results
+"""
+
 
 def _json_object(value: Any) -> dict[str, Any]:
     if value is None:
@@ -732,6 +861,32 @@ def _row_to_feedback(row: Sequence[Any]) -> Feedback:
         sentinel_run_id=row[15],
         created_at=row[16],
         supersedes_feedback_id=row[17],
+    )
+
+
+def _row_to_triage(row: Sequence[Any]) -> TriageRecord:
+    raw_quotes = json.loads(row[7]) if isinstance(row[7], str) else row[7]
+    if not isinstance(raw_quotes, list) or not all(
+        isinstance(quote, str) for quote in raw_quotes
+    ):
+        raise ValueError("stored evidence_quotes must be a JSON string array")
+    return TriageRecord(
+        triage_id=row[0],
+        firing_id=row[1],
+        mode=cast(TriageMode, row[2]),
+        real=row[3],
+        cause=row[4],
+        culprit_ref=row[5],
+        confidence=row[6],
+        evidence_quotes=tuple(raw_quotes),
+        model=row[8],
+        requested_model=row[9],
+        prompt_hash=row[10],
+        cache_hit=row[11],
+        replayed=row[12],
+        input_max_ts=row[13],
+        response_id=row[14],
+        created_at=row[15],
     )
 
 

@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 
 from sentinel.feedback import render_feedback_context
-from sentinel.store import Firing, SentinelStore
+from sentinel.store import Firing, SentinelStore, TriageRecord
 from sentinel.types import Event
 
 NOW = datetime(2025, 4, 7, 18, tzinfo=UTC)
@@ -82,6 +82,81 @@ def test_feedback_is_append_only_and_only_latest_correction_is_relevant(
         assert correction.supersedes_feedback_id == original.feedback_id
         with pytest.raises(ValueError, match="active feedback"):
             store.correct_feedback(original.feedback_id, outcome="true_positive")
+
+
+def test_triage_modes_persist_side_by_side_and_feed_later_feedback(
+    tmp_path: Path,
+) -> None:
+    with SentinelStore(tmp_path / "test.duckdb") as store:
+        store.insert_firings([_firing()])
+        full = TriageRecord(
+            triage_id="triage:full",
+            firing_id="firing-1",
+            mode="full",
+            real=True,
+            cause="v5.99.0 parser regression",
+            culprit_ref="v5.99.0",
+            confidence=0.91,
+            evidence_quotes=("Regression on v5.99.0",),
+            model="gpt-5.6-sol",
+            requested_model="gpt-5.6",
+            prompt_hash="full-hash",
+            cache_hit=False,
+            replayed=False,
+            input_max_ts=NOW - timedelta(seconds=1),
+            response_id="resp_full",
+            created_at=NOW + timedelta(hours=1),
+        )
+        no_feedback = TriageRecord(
+            triage_id="triage:no-feedback",
+            firing_id="firing-1",
+            mode="no_feedback",
+            real=True,
+            cause="v5.99.0 without feedback",
+            culprit_ref="v5.99.0",
+            confidence=0.8,
+            evidence_quotes=("Regression on v5.99.0",),
+            model="gpt-5.6-sol",
+            requested_model="gpt-5.6",
+            prompt_hash="no-feedback-hash",
+            cache_hit=True,
+            replayed=True,
+            input_max_ts=NOW - timedelta(seconds=1),
+            response_id="resp_no_feedback",
+            created_at=NOW + timedelta(hours=2),
+        )
+        no_agent = TriageRecord(
+            triage_id="triage:no-agent",
+            firing_id="firing-1",
+            mode="no_agent",
+            real=None,
+            cause=None,
+            culprit_ref=None,
+            confidence=None,
+            evidence_quotes=(),
+            model=None,
+            requested_model=None,
+            prompt_hash=None,
+            cache_hit=False,
+            replayed=False,
+            input_max_ts=NOW - timedelta(seconds=1),
+            response_id=None,
+            created_at=NOW + timedelta(hours=3),
+        )
+
+        assert store.insert_triage_result(full) is True
+        assert store.insert_triage_result(full) is False
+        assert store.insert_triage_result(no_feedback) is True
+        assert store.insert_triage_result(no_agent) is True
+        assert {result.mode for result in store.list_triage_results(firing_id="firing-1")} == {
+            "full",
+            "no_feedback",
+            "no_agent",
+        }
+
+        feedback = store.submit_scorecard_feedback("firing-1", "true_positive")
+        assert feedback.hypothesis == full.cause
+        assert feedback.confidence == full.confidence
 
 
 def test_false_negative_needs_no_firing_and_enters_future_context(
