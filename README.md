@@ -85,6 +85,12 @@ deterministic replay comes from the exact cached response, not sampling controls
 responses are written to both `.cache/triage/` and `tests/fixtures/triage/`. On a cache
 miss without a key, Sentinel fails instead of inventing a response.
 
+Triage uses a 24-hour lookback. Requests over 500,000 characters are compacted with the
+versioned `signal-first-v1` policy: issue/release signals and the newest context rank
+ahead of human comments and bot noise, individual text is an exact leading substring,
+and the request records source/supplied counts and character totals. Rolling API rate
+limits honor bounded `Retry-After` retries.
+
 The modes are persisted side by side in `triage_results`:
 
 - Default/full: GPT triage with active feedback from `relevant_feedback()`.
@@ -128,6 +134,23 @@ uv run sentinel feedback context \
 Free-text notes are delimited and explicitly treated as untrusted historical data.
 Feedback can change later triage context, but it cannot mutate deterministic metrics,
 thresholds, tiers, or routing.
+
+## Frozen holdout
+
+Run the committed one-week, three-repository holdout and verify all 40 GPT fixtures
+offline:
+
+```bash
+scripts/run_holdout.sh
+```
+
+The frozen detector produced 20 firings over 504/504 covered repo-hours. The disclosed
+automatic-label rule resolved only two: the no-agent baseline had 1 TP and 1 FP (50%
+precision, 1 FP/week), while full and no-feedback triage each rejected both (1 miss,
+1 true negative, undefined precision). Eighteen firings remain `UNRESOLVED`, and three
+acknowledged detector misses are published. The frozen feedback snapshot had no rows for
+the holdout repositories, so no feedback benefit is claimed. See `HOLDOUT.md` for every
+firing and the documented correction of two initial auto-label leakage bugs.
 
 ## Reproduce the webpack acceptance run
 

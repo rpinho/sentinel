@@ -40,9 +40,16 @@ maintainer acknowledgment.
 Sentinel uses the
 [OpenAI Responses API structured-output contract](https://developers.openai.com/api/docs/guides/structured-outputs)
 with GPT-5.6 and strict `text.format` JSON schema.
-The live endpoint rejected both `temperature` and `seed`, so neither field is sent. The
-source of truth for reproducibility is the SHA-256 of the exact effective request plus its
-committed response fixture.
+The live endpoint rejects `temperature: 0`. During holdout seeding it also rejected a
+fixed seed passed in the Responses request body with HTTP 400, `Unknown parameter: 'seed'`.
+Neither field is sent. The source of truth for reproducibility is the SHA-256 of the exact
+effective request plus its committed response fixture.
+
+The event lookup is bounded to 24 hours. If the rendered input exceeds 500,000 characters,
+`signal-first-v1` deterministically retains issue/release signals and recent context before
+human comments and bot noise, caps each text at an exact 12,000-character leading substring,
+and targets a 350,000-character event block. Compaction provenance is part of the hashed
+request. Rate-limit responses honor bounded server-directed retries.
 
 Lookup order is:
 
