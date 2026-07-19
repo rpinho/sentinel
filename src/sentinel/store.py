@@ -540,7 +540,9 @@ class SentinelStore:
                 entity=original.entity,
                 metric_id=original.metric_id,
                 ts=original.ts,
-                corrected_cause=corrected_cause or original.corrected_cause or "missed anomaly",
+                corrected_cause=corrected_cause
+                or original.corrected_cause
+                or "missed anomaly",
                 reason_code=reason_code,
                 note=note,
                 source=source,
@@ -551,7 +553,9 @@ class SentinelStore:
                 supersedes_feedback_id=feedback_id,
             )
         if original.firing_id is None:
-            raise ValueError("a missed-anomaly report can only be corrected as false_negative")
+            raise ValueError(
+                "a missed-anomaly report can only be corrected as false_negative"
+            )
         return self.submit_scorecard_feedback(
             original.firing_id,
             cast(Literal["true_positive", "false_positive", "needs_review"], outcome),
@@ -574,7 +578,10 @@ class SentinelStore:
                 raise ValueError(
                     f"unknown supersedes_feedback_id: {feedback.supersedes_feedback_id}"
                 )
-            if original.entity != feedback.entity or original.metric_id != feedback.metric_id:
+            if (
+                original.entity != feedback.entity
+                or original.metric_id != feedback.metric_id
+            ):
                 raise ValueError("a correction must preserve entity and metric scope")
         self.connection.execute(
             """

@@ -59,7 +59,9 @@ class NpmAdapter:
         document = self._get_json(f"{self.registry_url}/{self._package_path(package)}")
         times = document.get("time")
         if not isinstance(times, dict):
-            raise ValueError(f"npm registry response for {package!r} has no time mapping")
+            raise ValueError(
+                f"npm registry response for {package!r} has no time mapping"
+            )
         start_utc = parse_timestamp(start) if start else None
         end_utc = parse_timestamp(end) if end else None
 
@@ -100,7 +102,9 @@ class NpmAdapter:
         )
         points = document.get("downloads")
         if not isinstance(points, list):
-            raise ValueError(f"npm downloads response for {package!r} has no downloads list")
+            raise ValueError(
+                f"npm downloads response for {package!r} has no downloads list"
+            )
 
         for point in points:
             day = date.fromisoformat(str(point["day"]))

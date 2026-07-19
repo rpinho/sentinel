@@ -65,7 +65,9 @@ class Event:
     def from_dict(cls, raw: Mapping[str, Any]) -> Event:
         missing = {"ts", "entity", "kind"} - raw.keys()
         if missing:
-            raise ValueError(f"event is missing required fields: {', '.join(sorted(missing))}")
+            raise ValueError(
+                f"event is missing required fields: {', '.join(sorted(missing))}"
+            )
         return cls(
             ts=parse_timestamp(cast(str | datetime, raw["ts"])),
             entity=str(raw["entity"]),

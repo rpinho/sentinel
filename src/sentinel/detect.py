@@ -97,19 +97,29 @@ def detect_bursts(
     all_events = sorted(events, key=lambda event: (event.entity, event.ts))
     if not all_events:
         return []
-    start_utc = parse_timestamp(start) if start else min(event.ts for event in all_events)
-    end_utc = parse_timestamp(end) if end else max(event.ts for event in all_events) + config.bucket_size
+    start_utc = (
+        parse_timestamp(start) if start else min(event.ts for event in all_events)
+    )
+    end_utc = (
+        parse_timestamp(end)
+        if end
+        else max(event.ts for event in all_events) + config.bucket_size
+    )
     if end_utc <= start_utc:
         raise ValueError("detection end must follow start")
     start_bucket = _floor_bucket(start_utc, config.bucket_minutes)
     end_bucket = _ceil_bucket(end_utc, config.bucket_minutes)
 
     entities = sorted({event.entity for event in all_events})
-    matching: dict[str, dict[datetime, list[Event]]] = defaultdict(lambda: defaultdict(list))
+    matching: dict[str, dict[datetime, list[Event]]] = defaultdict(
+        lambda: defaultdict(list)
+    )
     for event in all_events:
         if event.ts < start_utc or event.ts >= end_utc or not _matches(event, config):
             continue
-        matching[event.entity][_floor_bucket(event.ts, config.bucket_minutes)].append(event)
+        matching[event.entity][_floor_bucket(event.ts, config.bucket_minutes)].append(
+            event
+        )
 
     firings: list[Firing] = []
     for entity in entities:
@@ -117,7 +127,9 @@ def detect_bursts(
         cooldown_until: datetime | None = None
         bucket_start = start_bucket
         while bucket_start < end_bucket:
-            bucket_events = sorted(matching[entity].get(bucket_start, []), key=lambda event: event.ts)
+            bucket_events = sorted(
+                matching[entity].get(bucket_start, []), key=lambda event: event.ts
+            )
             observed = len(bucket_events)
             baseline = counts[-config.baseline_buckets :]
             if len(baseline) >= config.minimum_baseline_buckets:

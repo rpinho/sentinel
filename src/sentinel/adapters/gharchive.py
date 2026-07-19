@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import gzip
 import json
-from datetime import UTC, datetime
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Iterator, Mapping
 
@@ -105,10 +105,14 @@ class GHArchiveAdapter:
                     if event is not None:
                         yield event
         except (gzip.BadGzipFile, EOFError) as exc:
-            raise GHArchiveFormatError(f"invalid or truncated gzip archive: {path}") from exc
+            raise GHArchiveFormatError(
+                f"invalid or truncated gzip archive: {path}"
+            ) from exc
 
     @staticmethod
-    def _normalize_event(raw: Mapping[str, Any], archive_hour: datetime) -> Event | None:
+    def _normalize_event(
+        raw: Mapping[str, Any], archive_hour: datetime
+    ) -> Event | None:
         event_type = raw.get("type")
         if event_type not in {"IssuesEvent", "IssueCommentEvent", "ReleaseEvent"}:
             return None

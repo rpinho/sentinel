@@ -23,7 +23,9 @@ app = typer.Typer(
     help="An anomaly detector that publishes and learns from its own scorecard.",
     no_args_is_help=True,
 )
-ingest_app = typer.Typer(help="Ingest normalized events from a source.", no_args_is_help=True)
+ingest_app = typer.Typer(
+    help="Ingest normalized events from a source.", no_args_is_help=True
+)
 feedback_app = typer.Typer(
     help="Append scorecard labels, corrections, and missed anomalies.",
     no_args_is_help=True,
@@ -80,7 +82,10 @@ def ingest_gharchive(
                     status="complete",
                     normalized_events=len(events),
                     source_bytes=source_bytes,
-                    meta={"archive": archive_path.name, "url": adapter.archive_url(hour)},
+                    meta={
+                        "archive": archive_path.name,
+                        "url": adapter.archive_url(hour),
+                    },
                 )
             )
             typer.echo(
@@ -157,7 +162,9 @@ def ingest_jsonl(
                 raise ValueError("each JSONL row must be an object")
             events.append(Event.from_dict(raw))
         except (json.JSONDecodeError, TypeError, ValueError) as exc:
-            raise typer.BadParameter(f"invalid event on stdin line {line_number}: {exc}") from exc
+            raise typer.BadParameter(
+                f"invalid event on stdin line {line_number}: {exc}"
+            ) from exc
     with SentinelStore(db) as store:
         inserted = store.insert_events(events)
     typer.echo(f"JSONL events={len(events)} inserted={inserted}")
@@ -231,7 +238,9 @@ def corroborate_release_command(
         events = store.list_events(kinds=["release"])
     result = corroborate_release(events, repo=repo, package=package, version=version)
     if result is None:
-        raise typer.BadParameter("matching GitHub and npm release events were not both found")
+        raise typer.BadParameter(
+            "matching GitHub and npm release events were not both found"
+        )
     typer.echo(f"RELEASE {result.version}")
     typer.echo(f"  GH Archive  {format_timestamp(result.github.ts)}")
     typer.echo(f"  npm registry {format_timestamp(result.npm.ts)}")
@@ -255,7 +264,9 @@ def feedback_scorecard(
 
     allowed = {"true_positive", "false_positive", "needs_review"}
     if outcome not in allowed:
-        raise typer.BadParameter("outcome must be true_positive, false_positive, or needs_review")
+        raise typer.BadParameter(
+            "outcome must be true_positive, false_positive, or needs_review"
+        )
     with SentinelStore(db) as store:
         feedback = store.submit_scorecard_feedback(
             firing_id,
@@ -341,7 +352,10 @@ def _print_gharchive_coverage(
 ) -> None:
     expected = set(_hours(start, end))
     windows = store.list_ingestion_windows(
-        entity=entity, source="gharchive", start=min(expected), end=max(expected) + timedelta(hours=1)
+        entity=entity,
+        source="gharchive",
+        start=min(expected),
+        end=max(expected) + timedelta(hours=1),
     )
     complete = {
         window.window_start for window in windows if window.status == "complete"

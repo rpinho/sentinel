@@ -37,7 +37,9 @@ def test_npm_adapter_emits_text_free_releases_and_metrics() -> None:
             end=datetime(2025, 4, 8, tzinfo=UTC),
         )
     )
-    metrics = list(adapter.iter_downloads("webpack", date(2025, 4, 7), date(2025, 4, 8)))
+    metrics = list(
+        adapter.iter_downloads("webpack", date(2025, 4, 7), date(2025, 4, 8))
+    )
 
     assert [event.meta["version"] for event in releases] == ["5.99.0", "5.99.1"]
     assert all(event.text is None and event.value is None for event in releases)

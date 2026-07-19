@@ -84,7 +84,9 @@ def test_feedback_is_append_only_and_only_latest_correction_is_relevant(
             store.correct_feedback(original.feedback_id, outcome="true_positive")
 
 
-def test_false_negative_needs_no_firing_and_enters_future_context(tmp_path: Path) -> None:
+def test_false_negative_needs_no_firing_and_enters_future_context(
+    tmp_path: Path,
+) -> None:
     with SentinelStore(tmp_path / "test.duckdb") as store:
         missed = store.report_missed_anomaly(
             entity="webpack/webpack",
