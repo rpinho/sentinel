@@ -1,0 +1,26 @@
+{
+  "ack_lookahead_hours": 24,
+  "auto_label_rule_version": "maintainer-substantive-v1",
+  "database_path": ".cache/holdout.duckdb",
+  "detection_end": "2025-05-19T00:00:00Z",
+  "detection_start": "2025-05-12T00:00:00Z",
+  "detector_config_path": "src/sentinel/config/default.toml",
+  "detector_config_sha256": "3fca62ea12ec74d0c406543e54d3a60772606fae6e13b17e756b78ead0323332",
+  "detector_version": "sha256:3fca62ea12ec",
+  "feedback_snapshot_path": "holdout/feedback-snapshot.json",
+  "feedback_snapshot_sha256": "062c596a46c6592c839716bdba2f7bdb29ef57401c50cc8f11f2e861f326fe4f",
+  "fixture_dir": "tests/fixtures/triage",
+  "frozen_at": "2026-07-19T22:26:21.235366Z",
+  "frozen_git_commit": "928f681cd82c91194f5d3aae746ca08c05c90287",
+  "holdout_id": "gharchive-2025-05-12-three-repos-v1",
+  "markdown_path": "HOLDOUT.md",
+  "raw_cache_dir": ".cache/gharchive",
+  "repositories": [
+    "facebook/react",
+    "vercel/next.js",
+    "microsoft/vscode"
+  ],
+  "schema_version": 1,
+  "scorecard_path": "holdout/scorecard.json",
+  "selection_policy": "First full Monday five weeks after the webpack demo; three predeclared high-traffic JavaScript repositories, selected before archive inspection."
+}
