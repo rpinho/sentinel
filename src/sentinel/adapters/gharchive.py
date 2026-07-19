@@ -6,7 +6,7 @@ import gzip
 import json
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Iterator, Mapping
+from typing import Any, Collection, Iterator, Mapping
 
 import httpx
 
@@ -81,13 +81,20 @@ class GHArchiveAdapter:
         hour: datetime,
         *,
         entity: str | None = None,
+        entities: Collection[str] | None = None,
         force: bool = False,
     ) -> Iterator[Event]:
         """Yield normalized issue, comment, and release events for an hour."""
 
+        if entity is not None and entities is not None:
+            raise ValueError("pass entity or entities, not both")
         normalized_hour = self.normalize_hour(hour)
         path = self.download_hour(normalized_hour, force=force)
-        entity_filter = entity.casefold() if entity else None
+        entity_filter = (
+            {entity.casefold()}
+            if entity
+            else {item.casefold() for item in entities or ()}
+        )
 
         try:
             with gzip.open(path, "rt", encoding="utf-8", errors="strict") as archive:
@@ -99,7 +106,7 @@ class GHArchiveAdapter:
                             f"invalid NDJSON in {path} at line {line_number}: {exc}"
                         ) from exc
                     repo_name = str((raw.get("repo") or {}).get("name") or "")
-                    if entity_filter and repo_name.casefold() != entity_filter:
+                    if entity_filter and repo_name.casefold() not in entity_filter:
                         continue
                     event = self._normalize_event(raw, normalized_hour)
                     if event is not None:

@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 
 from sentinel.feedback import render_feedback_context
-from sentinel.store import Firing, SentinelStore, TriageRecord
+from sentinel.store import Feedback, Firing, SentinelStore, TriageRecord
 from sentinel.types import Event
 
 NOW = datetime(2025, 4, 7, 18, tzinfo=UTC)
@@ -82,6 +82,56 @@ def test_feedback_is_append_only_and_only_latest_correction_is_relevant(
         assert correction.supersedes_feedback_id == original.feedback_id
         with pytest.raises(ValueError, match="active feedback"):
             store.correct_feedback(original.feedback_id, outcome="true_positive")
+
+
+def test_feedback_snapshot_import_preserves_ids_and_is_idempotent(
+    tmp_path: Path,
+) -> None:
+    original = Feedback(
+        feedback_id="feedback-original",
+        firing_id=None,
+        ts=NOW,
+        entity="facebook/react",
+        metric_id="issue_activity_per_hour",
+        outcome="false_negative",
+        verdict=None,
+        hypothesis=None,
+        confidence=None,
+        corrected_cause="missed regression",
+        reason_code="threshold_not_sensitive_enough",
+        note="snapshot row",
+        source="human",
+        submitted_by="reviewer",
+        detector_version="sha256:frozen",
+        sentinel_run_id="holdout",
+        created_at=NOW,
+    )
+    correction = Feedback(
+        feedback_id="feedback-correction",
+        firing_id=None,
+        ts=NOW,
+        entity="facebook/react",
+        metric_id="issue_activity_per_hour",
+        outcome="false_negative",
+        verdict=None,
+        hypothesis=None,
+        confidence=None,
+        corrected_cause="corrected regression",
+        reason_code="threshold_not_sensitive_enough",
+        note="corrected snapshot row",
+        source="human",
+        submitted_by="reviewer",
+        detector_version="sha256:frozen",
+        sentinel_run_id="holdout",
+        created_at=NOW + timedelta(minutes=1),
+        supersedes_feedback_id=original.feedback_id,
+    )
+
+    with SentinelStore(tmp_path / "snapshot.duckdb") as store:
+        assert store.import_feedback([correction, original]) == 2
+        assert store.import_feedback([original, correction]) == 0
+        assert store.list_feedback(entity="facebook/react") == [correction, original]
+        assert store.relevant_feedback("facebook/react") == [correction]
 
 
 def test_triage_modes_persist_side_by_side_and_feed_later_feedback(

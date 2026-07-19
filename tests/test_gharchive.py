@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import httpx
+import pytest
 
 from sentinel.adapters.gharchive import GHArchiveAdapter
 
@@ -121,3 +122,48 @@ def test_gharchive_normalizes_issue_and_release(tmp_path: Path) -> None:
     assert events[1].meta["version"] == "v5.99.0"
     assert events[1].ts == datetime(2025, 4, 7, 13, 12, 6, tzinfo=UTC)
     assert events[1].meta["published_at"] == "2025-04-07T13:12:05Z"
+
+
+def test_gharchive_filters_multiple_entities_in_one_archive_pass(
+    tmp_path: Path,
+) -> None:
+    def issue(event_id: str, repo: str) -> dict:
+        return {
+            "id": event_id,
+            "type": "IssuesEvent",
+            "actor": {"login": "reporter"},
+            "repo": {"name": repo},
+            "payload": {
+                "action": "opened",
+                "issue": {"number": 1, "title": "Regression", "body": "broken"},
+            },
+            "created_at": "2025-05-12T00:01:00Z",
+        }
+
+    hour = datetime(2025, 5, 12, tzinfo=UTC)
+    path = tmp_path / "2025-05-12-0.json.gz"
+    path.write_bytes(
+        _gzip_lines(
+            [
+                issue("1", "facebook/react"),
+                issue("2", "vercel/next.js"),
+                issue("3", "other/repo"),
+            ]
+        )
+    )
+
+    adapter = GHArchiveAdapter(cache_dir=tmp_path)
+    events = list(
+        adapter.iter_events(hour, entities={"facebook/react", "VERCEL/NEXT.JS"})
+    )
+
+    assert [event.entity for event in events] == [
+        "facebook/react",
+        "vercel/next.js",
+    ]
+    with pytest.raises(ValueError, match="not both"):
+        list(
+            adapter.iter_events(
+                hour, entity="facebook/react", entities={"other/repo"}
+            )
+        )

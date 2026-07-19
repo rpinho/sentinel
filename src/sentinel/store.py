@@ -599,6 +599,17 @@ class SentinelStore:
         self._append_feedback(feedback)
         return feedback
 
+    def import_feedback(self, feedback: Iterable[Feedback]) -> int:
+        """Idempotently restore an immutable feedback snapshot with original IDs."""
+
+        inserted = 0
+        for item in sorted(feedback, key=lambda row: (row.created_at, row.feedback_id)):
+            if self.get_feedback(item.feedback_id) is not None:
+                continue
+            self._append_feedback(item)
+            inserted += 1
+        return inserted
+
     def report_missed_anomaly(
         self,
         *,
