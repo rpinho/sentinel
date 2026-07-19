@@ -22,6 +22,7 @@ uv run sentinel detect \
   --start 2025-04-07T12:00:00Z \
   --end 2025-04-07T23:00:00Z \
   --db "$sentinel_db" \
+  --no-agent \
   --json
 
 uv run python scripts/verify_webpack_acceptance.py --db "$sentinel_db"
