@@ -95,6 +95,27 @@ class Feedback:
         object.__setattr__(self, "created_at", parse_timestamp(self.created_at))
 
 
+@dataclass(frozen=True, slots=True)
+class IngestionWindow:
+    source: str
+    entity: str
+    window_start: datetime
+    window_end: datetime
+    status: Literal["complete", "failed"]
+    normalized_events: int
+    source_bytes: int | None = None
+    fetched_at: datetime = field(default_factory=_utc_now)
+    meta: Mapping[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "window_start", parse_timestamp(self.window_start))
+        object.__setattr__(self, "window_end", parse_timestamp(self.window_end))
+        object.__setattr__(self, "fetched_at", parse_timestamp(self.fetched_at))
+        object.__setattr__(self, "meta", dict(self.meta))
+        if self.window_end <= self.window_start:
+            raise ValueError("ingestion window end must follow its start")
+
+
 class SentinelStore:
     """Small persistence boundary; callers never update feedback in place."""
 
@@ -168,10 +189,25 @@ class SentinelStore:
                 supersedes_feedback_id VARCHAR
             );
 
+            CREATE TABLE IF NOT EXISTS ingestion_windows (
+                source VARCHAR NOT NULL,
+                entity VARCHAR NOT NULL,
+                window_start TIMESTAMPTZ NOT NULL,
+                window_end TIMESTAMPTZ NOT NULL,
+                status VARCHAR NOT NULL CHECK (status IN ('complete', 'failed')),
+                normalized_events BIGINT NOT NULL,
+                source_bytes BIGINT,
+                fetched_at TIMESTAMPTZ NOT NULL,
+                meta JSON NOT NULL,
+                PRIMARY KEY (source, entity, window_start, window_end)
+            );
+
             CREATE INDEX IF NOT EXISTS events_entity_ts_idx ON events(entity, ts);
             CREATE INDEX IF NOT EXISTS firings_entity_ts_idx ON firings(entity, ts);
             CREATE INDEX IF NOT EXISTS feedback_entity_created_idx
                 ON feedback(entity, created_at);
+            CREATE INDEX IF NOT EXISTS ingestion_entity_window_idx
+                ON ingestion_windows(entity, window_start, window_end);
             """
         )
 
@@ -326,6 +362,78 @@ class SentinelStore:
             parameters,
         ).fetchall()
         return [_row_to_firing(row) for row in rows]
+
+    def record_ingestion_window(self, window: IngestionWindow) -> None:
+        """Record source coverage; a repeat fetch replaces only this status record."""
+
+        self.connection.execute(
+            """
+            INSERT INTO ingestion_windows VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT (source, entity, window_start, window_end) DO UPDATE SET
+                status = excluded.status,
+                normalized_events = excluded.normalized_events,
+                source_bytes = excluded.source_bytes,
+                fetched_at = excluded.fetched_at,
+                meta = excluded.meta
+            """,
+            [
+                window.source,
+                window.entity,
+                window.window_start,
+                window.window_end,
+                window.status,
+                window.normalized_events,
+                window.source_bytes,
+                window.fetched_at,
+                json.dumps(dict(window.meta), ensure_ascii=False, sort_keys=True),
+            ],
+        )
+
+    def list_ingestion_windows(
+        self,
+        *,
+        entity: str | None = None,
+        source: str | None = None,
+        start: datetime | None = None,
+        end: datetime | None = None,
+    ) -> list[IngestionWindow]:
+        clauses: list[str] = []
+        parameters: list[Any] = []
+        for column, value in (("entity", entity), ("source", source)):
+            if value:
+                clauses.append(f"{column} = ?")
+                parameters.append(value)
+        if start:
+            clauses.append("window_start >= ?")
+            parameters.append(parse_timestamp(start))
+        if end:
+            clauses.append("window_end <= ?")
+            parameters.append(parse_timestamp(end))
+        where = " WHERE " + " AND ".join(clauses) if clauses else ""
+        rows = self.connection.execute(
+            """
+            SELECT source, entity, window_start, window_end, status,
+                   normalized_events, source_bytes, fetched_at, meta
+            FROM ingestion_windows
+            """
+            + where
+            + " ORDER BY window_start, source",
+            parameters,
+        ).fetchall()
+        return [
+            IngestionWindow(
+                source=row[0],
+                entity=row[1],
+                window_start=row[2],
+                window_end=row[3],
+                status=row[4],
+                normalized_events=row[5],
+                source_bytes=row[6],
+                fetched_at=row[7],
+                meta=_json_object(row[8]),
+            )
+            for row in rows
+        ]
 
     def submit_scorecard_feedback(
         self,
