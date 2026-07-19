@@ -11,7 +11,6 @@ from openai import RateLimitError
 
 from sentinel.store import Firing
 from sentinel.triage import (
-    FIXED_LIVE_SEED,
     MAX_EVENT_TEXT_CHARS,
     MAX_TRIAGE_INPUT_CHARS,
     TriageCacheMissError,
@@ -167,7 +166,7 @@ def test_live_response_is_cached_as_fixture_and_replays_without_key(
     assert len(client.responses.calls) == 1
     assert "temperature" not in client.responses.calls[0]
     assert "seed" not in client.responses.calls[0]
-    assert client.responses.calls[0]["extra_body"] == {"seed": FIXED_LIVE_SEED}
+    assert "extra_body" not in client.responses.calls[0]
 
 
 def test_live_rate_limit_retries_with_server_delay(
@@ -189,10 +188,7 @@ def test_live_rate_limit_retries_with_server_delay(
     assert run.output.real is True
     assert len(responses.calls) == 2
     assert sleeps == [1.0]
-    assert all(
-        call["extra_body"] == {"seed": FIXED_LIVE_SEED}
-        for call in responses.calls
-    )
+    assert all("temperature" not in call for call in responses.calls)
 
 
 def test_no_feedback_changes_exact_prompt_hash() -> None:
@@ -205,7 +201,7 @@ def test_no_feedback_changes_exact_prompt_hash() -> None:
     assert ablated.mode == "no_feedback"
     assert full.prompt_hash != ablated.prompt_hash
     assert "temperature" not in full.api_payload
-    assert full.api_payload["seed"] == FIXED_LIVE_SEED
+    assert "seed" not in full.api_payload
     assert '"enabled":false' in ablated.api_payload["input"][1]["content"]
 
 

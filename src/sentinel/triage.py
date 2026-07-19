@@ -30,7 +30,6 @@ MAX_TRIAGE_INPUT_CHARS = 500_000
 TARGET_EVENT_CONTEXT_CHARS = 350_000
 MAX_EVENT_TEXT_CHARS = 12_000
 MIN_RECENT_EVENTS = 20
-FIXED_LIVE_SEED = 42
 MAX_RATE_LIMIT_RETRIES = 4
 MAX_RATE_LIMIT_DELAY_SECONDS = 30.0
 
@@ -257,7 +256,6 @@ def build_triage_request(
 
     api_payload: dict[str, Any] = {
         "model": model,
-        "seed": FIXED_LIVE_SEED,
         "max_output_tokens": MAX_OUTPUT_TOKENS,
         "store": False,
         "input": [
@@ -506,12 +504,9 @@ def _run_from_record(
 def _create_live_response(
     client: OpenAIClient, api_payload: Mapping[str, Any]
 ) -> Any:
-    """Call Responses with fixed-seed passthrough and bounded TPM retry handling."""
+    """Call Responses with bounded TPM retry handling."""
 
     call_payload = dict(api_payload)
-    seed = call_payload.pop("seed", None)
-    if seed is not None:
-        call_payload["extra_body"] = {"seed": seed}
     for attempt in range(MAX_RATE_LIMIT_RETRIES + 1):
         try:
             return client.responses.create(**call_payload)
