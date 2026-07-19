@@ -8,6 +8,7 @@ from sentinel.holdout import (
     iter_hours,
     mode_metrics,
     routing_for_firing,
+    visible_issue_numbers,
 )
 from sentinel.store import Firing
 from sentinel.types import Event
@@ -40,6 +41,7 @@ def _event(
     text: str,
     issue_number: int = 7,
     association: str | None = None,
+    author: str | None = None,
 ) -> Event:
     meta = {
         "source": "gharchive",
@@ -50,6 +52,8 @@ def _event(
     }
     if association:
         meta["author_association"] = association
+    if author:
+        meta["author"] = author
     return Event(
         ts=ts,
         entity="facebook/react",
@@ -85,6 +89,53 @@ def test_acknowledgment_rules_are_deterministic_and_maintainer_scoped() -> None:
     assert verdict.verdict == "TRUE"
     assert verdict.issue_number == 7
     assert verdict.lead_minutes == 20
+
+
+def test_auto_label_excludes_bots_and_post_firing_issue_activity() -> None:
+    issue_before = _event(
+        ts=NOW - timedelta(minutes=1),
+        kind="issue",
+        text="Regression",
+        issue_number=7,
+    )
+    issue_after = _event(
+        ts=NOW + timedelta(minutes=1),
+        kind="issue",
+        text="Regression",
+        issue_number=8,
+    )
+    bot_ack = _event(
+        ts=NOW + timedelta(minutes=5),
+        kind="comment",
+        text="Confirmed regression; fixed in #123",
+        issue_number=7,
+        association="MEMBER",
+        author="ci[bot]",
+    )
+    human_ack_for_future_issue = _event(
+        ts=NOW + timedelta(minutes=10),
+        kind="comment",
+        text="Confirmed regression; fixed in #124",
+        issue_number=8,
+        association="MEMBER",
+        author="maintainer",
+    )
+    firing = _firing()
+
+    candidates = visible_issue_numbers(firing, [issue_before, issue_after])
+    verdict = auto_label_firing(
+        firing=firing,
+        events=[
+            issue_before,
+            issue_after,
+            bot_ack,
+            human_ack_for_future_issue,
+        ],
+        issue_numbers=candidates,
+    )
+
+    assert candidates == {7}
+    assert verdict.verdict == "UNRESOLVED"
 
 
 def test_metrics_publish_false_positives_misses_and_unresolved() -> None:

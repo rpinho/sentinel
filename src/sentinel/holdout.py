@@ -29,7 +29,7 @@ from sentinel.store import (
 from sentinel.types import Event, format_timestamp, parse_timestamp
 
 HOLDOUT_SCHEMA_VERSION = 1
-AUTO_LABEL_RULE_VERSION = "maintainer-substantive-v1"
+AUTO_LABEL_RULE_VERSION = "maintainer-substantive-v2"
 MAINTAINER_ASSOCIATIONS = frozenset({"OWNER", "MEMBER", "COLLABORATOR"})
 
 NEGATIVE_ACK = re.compile(
@@ -432,10 +432,31 @@ def build_scorecard(
             "rule_version": AUTO_LABEL_RULE_VERSION,
             "maintainer_associations": sorted(MAINTAINER_ASSOCIATIONS),
             "description": (
-                "First later same-issue maintainer comment matching disclosed "
-                "substantive positive or negative phrases; otherwise UNRESOLVED."
+                "First later same-issue human maintainer comment matching disclosed "
+                "substantive positive or negative phrases. Candidate issues must be "
+                "visible no later than the firing; otherwise UNRESOLVED."
             ),
         },
+        "methodology_amendments": [
+            {
+                "from_rule": "maintainer-substantive-v1",
+                "to_rule": AUTO_LABEL_RULE_VERSION,
+                "reason": (
+                    "The first raw run exposed two label-leakage defects: bot-authored "
+                    "PR statistics matched acknowledgment phrases, and issue activity "
+                    "later in the firing hour could label an earlier firing. V2 excludes "
+                    "bot acknowledgments and restricts candidate issue activity to "
+                    "timestamps at or before the firing. Detector outputs and agent "
+                    "triage fixtures were not changed."
+                ),
+                "observed_v1_metrics": {
+                    "no_agent": {"true_positives": 9, "unresolved": 11},
+                    "no_feedback": {"misses": 9, "unresolved": 11},
+                    "full": {"misses": 9, "unresolved": 11},
+                    "detector_misses": 3,
+                },
+            }
+        ],
         "metrics": metrics,
         "feedback_precision_delta": feedback_effect,
         "firings": firing_rows,
@@ -461,7 +482,7 @@ def firing_scorecard_row(
     verdict = auto_label_firing(
         firing=firing,
         events=events,
-        issue_numbers=issue_numbers(bucket_events),
+        issue_numbers=visible_issue_numbers(firing, bucket_events),
     )
     source_event = min(
         (
@@ -507,6 +528,7 @@ def auto_label_firing(
         and _int_or_none(event.meta.get("issue_number")) in issue_numbers
         and str(event.meta.get("author_association") or "").upper()
         in MAINTAINER_ASSOCIATIONS
+        and not _is_bot_event(event)
     ]
     for event in sorted(candidates, key=lambda item: item.ts):
         verdict = classify_acknowledgment(event.text)
@@ -525,6 +547,15 @@ def auto_label_firing(
         verdict="UNRESOLVED",
         reason="no later same-issue substantive maintainer acknowledgment in coverage",
     )
+
+
+def visible_issue_numbers(firing: Firing, events: Iterable[Event]) -> set[int]:
+    return issue_numbers(event for event in events if event.ts <= firing.ts)
+
+
+def _is_bot_event(event: Event) -> bool:
+    identity = str(event.meta.get("author") or event.meta.get("actor") or "").lower()
+    return identity.endswith("[bot]") or identity.endswith("-bot")
 
 
 def classify_acknowledgment(text: str | None) -> str | None:
@@ -733,6 +764,12 @@ def render_holdout_markdown(scorecard: Mapping[str, Any]) -> str:
             "",
             "Verdicts use the committed deterministic maintainer-acknowledgment rule. "
             "No later acknowledgment means `UNRESOLVED`, not a guessed false positive.",
+            "",
+            "### Methodology amendment",
+            "",
+            cast(list[Mapping[str, Any]], scorecard["methodology_amendments"])[0][
+                "reason"
+            ],
             "",
             "## Every firing",
             "",
