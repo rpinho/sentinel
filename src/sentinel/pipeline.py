@@ -4,11 +4,14 @@ from __future__ import annotations
 
 import hashlib
 import json
+from datetime import timedelta
 from pathlib import Path
 
 from sentinel.feedback import render_feedback_context
 from sentinel.store import Firing, SentinelStore, TriageRecord
 from sentinel.triage import triage_firing
+
+TRIAGE_LOOKBACK = timedelta(hours=24)
 
 
 def execute_triage(
@@ -43,7 +46,11 @@ def execute_triage(
         )
         return record, store.insert_triage_result(record)
 
-    events = store.list_events(entity=firing.entity, end=firing.ts)
+    events = store.list_events(
+        entity=firing.entity,
+        start=firing.ts - TRIAGE_LOOKBACK,
+        end=firing.ts,
+    )
     feedback_context = None
     if not no_feedback:
         feedback_context = render_feedback_context(
