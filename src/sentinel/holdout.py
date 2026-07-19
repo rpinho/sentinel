@@ -29,12 +29,14 @@ from sentinel.store import (
 from sentinel.types import Event, format_timestamp, parse_timestamp
 
 HOLDOUT_SCHEMA_VERSION = 1
-AUTO_LABEL_RULE_VERSION = "maintainer-substantive-v2"
+AUTO_LABEL_RULE_VERSION = "maintainer-substantive-v3"
 MAINTAINER_ASSOCIATIONS = frozenset({"OWNER", "MEMBER", "COLLABORATOR"})
 
 NEGATIVE_ACK = re.compile(
     r"\b(not a bug|expected behavio[u]?r|works as intended|cannot reproduce|"
-    r"can't reproduce|unable to reproduce|invalid|support request)\b",
+    r"can't reproduce|unable to reproduce|invalid|support request|"
+    r"not (?:the )?official(?:ly supported)? (?:build|binary|binaries)|"
+    r"issue against (?:the )?(?:package )?distributor)\b",
     re.IGNORECASE,
 )
 POSITIVE_ACK = re.compile(
@@ -432,9 +434,9 @@ def build_scorecard(
             "rule_version": AUTO_LABEL_RULE_VERSION,
             "maintainer_associations": sorted(MAINTAINER_ASSOCIATIONS),
             "description": (
-                "First later same-issue human maintainer comment matching disclosed "
-                "substantive positive or negative phrases. Candidate issues must be "
-                "visible no later than the firing; otherwise UNRESOLVED."
+                "First later same-issue human maintainer comment on an issue thread "
+                "matching disclosed substantive positive or negative phrases. Candidate "
+                "issues must be visible no later than the firing; otherwise UNRESOLVED."
             ),
         },
         "methodology_amendments": [
@@ -442,17 +444,25 @@ def build_scorecard(
                 "from_rule": "maintainer-substantive-v1",
                 "to_rule": AUTO_LABEL_RULE_VERSION,
                 "reason": (
-                    "The first raw run exposed two label-leakage defects: bot-authored "
-                    "PR statistics matched acknowledgment phrases, and issue activity "
-                    "later in the firing hour could label an earlier firing. V2 excludes "
-                    "bot acknowledgments and restricts candidate issue activity to "
-                    "timestamps at or before the firing. Detector outputs and agent "
-                    "triage fixtures were not changed."
+                    "The first raw runs exposed label leakage: generated PR statistics "
+                    "matched acknowledgment phrases (including CI posted through a human "
+                    "maintainer account), issue activity later in the firing hour could "
+                    "label an earlier firing, and an explicit downstream-distributor "
+                    "closure was read as a fix. V3 grades only issue acknowledgments, "
+                    "excludes bots, restricts candidate issue activity to timestamps at "
+                    "or before the firing, and recognizes the disclosed downstream-build "
+                    "negative phrase. Detector outputs and agent fixtures were unchanged."
                 ),
                 "observed_v1_metrics": {
                     "no_agent": {"true_positives": 9, "unresolved": 11},
                     "no_feedback": {"misses": 9, "unresolved": 11},
                     "full": {"misses": 9, "unresolved": 11},
+                    "detector_misses": 3,
+                },
+                "observed_v2_metrics": {
+                    "no_agent": {"true_positives": 7, "unresolved": 13},
+                    "no_feedback": {"misses": 7, "unresolved": 13},
+                    "full": {"misses": 7, "unresolved": 13},
                     "detector_misses": 3,
                 },
             }
@@ -529,6 +539,7 @@ def auto_label_firing(
         and str(event.meta.get("author_association") or "").upper()
         in MAINTAINER_ASSOCIATIONS
         and not _is_bot_event(event)
+        and "/pull/" not in str(event.meta.get("url") or "")
     ]
     for event in sorted(candidates, key=lambda item: item.ts):
         verdict = classify_acknowledgment(event.text)

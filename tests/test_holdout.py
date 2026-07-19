@@ -66,6 +66,13 @@ def _event(
 def test_acknowledgment_rules_are_deterministic_and_maintainer_scoped() -> None:
     assert classify_acknowledgment("Confirmed regression; fixed in #123") == "TRUE"
     assert classify_acknowledgment("This is expected behavior, not a bug") == "FALSE"
+    assert (
+        classify_acknowledgment(
+            "This is not the official build; file the issue against the distributor "
+            "to get this fixed."
+        )
+        == "FALSE"
+    )
     assert classify_acknowledgment("Thanks for the report") is None
 
     issue = _event(ts=NOW - timedelta(minutes=20), kind="issue", text="Regression")
@@ -135,6 +142,38 @@ def test_auto_label_excludes_bots_and_post_firing_issue_activity() -> None:
     )
 
     assert candidates == {7}
+    assert verdict.verdict == "UNRESOLVED"
+
+
+def test_auto_label_excludes_pr_ci_comments_even_from_maintainers() -> None:
+    issue = _event(
+        ts=NOW - timedelta(minutes=1),
+        kind="issue",
+        text="Regression",
+    )
+    pr_ack = _event(
+        ts=NOW + timedelta(minutes=5),
+        kind="comment",
+        text="Default Build: increase detected; fixed in #123",
+        association="MEMBER",
+        author="maintainer",
+    )
+    pr_meta = dict(pr_ack.meta)
+    pr_meta["url"] = "https://github.com/facebook/react/pull/7#issuecomment-1"
+    pr_ack = Event(
+        ts=pr_ack.ts,
+        entity=pr_ack.entity,
+        kind=pr_ack.kind,
+        text=pr_ack.text,
+        meta=pr_meta,
+    )
+
+    verdict = auto_label_firing(
+        firing=_firing(),
+        events=[issue, pr_ack],
+        issue_numbers={7},
+    )
+
     assert verdict.verdict == "UNRESOLVED"
 
 
