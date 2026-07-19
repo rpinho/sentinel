@@ -189,6 +189,61 @@ def test_text_free_events_degrade_without_error(tmp_path: Path) -> None:
     assert run.output.evidence_quotes == ()
 
 
+def test_markdown_visible_quote_is_grounded_to_exact_source(tmp_path: Path) -> None:
+    source = (
+        "We figured it doesn't follow our "
+        "[issue reporting guidelines](https://example.test/guidelines). "
+        "Please update the issue."
+    )
+    client = FakeClient(
+        {
+            "real": False,
+            "cause": "This is an issue-template burst rather than breakage.",
+            "culprit_ref": None,
+            "confidence": 0.95,
+            "evidence_quotes": [
+                "We figured it doesn't follow our issue reporting guidelines."
+            ],
+        }
+    )
+    event = Event(
+        ts=FIRING_TS - timedelta(minutes=5),
+        entity="webpack/webpack",
+        kind="comment",
+        text=source,
+        meta={"action": "created"},
+    )
+
+    run = triage_firing(
+        _firing(),
+        [event],
+        client=client,
+        cache_dir=tmp_path / "cache",
+        fixture_dir=tmp_path / "fixtures",
+    )
+    record = json.loads(
+        (tmp_path / "fixtures" / f"{run.prompt_hash}.json").read_text()
+    )
+
+    assert run.output.evidence_quotes == (
+        "We figured it doesn't follow our "
+        "[issue reporting guidelines](https://example.test/guidelines).",
+    )
+    assert record["raw_response"] == client.responses.output
+    assert record["evidence_grounding"] == [
+        {
+            "model_quote": (
+                "We figured it doesn't follow our issue reporting guidelines."
+            ),
+            "grounded_quote": (
+                "We figured it doesn't follow our "
+                "[issue reporting guidelines](https://example.test/guidelines)."
+            ),
+            "method": "unique_markdown_visible_match",
+        }
+    ]
+
+
 def test_offline_cache_miss_fails_loudly(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

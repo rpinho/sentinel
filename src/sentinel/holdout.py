@@ -213,6 +213,9 @@ def run_holdout(*, repo_root: Path, manifest_path: Path) -> dict[str, Any]:
             end=end,
             ack_end=ack_end,
         )
+        scorecard["execution_git_commit"] = subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], cwd=repo_root, text=True
+        ).strip()
 
     scorecard_path = repo_root / cast(str, manifest["scorecard_path"])
     markdown_path = repo_root / cast(str, manifest["markdown_path"])
@@ -699,6 +702,7 @@ def render_holdout_markdown(scorecard: Mapping[str, Any]) -> str:
         f"- Window: `{holdout['detection_start']}` to `{holdout['detection_end']}`",
         f"- Repositories: {', '.join(f'`{repo}`' for repo in holdout['repositories'])}",
         f"- Frozen commit: `{holdout['frozen_git_commit']}`",
+        f"- Execution commit: `{scorecard['execution_git_commit']}`",
         f"- Detector config: `{holdout['detector_config_sha256']}`",
         f"- Detector version: `{holdout['detector_version']}`",
         f"- Feedback snapshot: `{holdout['feedback_snapshot_sha256']}`",

@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -330,7 +331,8 @@ def triage_firing(
         ) from exc
     if not isinstance(raw_output, dict):
         raise TriageResponseError("OpenAI structured output was not a JSON object")
-    output = TriageOutput.from_mapping(raw_output)
+    model_output = TriageOutput.from_mapping(raw_output)
+    output, grounding = _ground_evidence_quotes(model_output, request.events)
     _validate_evidence(output, request.events)
 
     record = {
@@ -338,6 +340,8 @@ def triage_firing(
         "request_hash": request.prompt_hash,
         "request": dict(request.api_payload),
         "response": output.to_dict(),
+        "raw_response": model_output.to_dict() if grounding else None,
+        "evidence_grounding": grounding,
         "requested_model": request.model,
         "returned_model": str(getattr(response, "model", request.model)),
         "response_id": getattr(response, "id", None),
@@ -432,6 +436,72 @@ def _validate_evidence(output: TriageOutput, events: Sequence[Event]) -> None:
             )
     if output.real and source_texts and not output.evidence_quotes:
         raise TriageResponseError("a real incident with text evidence requires a quote")
+
+
+def _ground_evidence_quotes(
+    output: TriageOutput, events: Sequence[Event]
+) -> tuple[TriageOutput, list[dict[str, str]]]:
+    """Restore uniquely matched Markdown-visible quotes to exact source substrings."""
+
+    source_texts = [_normalize_text(event.text) for event in events if event.text]
+    grounded: list[str] = []
+    audit: list[dict[str, str]] = []
+    for quote in output.evidence_quotes:
+        normalized_quote = _normalize_text(quote)
+        if any(normalized_quote in source for source in source_texts):
+            grounded.append(quote)
+            continue
+        visible_quote = _visible_markdown(normalized_quote)
+        matches = {
+            candidate
+            for source in source_texts
+            for candidate in _quote_candidates(source)
+            if _visible_markdown(candidate) == visible_quote
+        }
+        if len(matches) != 1:
+            grounded.append(quote)
+            continue
+        exact_quote = matches.pop()
+        grounded.append(exact_quote)
+        audit.append(
+            {
+                "model_quote": quote,
+                "grounded_quote": exact_quote,
+                "method": "unique_markdown_visible_match",
+            }
+        )
+    if not audit:
+        return output, audit
+    return (
+        TriageOutput(
+            real=output.real,
+            cause=output.cause,
+            culprit_ref=output.culprit_ref,
+            confidence=output.confidence,
+            evidence_quotes=tuple(grounded),
+        ),
+        audit,
+    )
+
+
+def _quote_candidates(source: str) -> set[str]:
+    sentences = [
+        part.strip()
+        for part in re.split(r"(?<=[.!?])\s+|\n+", source)
+        if part.strip()
+    ]
+    candidates = set(sentences)
+    for width in (2, 3):
+        candidates.update(
+            " ".join(sentences[index : index + width])
+            for index in range(len(sentences) - width + 1)
+        )
+    return candidates
+
+
+def _visible_markdown(value: str) -> str:
+    without_links = re.sub(r"\[([^\]]+)\]\([^)]*\)", r"\1", value)
+    return _normalize_text(re.sub(r"[*_`]", "", without_links))
 
 
 def _normalize_text(value: str | None) -> str:
