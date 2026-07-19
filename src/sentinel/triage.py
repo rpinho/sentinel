@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Literal, Mapping, Protocol, Sequence, cast
+from urllib.parse import unquote
 from uuid import uuid4
 
 from dotenv import load_dotenv
@@ -563,6 +564,15 @@ def _ground_evidence_quotes(
             for candidate in _quote_candidates(source)
             if _visible_markdown(candidate) == visible_quote
         }
+        method = "unique_markdown_visible_match"
+        if len(matches) != 1:
+            matches = {
+                candidate
+                for source in source_texts
+                for candidate, url in _markdown_links(source)
+                if normalized_quote in _normalize_text(unquote(url))
+            }
+            method = "unique_percent_decoded_markdown_url_match"
         if len(matches) != 1:
             grounded.append(quote)
             continue
@@ -572,7 +582,7 @@ def _ground_evidence_quotes(
             {
                 "model_quote": quote,
                 "grounded_quote": exact_quote,
-                "method": "unique_markdown_visible_match",
+                "method": method,
             }
         )
     if not audit:
@@ -607,6 +617,13 @@ def _quote_candidates(source: str) -> set[str]:
 def _visible_markdown(value: str) -> str:
     without_links = re.sub(r"\[([^\]]+)\]\([^)]*\)", r"\1", value)
     return _normalize_text(re.sub(r"[*_`]", "", without_links))
+
+
+def _markdown_links(source: str) -> set[tuple[str, str]]:
+    return {
+        (match.group(0), match.group(1))
+        for match in re.finditer(r"\[[^\]]+\]\(([^)]+)\)", source)
+    }
 
 
 def _normalize_text(value: str | None) -> str:

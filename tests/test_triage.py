@@ -283,6 +283,51 @@ def test_markdown_visible_quote_is_grounded_to_exact_source(tmp_path: Path) -> N
     ]
 
 
+def test_percent_decoded_link_quote_is_grounded_to_exact_source(
+    tmp_path: Path,
+) -> None:
+    source = (
+        "[Add a changeset](https://example.test/new?value="
+        "Update%20Rspack%20development%20test%20manifest)"
+    )
+    client = FakeClient(
+        {
+            "real": False,
+            "cause": "This is routine manifest automation.",
+            "culprit_ref": None,
+            "confidence": 0.94,
+            "evidence_quotes": ["Update Rspack development test manifest"],
+        }
+    )
+    event = Event(
+        ts=FIRING_TS - timedelta(minutes=5),
+        entity="webpack/webpack",
+        kind="comment",
+        text=source,
+        meta={"action": "created"},
+    )
+
+    run = triage_firing(
+        _firing(),
+        [event],
+        client=client,
+        cache_dir=tmp_path / "cache",
+        fixture_dir=tmp_path / "fixtures",
+    )
+    record = json.loads(
+        (tmp_path / "fixtures" / f"{run.prompt_hash}.json").read_text()
+    )
+
+    assert run.output.evidence_quotes == (source,)
+    assert record["evidence_grounding"] == [
+        {
+            "model_quote": "Update Rspack development test manifest",
+            "grounded_quote": source,
+            "method": "unique_percent_decoded_markdown_url_match",
+        }
+    ]
+
+
 def test_offline_cache_miss_fails_loudly(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
