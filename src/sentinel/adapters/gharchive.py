@@ -175,7 +175,10 @@ class GHArchiveAdapter:
         body = str(release.get("body") or "").strip()
         text = "\n\n".join(part for part in (name, body) if part) or None
         return Event(
-            ts=parse_timestamp(release.get("published_at") or raw["created_at"]),
+            # GH Archive's envelope timestamp is when this public stream observed
+            # the release. Keep GitHub's intrinsic publish time separately; the
+            # scorecard can show both instead of silently conflating them.
+            ts=parse_timestamp(raw["created_at"]),
             entity=repo_name,
             kind="release",
             text=text,
@@ -183,6 +186,7 @@ class GHArchiveAdapter:
                 **common_meta,
                 "release_id": release.get("id"),
                 "version": release.get("tag_name"),
+                "published_at": release.get("published_at"),
                 "url": release.get("html_url"),
                 "prerelease": bool(release.get("prerelease")),
                 "draft": bool(release.get("draft")),

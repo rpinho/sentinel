@@ -116,4 +116,5 @@ def test_gharchive_normalizes_issue_and_release(tmp_path: Path) -> None:
     assert events[0].text == "Regression\n\nprocess is not defined"
     assert events[0].meta["action"] == "opened"
     assert events[1].meta["version"] == "v5.99.0"
-    assert events[1].ts == datetime(2025, 4, 7, 13, 12, 5, tzinfo=UTC)
+    assert events[1].ts == datetime(2025, 4, 7, 13, 12, 6, tzinfo=UTC)
+    assert events[1].meta["published_at"] == "2025-04-07T13:12:05Z"
