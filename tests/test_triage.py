@@ -1,3 +1,4 @@
+import hashlib
 import json
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -9,10 +10,11 @@ import pytest
 from sentinel.store import Firing
 from sentinel.triage import (
     TriageCacheMissError,
+    TriageOutput,
     build_triage_request,
     triage_firing,
 )
-from sentinel.types import Event
+from sentinel.types import Event, parse_timestamp
 
 FIRING_TS = datetime(2025, 4, 7, 18, 27, 36, tzinfo=UTC)
 
@@ -197,4 +199,58 @@ def test_offline_cache_miss_fails_loudly(
             [_issue()],
             cache_dir=tmp_path / "cache",
             fixture_dir=tmp_path / "fixtures",
+        )
+
+
+def test_committed_webpack_fixtures_are_pre_firing_and_name_culprit() -> None:
+    fixture_dir = Path(__file__).parent / "fixtures" / "triage"
+    expected_modes = {
+        "4a1a32397966ece3416134eec926a485afa869c0d57d17c61e3c2f00386837f6": False,
+        "d70b11c9db7e918b945460220942cbccfc86657a8df830710f1953ab5df247f6": True,
+    }
+    firing_ts = parse_timestamp("2025-04-07T18:27:36Z")
+    forbidden_ack = (
+        "2784517989",
+        "2025-04-07T20:14:04Z",
+        "Found buggy places",
+        "PR #19398",
+    )
+
+    for prompt_hash, feedback_enabled in expected_modes.items():
+        fixture_path = fixture_dir / f"{prompt_hash}.json"
+        serialized = fixture_path.read_text(encoding="utf-8")
+        record = json.loads(serialized)
+        request = record["request"]
+        canonical = json.dumps(
+            request, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+        )
+        assert hashlib.sha256(canonical.encode("utf-8")).hexdigest() == prompt_hash
+        assert record["request_hash"] == prompt_hash
+        assert request["model"] == "gpt-5.6"
+        assert "temperature" not in request
+        assert "seed" not in request
+        assert all(marker not in serialized for marker in forbidden_ack)
+
+        payload = json.loads(request["input"][1]["content"])
+        events = payload["pre_firing_events"]
+        assert payload["firing"]["firing_id"] == (
+            "firing:9f151a8243fe964d47d56400"
+        )
+        assert len(events) == 12
+        assert payload["input_window"]["max_event_ts"] == "2025-04-07T18:27:04Z"
+        assert payload["feedback"]["enabled"] is feedback_enabled
+        assert all(event["entity"] == "webpack/webpack" for event in events)
+        assert all(parse_timestamp(event["ts"]) < firing_ts for event in events)
+
+        output = TriageOutput.from_mapping(record["response"])
+        source_texts = [
+            " ".join((event.get("text") or "").split()) for event in events
+        ]
+        assert output.real is True
+        assert output.culprit_ref == "v5.99.0"
+        assert output.confidence == 0.98
+        assert output.evidence_quotes
+        assert all(
+            any(" ".join(quote.split()) in source for source in source_texts)
+            for quote in output.evidence_quotes
         )
