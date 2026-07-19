@@ -8,7 +8,6 @@ import pytest
 
 from sentinel.store import Firing
 from sentinel.triage import (
-    BEST_EFFORT_SEED,
     TriageCacheMissError,
     build_triage_request,
     triage_firing,
@@ -140,7 +139,7 @@ def test_live_response_is_cached_as_fixture_and_replays_without_key(
     assert len(client.responses.calls) == 1
     assert "temperature" not in client.responses.calls[0]
     assert "seed" not in client.responses.calls[0]
-    assert client.responses.calls[0]["extra_body"] == {"seed": BEST_EFFORT_SEED}
+    assert "extra_body" not in client.responses.calls[0]
 
 
 def test_no_feedback_changes_exact_prompt_hash() -> None:
@@ -153,7 +152,7 @@ def test_no_feedback_changes_exact_prompt_hash() -> None:
     assert ablated.mode == "no_feedback"
     assert full.prompt_hash != ablated.prompt_hash
     assert "temperature" not in full.api_payload
-    assert full.api_payload["seed"] == BEST_EFFORT_SEED
+    assert "seed" not in full.api_payload
     assert '"enabled":false' in ablated.api_payload["input"][1]["content"]
 
 
