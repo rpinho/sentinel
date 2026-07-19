@@ -4,7 +4,8 @@ An anomaly detection + triage agent for public event streams that **grades itsel
 
 The current core provides a source-neutral event contract, two deliberately different
 public-data adapters, deterministic trailing-baseline detection, DuckDB persistence,
-and an append-only feedback loop. Triage and the public scorecard UI are the next pass.
+GPT-5.6 causal triage, exact-response replay fixtures, two real ablations, and an
+append-only feedback loop. The public scorecard UI is the next pass.
 
 ## Install and test
 
@@ -59,6 +60,41 @@ Thresholds, baseline length, source event kinds, and the volume floor live in th
 packaged TOML config. Each firing carries the config's SHA-256 version. Pass
 `--config path/to/config.toml` to use a different committed configuration.
 
+Detection runs GPT-5.6 triage for each firing by default. Use `--no-agent` for the
+detector-only ablation.
+
+## Triage, replay, and ablations
+
+Triage reads only persisted events for the firing's entity with `event.ts < firing.ts`.
+The store query uses an exclusive upper bound, and the triage boundary asserts the same
+invariant again before hashing or calling the API. Events at the firing timestamp and
+later events are rejected.
+
+Run one persisted firing directly:
+
+```bash
+uv run sentinel triage FIRING_ID --db sentinel.duckdb
+```
+
+The live API key is loaded from the repository `.env` as `OPENAI_API_KEY`. Each request
+uses GPT-5.6 with
+[Responses structured output](https://developers.openai.com/api/docs/guides/structured-outputs)
+and is hashed from the exact effective API payload. GPT-5.6's Responses endpoint accepts
+only its default sampling behavior, so Sentinel sends neither `temperature` nor `seed`;
+deterministic replay comes from the exact cached response, not sampling controls. Live
+responses are written to both `.cache/triage/` and `tests/fixtures/triage/`. On a cache
+miss without a key, Sentinel fails instead of inventing a response.
+
+The modes are persisted side by side in `triage_results`:
+
+- Default/full: GPT triage with active feedback from `relevant_feedback()`.
+- `--no-feedback`: GPT triage without feedback; the changed request has a distinct hash.
+- `--no-agent`: detector only; the scorecard firing remains, with null cause and culprit.
+
+Full-mode feedback is rendered with IDs and provenance, delimited as untrusted historical
+data, and can affect only agent context. It cannot alter detector metrics, thresholds,
+baselines, tiers, or routing.
+
 ## Feedback
 
 Label an emitted firing:
@@ -112,5 +148,13 @@ Current verified result:
 - `v5.99.0`: GH Archive `13:12:05Z`; npm `13:13:08.298Z` (63 seconds apart).
 - `v5.99.1`: GH Archive `22:35:51Z`; npm `22:36:24.645Z` (34 seconds apart).
 - npm reported 5,356,274 and 5,878,921 downloads/day on April 7–8.
+- GPT-5.6 full and no-feedback triage both named `v5.99.0` at 0.98 confidence.
+- The triage input ended at `18:27:04Z`, 32 seconds before the `18:27:36Z` firing.
+- Both fixtures contain 12 pre-firing events, four exact issue-text quotes, and no
+  `20:14:04Z` maintainer acknowledgment or PR `#19398` answer.
+- Exact prompt hashes: full `d70b11c9...47f6`; no-feedback `4a1a3239...37f6`.
+- Fixture replay succeeds without `OPENAI_API_KEY` and reports `cache_hit=true` and
+  `replayed=true`.
 
-See `HANDOFF.md` for the product brief and `FEEDBACK_LOOP.md` for the learning-loop rationale.
+See `HANDOFF.md` for the product brief, `TRIAGE.md` for the implemented agent contract,
+and `FEEDBACK_LOOP.md` for the learning-loop rationale.

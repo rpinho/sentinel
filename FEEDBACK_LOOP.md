@@ -1,5 +1,18 @@
 # Anomaly Detector Feedback Loop
 
+## Implementation status
+
+The core loop is shipped. Scorecard verdicts and missed anomalies are append-only DuckDB
+records; active, non-superseded feedback is rendered with provenance as untrusted context
+before full-mode GPT-5.6 triage. `--no-feedback` removes that context from the exact hashed
+request, and `--no-agent` persists a detector-only scorecard result. Mode-specific triage
+results remain side by side and later scorecard feedback captures the latest full-mode
+hypothesis and confidence.
+
+The GitHub-issues ingestion channel, automatic maintainer labeling, calibration aggregation,
+and web scorecard controls remain future delivery surfaces. They are not required for the
+implemented contextual-learning mechanism.
+
 ## Decision
 
 Use the anomaly scorecard as the primary feedback surface and store every response as structured, append-only feedback. Each Sentinel run reads relevant feedback before it performs triage.
