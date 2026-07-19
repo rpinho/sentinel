@@ -6,6 +6,7 @@ import hashlib
 import json
 import os
 import re
+import time
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -14,7 +15,7 @@ from urllib.parse import unquote
 from uuid import uuid4
 
 from dotenv import load_dotenv
-from openai import OpenAI
+from openai import OpenAI, RateLimitError
 
 from sentinel.store import Firing
 from sentinel.types import Event, format_timestamp
@@ -29,6 +30,9 @@ MAX_TRIAGE_INPUT_CHARS = 500_000
 TARGET_EVENT_CONTEXT_CHARS = 350_000
 MAX_EVENT_TEXT_CHARS = 12_000
 MIN_RECENT_EVENTS = 20
+FIXED_LIVE_SEED = 42
+MAX_RATE_LIMIT_RETRIES = 4
+MAX_RATE_LIMIT_DELAY_SECONDS = 30.0
 
 TriageMode = Literal["full", "no_feedback"]
 
@@ -253,6 +257,7 @@ def build_triage_request(
 
     api_payload: dict[str, Any] = {
         "model": model,
+        "seed": FIXED_LIVE_SEED,
         "max_output_tokens": MAX_OUTPUT_TOKENS,
         "store": False,
         "input": [
@@ -423,7 +428,7 @@ def triage_firing(
             f"no cached triage response for {request.prompt_hash} and OPENAI_API_KEY is absent"
         )
     live_client = client or cast(OpenAIClient, OpenAI(api_key=resolved_key))
-    response = live_client.responses.create(**dict(request.api_payload))
+    response = _create_live_response(live_client, request.api_payload)
     output_text = getattr(response, "output_text", None)
     if not isinstance(output_text, str) or not output_text.strip():
         raise TriageResponseError(
@@ -496,6 +501,42 @@ def _run_from_record(
             else None
         ),
     )
+
+
+def _create_live_response(
+    client: OpenAIClient, api_payload: Mapping[str, Any]
+) -> Any:
+    """Call Responses with fixed-seed passthrough and bounded TPM retry handling."""
+
+    call_payload = dict(api_payload)
+    seed = call_payload.pop("seed", None)
+    if seed is not None:
+        call_payload["extra_body"] = {"seed": seed}
+    for attempt in range(MAX_RATE_LIMIT_RETRIES + 1):
+        try:
+            return client.responses.create(**call_payload)
+        except RateLimitError as exc:
+            if attempt >= MAX_RATE_LIMIT_RETRIES:
+                raise
+            time.sleep(_rate_limit_delay(exc))
+    raise TriageError("unreachable live response retry state")
+
+
+def _rate_limit_delay(exc: RateLimitError) -> float:
+    headers = getattr(exc.response, "headers", {})
+    raw_milliseconds = headers.get("retry-after-ms")
+    raw_seconds = headers.get("retry-after")
+    try:
+        if raw_milliseconds is not None:
+            delay = float(raw_milliseconds) / 1_000
+        elif raw_seconds is not None:
+            delay = float(raw_seconds)
+        else:
+            match = re.search(r"try again in ([0-9.]+)s", str(exc), re.IGNORECASE)
+            delay = float(match.group(1)) if match else 5.0
+    except (TypeError, ValueError):
+        delay = 5.0
+    return min(MAX_RATE_LIMIT_DELAY_SECONDS, max(1.0, delay + 0.5))
 
 
 def _read_record(path: Path, request: TriageRequest) -> dict[str, Any]:
