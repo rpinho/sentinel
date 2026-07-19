@@ -168,7 +168,7 @@ def test_triage_modes_are_real_isolated_and_persisted(
             response_id="resp_cli",
         )
 
-    monkeypatch.setattr("sentinel.cli.triage_firing", fake_triage)
+    monkeypatch.setattr("sentinel.pipeline.triage_firing", fake_triage)
 
     full = runner.invoke(
         app,
@@ -251,7 +251,7 @@ def test_detect_no_agent_never_calls_triage(
     def unexpected_triage(*args: Any, **kwargs: Any) -> None:
         raise AssertionError("--no-agent called triage")
 
-    monkeypatch.setattr("sentinel.cli.triage_firing", unexpected_triage)
+    monkeypatch.setattr("sentinel.pipeline.triage_firing", unexpected_triage)
     result = runner.invoke(
         app, ["detect", "--db", str(db), "--no-agent", "--json"]
     )

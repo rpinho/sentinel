@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import hashlib
 import json
 import sys
 from datetime import UTC, date, datetime, time, timedelta
@@ -16,12 +15,12 @@ from sentinel.adapters.npm import NpmAdapter
 from sentinel.corroborate import corroborate_release
 from sentinel.detect import DetectorConfig, detect_bursts
 from sentinel.feedback import render_feedback_context
+from sentinel.pipeline import execute_triage
 from sentinel.store import Firing, IngestionWindow, SentinelStore, TriageRecord
 from sentinel.triage import (
     DEFAULT_CACHE_DIR,
     DEFAULT_FIXTURE_DIR,
     DEFAULT_MODEL,
-    triage_firing,
 )
 from sentinel.types import Event, format_timestamp, parse_timestamp
 
@@ -222,7 +221,7 @@ def detect(
             f"firings={len(firings)} inserted={inserted}"
         )
         for firing in firings:
-            triage, triage_inserted = _execute_triage(
+            triage, triage_inserted = execute_triage(
                 store,
                 firing,
                 no_agent=no_agent,
@@ -267,7 +266,7 @@ def triage_command(
         firing = store.get_firing(firing_id)
         if firing is None:
             raise typer.BadParameter(f"unknown firing_id: {firing_id}")
-        triage, inserted = _execute_triage(
+        triage, inserted = execute_triage(
             store,
             firing,
             no_agent=no_agent,
@@ -401,84 +400,6 @@ def _validate_ablation_flags(*, no_agent: bool, no_feedback: bool) -> None:
         raise typer.BadParameter(
             "--no-agent and --no-feedback are separate ablations and cannot be combined"
         )
-
-
-def _execute_triage(
-    store: SentinelStore,
-    firing: Firing,
-    *,
-    no_agent: bool,
-    no_feedback: bool,
-    model: str,
-    cache_dir: Path,
-    fixture_dir: Path,
-) -> tuple[TriageRecord, bool]:
-    if no_agent:
-        record = TriageRecord(
-            triage_id=_triage_id(firing.firing_id, "no_agent", None),
-            firing_id=firing.firing_id,
-            mode="no_agent",
-            real=None,
-            cause=None,
-            culprit_ref=None,
-            confidence=None,
-            evidence_quotes=(),
-            model=None,
-            requested_model=None,
-            prompt_hash=None,
-            cache_hit=False,
-            replayed=False,
-            input_max_ts=None,
-            response_id=None,
-        )
-        return record, store.insert_triage_result(record)
-
-    # DuckDB implements the same exclusive upper bound, then triage.py asserts it
-    # again immediately before hashing or calling the model.
-    events = store.list_events(entity=firing.entity, end=firing.ts)
-    assert all(event.entity == firing.entity for event in events)
-    assert all(event.ts < firing.ts for event in events)
-    feedback_context = None
-    if not no_feedback:
-        feedback_context = render_feedback_context(
-            store.relevant_feedback(firing.entity, metric_id=firing.metric_id)
-        )
-    run = triage_firing(
-        firing,
-        events,
-        feedback_context=feedback_context,
-        no_feedback=no_feedback,
-        model=model,
-        cache_dir=cache_dir,
-        fixture_dir=fixture_dir,
-    )
-    record = TriageRecord(
-        triage_id=_triage_id(firing.firing_id, run.mode, run.prompt_hash),
-        firing_id=firing.firing_id,
-        mode=run.mode,
-        real=run.output.real,
-        cause=run.output.cause,
-        culprit_ref=run.output.culprit_ref,
-        confidence=run.output.confidence,
-        evidence_quotes=run.output.evidence_quotes,
-        model=run.model,
-        requested_model=run.requested_model,
-        prompt_hash=run.prompt_hash,
-        cache_hit=run.cache_hit,
-        replayed=run.replayed,
-        input_max_ts=run.input_max_ts,
-        response_id=run.response_id,
-    )
-    return record, store.insert_triage_result(record)
-
-
-def _triage_id(firing_id: str, mode: str, prompt_hash: str | None) -> str:
-    identity = json.dumps(
-        {"firing_id": firing_id, "mode": mode, "prompt_hash": prompt_hash},
-        sort_keys=True,
-        separators=(",", ":"),
-    )
-    return "triage:" + hashlib.sha256(identity.encode("utf-8")).hexdigest()[:24]
 
 
 def _print_firing(

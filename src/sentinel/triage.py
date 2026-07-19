@@ -86,6 +86,10 @@ class TriageResponseError(TriageError):
     """Raised when a live or cached response violates the output contract."""
 
 
+class TriageInputError(TriageError, ValueError):
+    """Raised before hashing when an event violates temporal or entity isolation."""
+
+
 class ResponsesClient(Protocol):
     def create(self, **kwargs: Any) -> Any: ...
 
@@ -185,14 +189,16 @@ def build_triage_request(
 
     ordered_events = tuple(sorted(events, key=lambda event: event.ts))
     for event in ordered_events:
-        assert event.entity == firing.entity, (
-            f"triage event entity {event.entity!r} does not match firing "
-            f"entity {firing.entity!r}"
-        )
-        assert event.ts < firing.ts, (
-            f"triage event {format_timestamp(event.ts)} is not strictly before "
-            f"firing {format_timestamp(firing.ts)}"
-        )
+        if event.entity != firing.entity:
+            raise TriageInputError(
+                f"triage event entity {event.entity!r} does not match firing "
+                f"entity {firing.entity!r}"
+            )
+        if event.ts >= firing.ts:
+            raise TriageInputError(
+                f"triage event {format_timestamp(event.ts)} is not strictly before "
+                f"firing {format_timestamp(firing.ts)}"
+            )
 
     mode: TriageMode = "no_feedback" if no_feedback else "full"
     if no_feedback:

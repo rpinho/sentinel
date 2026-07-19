@@ -10,6 +10,7 @@ import pytest
 from sentinel.store import Firing
 from sentinel.triage import (
     TriageCacheMissError,
+    TriageInputError,
     TriageOutput,
     build_triage_request,
     triage_firing,
@@ -79,7 +80,7 @@ def _live_output() -> dict[str, Any]:
 def test_post_firing_event_is_rejected_before_client_call(tmp_path: Path) -> None:
     client = FakeClient(_live_output())
 
-    with pytest.raises(AssertionError, match="not strictly before"):
+    with pytest.raises(TriageInputError, match="not strictly before"):
         triage_firing(
             _firing(),
             [_issue(FIRING_TS)],
@@ -94,7 +95,7 @@ def test_post_firing_event_is_rejected_before_client_call(tmp_path: Path) -> Non
 def test_wrong_entity_is_rejected_before_client_call(tmp_path: Path) -> None:
     client = FakeClient(_live_output())
 
-    with pytest.raises(AssertionError, match="does not match firing"):
+    with pytest.raises(TriageInputError, match="does not match firing"):
         triage_firing(
             _firing(),
             [_issue(entity="other/repo")],
