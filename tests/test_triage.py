@@ -9,6 +9,8 @@ import pytest
 
 from sentinel.store import Firing
 from sentinel.triage import (
+    MAX_EVENT_TEXT_CHARS,
+    MAX_TRIAGE_INPUT_CHARS,
     TriageCacheMissError,
     TriageInputError,
     TriageOutput,
@@ -157,6 +159,43 @@ def test_no_feedback_changes_exact_prompt_hash() -> None:
     assert "temperature" not in full.api_payload
     assert "seed" not in full.api_payload
     assert '"enabled":false' in ablated.api_payload["input"][1]["content"]
+
+
+def test_oversized_context_is_compacted_deterministically() -> None:
+    issue = _issue(FIRING_TS - timedelta(minutes=59))
+    bot_events = [
+        Event(
+            ts=FIRING_TS - timedelta(minutes=58 - index),
+            entity="webpack/webpack",
+            kind="comment",
+            text=f"CI report {index}\n" + ("x" * 30_000),
+            meta={"author": "metrics[bot]", "comment_id": index},
+        )
+        for index in range(58)
+    ]
+    events = [issue, *bot_events]
+
+    first = build_triage_request(_firing(), events)
+    second = build_triage_request(_firing(), list(reversed(events)))
+    content = first.api_payload["input"][1]["content"]
+    payload = json.loads(content)
+
+    assert first.prompt_hash == second.prompt_hash
+    assert len(content) <= MAX_TRIAGE_INPUT_CHARS
+    assert payload["input_window"]["compaction"] == {
+        "applied": True,
+        "max_event_text_chars": MAX_EVENT_TEXT_CHARS,
+        "policy": "signal-first-v1",
+        "source_event_count": 59,
+        "source_text_chars": sum(len(event.text or "") for event in events),
+        "supplied_event_count": len(first.events),
+        "supplied_text_chars": sum(len(event.text or "") for event in first.events),
+        "target_event_context_chars": 350_000,
+    }
+    assert issue in first.events
+    assert bot_events[-1].ts == first.events[-1].ts
+    assert len(first.events) < len(events)
+    assert all(len(event.text or "") <= MAX_EVENT_TEXT_CHARS for event in first.events)
 
 
 def test_text_free_events_degrade_without_error(tmp_path: Path) -> None:

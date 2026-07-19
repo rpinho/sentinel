@@ -24,6 +24,10 @@ DEFAULT_MODEL = "gpt-5.6"
 DEFAULT_CACHE_DIR = Path(".cache/triage")
 DEFAULT_FIXTURE_DIR = Path("tests/fixtures/triage")
 MAX_OUTPUT_TOKENS = 1_200
+MAX_TRIAGE_INPUT_CHARS = 500_000
+TARGET_EVENT_CONTEXT_CHARS = 350_000
+MAX_EVENT_TEXT_CHARS = 12_000
+MIN_RECENT_EVENTS = 20
 
 TriageMode = Literal["full", "no_feedback"]
 
@@ -216,47 +220,43 @@ def build_triage_request(
         }
 
     input_max_ts = max((event.ts for event in ordered_events), default=None)
-    user_payload = {
-        "firing": {
-            "firing_id": firing.firing_id,
-            "ts": format_timestamp(firing.ts),
-            "entity": firing.entity,
-            "metric_id": firing.metric_id,
-            "observed_at_fire": firing.observed,
-            "baseline_mean": firing.baseline_mean,
-            "baseline_stddev": firing.baseline_stddev,
-            "z_score": firing.score,
-            "detector_version": firing.detector_version,
-            "detector_meta": dict(firing.meta),
-        },
-        "input_window": {
-            "rule": "Every event timestamp is strictly less than the firing timestamp.",
-            "event_count": len(ordered_events),
-            "max_event_ts": format_timestamp(input_max_ts) if input_max_ts else None,
-        },
-        "pre_firing_events": [event.to_dict() for event in ordered_events],
-        "feedback": rendered_feedback,
-        "task": (
-            "Classify the burst, explain the likely cause, identify the most likely "
-            "culprit reference visible before the cutoff, calibrate confidence, and "
-            "quote only exact supporting text from pre_firing_events."
-        ),
-    }
+    user_payload = _user_payload(
+        firing,
+        ordered_events,
+        rendered_feedback,
+        input_max_ts=input_max_ts,
+    )
+    if len(_render_user_payload(user_payload)) > MAX_TRIAGE_INPUT_CHARS:
+        source_event_count = len(ordered_events)
+        source_text_chars = sum(len(event.text or "") for event in ordered_events)
+        ordered_events = _compact_events(ordered_events)
+        input_max_ts = max((event.ts for event in ordered_events), default=None)
+        user_payload = _user_payload(
+            firing,
+            ordered_events,
+            rendered_feedback,
+            input_max_ts=input_max_ts,
+            compaction={
+                "applied": True,
+                "policy": "signal-first-v1",
+                "source_event_count": source_event_count,
+                "supplied_event_count": len(ordered_events),
+                "source_text_chars": source_text_chars,
+                "supplied_text_chars": sum(
+                    len(event.text or "") for event in ordered_events
+                ),
+                "max_event_text_chars": MAX_EVENT_TEXT_CHARS,
+                "target_event_context_chars": TARGET_EVENT_CONTEXT_CHARS,
+            },
+        )
+
     api_payload: dict[str, Any] = {
         "model": model,
         "max_output_tokens": MAX_OUTPUT_TOKENS,
         "store": False,
         "input": [
             {"role": "system", "content": SYSTEM_PROMPT},
-            {
-                "role": "user",
-                "content": json.dumps(
-                    user_payload,
-                    ensure_ascii=False,
-                    sort_keys=True,
-                    separators=(",", ":"),
-                ),
-            },
+            {"role": "user", "content": _render_user_payload(user_payload)},
         ],
         "text": {
             "format": {
@@ -277,6 +277,111 @@ def build_triage_request(
         input_max_ts=input_max_ts,
         events=ordered_events,
     )
+
+
+def _user_payload(
+    firing: Firing,
+    events: Sequence[Event],
+    rendered_feedback: Mapping[str, Any],
+    *,
+    input_max_ts: datetime | None,
+    compaction: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    input_window: dict[str, Any] = {
+        "rule": "Every event timestamp is strictly less than the firing timestamp.",
+        "event_count": len(events),
+        "max_event_ts": format_timestamp(input_max_ts) if input_max_ts else None,
+    }
+    if compaction is not None:
+        input_window["compaction"] = dict(compaction)
+    return {
+        "firing": {
+            "firing_id": firing.firing_id,
+            "ts": format_timestamp(firing.ts),
+            "entity": firing.entity,
+            "metric_id": firing.metric_id,
+            "observed_at_fire": firing.observed,
+            "baseline_mean": firing.baseline_mean,
+            "baseline_stddev": firing.baseline_stddev,
+            "z_score": firing.score,
+            "detector_version": firing.detector_version,
+            "detector_meta": dict(firing.meta),
+        },
+        "input_window": input_window,
+        "pre_firing_events": [event.to_dict() for event in events],
+        "feedback": rendered_feedback,
+        "task": (
+            "Classify the burst, explain the likely cause, identify the most likely "
+            "culprit reference visible before the cutoff, calibrate confidence, and "
+            "quote only exact supporting text from pre_firing_events."
+        ),
+    }
+
+
+def _render_user_payload(payload: Mapping[str, Any]) -> str:
+    return json.dumps(
+        payload,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+
+
+def _compact_events(events: Sequence[Event]) -> tuple[Event, ...]:
+    """Fit noisy high-volume windows while retaining causal and recent signals."""
+
+    compacted = tuple(_truncate_event_text(event) for event in events)
+    priority = sorted(
+        range(len(compacted)),
+        key=lambda index: _event_priority(compacted[index], index, len(compacted)),
+    )
+    chosen: set[int] = set()
+    consumed = 2  # JSON list brackets.
+    for index in priority:
+        event_size = len(_render_user_payload(compacted[index].to_dict())) + 1
+        if consumed + event_size > TARGET_EVENT_CONTEXT_CHARS and chosen:
+            continue
+        chosen.add(index)
+        consumed += event_size
+    return tuple(compacted[index] for index in sorted(chosen))
+
+
+def _truncate_event_text(event: Event) -> Event:
+    text = event.text
+    if text is None or len(text) <= MAX_EVENT_TEXT_CHARS:
+        return event
+    meta = dict(event.meta)
+    meta["triage_text"] = {
+        "truncated": True,
+        "original_chars": len(text),
+        "included_chars": MAX_EVENT_TEXT_CHARS,
+        "policy": "leading-exact-substring-v1",
+    }
+    return Event(
+        ts=event.ts,
+        entity=event.entity,
+        kind=event.kind,
+        text=text[:MAX_EVENT_TEXT_CHARS],
+        value=event.value,
+        meta=meta,
+    )
+
+
+def _event_priority(event: Event, index: int, total: int) -> tuple[int, int]:
+    if event.kind in {"release", "issue", "metric"}:
+        signal_rank = 0
+    elif index >= max(0, total - MIN_RECENT_EVENTS):
+        signal_rank = 1
+    elif not _is_bot_event(event):
+        signal_rank = 2
+    else:
+        signal_rank = 3
+    return signal_rank, -index
+
+
+def _is_bot_event(event: Event) -> bool:
+    identity = str(event.meta.get("author") or event.meta.get("actor") or "").lower()
+    return identity.endswith("[bot]") or identity.endswith("-bot")
 
 
 def triage_firing(
