@@ -61,7 +61,8 @@ def test_gharchive_uses_unpadded_hour_and_preserves_comment_association(
     assert events[0].kind == "comment"
     assert events[0].meta["author_association"] == "MEMBER"
     assert events[0].meta["comment_id"] == 2784517989
-    assert events[0].ts == datetime(2025, 4, 7, 20, 14, 4, tzinfo=UTC)
+    assert events[0].ts == datetime(2025, 4, 7, 20, 14, 5, tzinfo=UTC)
+    assert events[0].meta["comment_created_at"] == "2025-04-07T20:14:04Z"
 
 
 def test_gharchive_normalizes_issue_and_release(tmp_path: Path) -> None:
@@ -115,6 +116,8 @@ def test_gharchive_normalizes_issue_and_release(tmp_path: Path) -> None:
     assert [event.kind for event in events] == ["issue", "release"]
     assert events[0].text == "Regression\n\nprocess is not defined"
     assert events[0].meta["action"] == "opened"
+    assert events[0].ts == datetime(2025, 4, 7, 18, 5, tzinfo=UTC)
+    assert events[0].meta["issue_created_at"] == "2025-04-07T18:04:49Z"
     assert events[1].meta["version"] == "v5.99.0"
     assert events[1].ts == datetime(2025, 4, 7, 13, 12, 6, tzinfo=UTC)
     assert events[1].meta["published_at"] == "2025-04-07T13:12:05Z"

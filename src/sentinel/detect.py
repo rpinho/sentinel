@@ -20,7 +20,7 @@ from sentinel.types import EVENT_KINDS, Event, EventKind, parse_timestamp
 @dataclass(frozen=True, slots=True)
 class DetectorConfig:
     metric_id: str
-    kind: EventKind
+    kinds: tuple[EventKind, ...]
     bucket_minutes: int
     baseline_buckets: int
     minimum_baseline_buckets: int
@@ -29,12 +29,12 @@ class DetectorConfig:
     volume_floor: int
     minimum_absolute_increase: float
     cooldown_buckets: int
-    meta_equals: Mapping[str, Any] = field(default_factory=dict)
+    meta_in: Mapping[str, tuple[Any, ...]] = field(default_factory=dict)
     version: str = "unversioned"
 
     def __post_init__(self) -> None:
-        if self.kind not in EVENT_KINDS:
-            raise ValueError(f"unknown detector event kind: {self.kind}")
+        if not self.kinds or any(kind not in EVENT_KINDS for kind in self.kinds):
+            raise ValueError(f"unknown or empty detector event kinds: {self.kinds}")
         if self.bucket_minutes < 1:
             raise ValueError("bucket_minutes must be positive")
         if self.baseline_buckets < 1:
@@ -47,7 +47,12 @@ class DetectorConfig:
             raise ValueError("volume_floor must be positive")
         if self.cooldown_buckets < 0:
             raise ValueError("cooldown_buckets cannot be negative")
-        object.__setattr__(self, "meta_equals", dict(self.meta_equals))
+        object.__setattr__(self, "kinds", tuple(self.kinds))
+        object.__setattr__(
+            self,
+            "meta_in",
+            {key: tuple(values) for key, values in self.meta_in.items()},
+        )
 
     @property
     def bucket_size(self) -> timedelta:
@@ -66,7 +71,7 @@ class DetectorConfig:
         version = "sha256:" + hashlib.sha256(raw_bytes).hexdigest()[:12]
         return cls(
             metric_id=str(raw["metric_id"]),
-            kind=cast(EventKind, raw["kind"]),
+            kinds=tuple(cast(list[EventKind], raw["kinds"])),
             bucket_minutes=int(raw["bucket_minutes"]),
             baseline_buckets=int(raw["baseline_buckets"]),
             minimum_baseline_buckets=int(raw["minimum_baseline_buckets"]),
@@ -75,7 +80,7 @@ class DetectorConfig:
             volume_floor=int(raw["volume_floor"]),
             minimum_absolute_increase=float(raw["minimum_absolute_increase"]),
             cooldown_buckets=int(raw["cooldown_buckets"]),
-            meta_equals=raw.get("meta_equals") or {},
+            meta_in=raw.get("meta_in") or {},
             version=version,
         )
 
@@ -133,7 +138,7 @@ def detect_bursts(
                             ts=crossing_event.ts,
                             entity=entity,
                             metric_id=config.metric_id,
-                            kind=config.kind,
+                            kind="metric",
                             window_start=bucket_start,
                             window_end=bucket_end,
                             observed=required,
@@ -148,6 +153,7 @@ def detect_bursts(
                                 "z_score_threshold": config.z_score_threshold,
                                 "volume_floor": config.volume_floor,
                                 "minimum_absolute_increase": config.minimum_absolute_increase,
+                                "source_event_kinds": list(config.kinds),
                             },
                         )
                     )
@@ -160,8 +166,8 @@ def detect_bursts(
 
 
 def _matches(event: Event, config: DetectorConfig) -> bool:
-    return event.kind == config.kind and all(
-        event.meta.get(key) == value for key, value in config.meta_equals.items()
+    return event.kind in config.kinds and all(
+        event.meta.get(key) in values for key, values in config.meta_in.items()
     )
 
 

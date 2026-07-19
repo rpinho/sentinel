@@ -8,8 +8,8 @@ START = datetime(2025, 4, 7, 12, tzinfo=UTC)
 
 def _config() -> DetectorConfig:
     return DetectorConfig(
-        metric_id="opened_issues_per_hour",
-        kind="issue",
+        metric_id="issue_activity_per_hour",
+        kinds=("issue", "comment"),
         bucket_minutes=60,
         baseline_buckets=4,
         minimum_baseline_buckets=4,
@@ -18,7 +18,7 @@ def _config() -> DetectorConfig:
         volume_floor=3,
         minimum_absolute_increase=2,
         cooldown_buckets=2,
-        meta_equals={"action": "opened"},
+        meta_in={"action": ("opened", "created")},
         version="test:v1",
     )
 
@@ -47,7 +47,7 @@ def test_detector_fires_at_threshold_crossing_against_prior_buckets() -> None:
     assert firings[0].detector_version == "test:v1"
 
 
-def test_detector_ignores_non_opened_issues_and_text_free_metrics() -> None:
+def test_detector_ignores_closed_issues_and_text_free_metrics() -> None:
     events = [Event(START, "webpack/webpack", "release")]
     events.extend(
         Event(
@@ -73,5 +73,5 @@ def test_detector_ignores_non_opened_issues_and_text_free_metrics() -> None:
 def test_default_config_is_versioned() -> None:
     config = DetectorConfig.load()
 
-    assert config.metric_id == "opened_issues_per_hour"
+    assert config.metric_id == "issue_activity_per_hour"
     assert config.version.startswith("sha256:")

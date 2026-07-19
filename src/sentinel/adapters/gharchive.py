@@ -135,13 +135,14 @@ class GHArchiveAdapter:
             body = str(issue.get("body") or "").strip()
             text = "\n\n".join(part for part in (title, body) if part) or None
             return Event(
-                ts=parse_timestamp(issue.get("created_at") or raw["created_at"]),
+                ts=parse_timestamp(raw["created_at"]),
                 entity=repo_name,
                 kind="issue",
                 text=text,
                 meta={
                     **common_meta,
                     "issue_number": issue.get("number"),
+                    "issue_created_at": issue.get("created_at"),
                     "url": issue.get("html_url"),
                     "author": (issue.get("user") or {}).get("login"),
                     "labels": [
@@ -156,7 +157,7 @@ class GHArchiveAdapter:
             issue = payload.get("issue") or {}
             comment = payload.get("comment") or {}
             return Event(
-                ts=parse_timestamp(comment.get("created_at") or raw["created_at"]),
+                ts=parse_timestamp(raw["created_at"]),
                 entity=repo_name,
                 kind="comment",
                 text=str(comment.get("body") or "").strip() or None,
@@ -164,6 +165,7 @@ class GHArchiveAdapter:
                     **common_meta,
                     "issue_number": issue.get("number"),
                     "comment_id": comment.get("id"),
+                    "comment_created_at": comment.get("created_at"),
                     "url": comment.get("html_url"),
                     "author": (comment.get("user") or {}).get("login"),
                     "author_association": comment.get("author_association"),

@@ -1,14 +1,14 @@
 [detector]
-metric_id = "opened_issues_per_hour"
-kind = "issue"
+metric_id = "issue_activity_per_hour"
+kinds = ["issue", "comment"]
 bucket_minutes = 60
 baseline_buckets = 6
 minimum_baseline_buckets = 4
-z_score_threshold = 4.0
+z_score_threshold = 3.0
 standard_deviation_floor = 0.5
-volume_floor = 3
-minimum_absolute_increase = 2.0
+volume_floor = 5
+minimum_absolute_increase = 4.0
 cooldown_buckets = 2
 
-[detector.meta_equals]
-action = "opened"
+[detector.meta_in]
+action = ["opened", "created"]
