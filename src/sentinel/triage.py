@@ -22,7 +22,7 @@ load_dotenv()
 DEFAULT_MODEL = "gpt-5.6"
 DEFAULT_CACHE_DIR = Path(".cache/triage")
 DEFAULT_FIXTURE_DIR = Path("tests/fixtures/triage")
-TEMPERATURE = 0
+BEST_EFFORT_SEED = 20250719
 MAX_OUTPUT_TOKENS = 1_200
 
 TriageMode = Literal["full", "no_feedback"]
@@ -238,7 +238,7 @@ def build_triage_request(
     }
     api_payload: dict[str, Any] = {
         "model": model,
-        "temperature": TEMPERATURE,
+        "seed": BEST_EFFORT_SEED,
         "max_output_tokens": MAX_OUTPUT_TOKENS,
         "store": False,
         "input": [

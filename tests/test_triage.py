@@ -8,6 +8,7 @@ import pytest
 
 from sentinel.store import Firing
 from sentinel.triage import (
+    BEST_EFFORT_SEED,
     TriageCacheMissError,
     build_triage_request,
     triage_firing,
@@ -148,6 +149,8 @@ def test_no_feedback_changes_exact_prompt_hash() -> None:
     assert full.mode == "full"
     assert ablated.mode == "no_feedback"
     assert full.prompt_hash != ablated.prompt_hash
+    assert "temperature" not in full.api_payload
+    assert full.api_payload["seed"] == BEST_EFFORT_SEED
     assert '"enabled":false' in ablated.api_payload["input"][1]["content"]
 
 
