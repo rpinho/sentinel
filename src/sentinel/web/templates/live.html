@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block content %}
+  <section class="hero live-hero">
+    <div class="eyebrow"><span>LIVE SOURCE</span><span>ON DEMAND</span></div>
+    <p class="kicker">No daemon. No staged result.</p>
+    <h1>Pull one real archive hour.</h1>
+    <p class="lede">Choose a repository. Sentinel downloads the newest published GH Archive hour, normalizes its public events, and runs the frozen detector.</p>
+    <div class="live-actions" aria-label="Run a live archive check">
+      <form method="post" action="/live?repo=webpack%2Fwebpack"><button type="submit">Run webpack/webpack <span>→</span></button></form>
+      <form method="post" action="/live?repo=facebook%2Freact"><button type="submit" class="secondary">Run facebook/react <span>→</span></button></form>
+      <form method="post" action="/live?repo=vercel%2Fnext.js"><button type="submit" class="secondary">Run vercel/next.js <span>→</span></button></form>
+    </div>
+    <p class="cost-note">This fetches one public compressed archive hour—often hundreds of megabytes. It makes no model call.</p>
+  </section>
+
+  {% if error %}
+    <section class="live-result error-result" aria-live="polite">
+      <p class="kicker">SOURCE CHECK FAILED</p>
+      <h2>The archive did not return a usable hour.</h2>
+      <p>{{ error }}</p>
+      <p>No event or healthy-state claim was fabricated.</p>
+    </section>
+  {% elif live %}
+    <section class="live-result" aria-live="polite">
+      <div class="live-status">
+        <span class="pulse" aria-hidden="true"></span>
+        <div><p class="kicker">LATEST COMPLETED RUN</p><h2>{% if live.firings %}{{ live.firings }} firing{% if live.firings != 1 %}s{% endif %}{% else %}No anomaly fired{% endif %}</h2></div>
+      </div>
+      <div class="live-grid">
+        <div><span>REPOSITORY</span><b>{{ live.repo }}</b></div>
+        <div><span>ARCHIVE HOUR</span><a href="{{ live.archive_url }}" rel="noreferrer">{{ live.hour|timestamp }}</a></div>
+        <div><span>NORMALIZED</span><b>{{ live.event_count }} events</b></div>
+        <div><span>HISTORY</span><b>{{ live.covered_hours }} / 336 hours</b></div>
+      </div>
+      {% if not live.history_ready %}
+        <p class="truth-note"><b>Baseline state: immature.</b> The detector did not synthesize missing history. Repeat on future hours or preload 14 continuous days before treating “no firing” as a healthy verdict.</p>
+      {% endif %}
+      {% if live.events %}
+        <div class="live-events">
+          <p class="mini-label">PUBLIC EVENTS OBSERVED</p>
+          {% for event in live.events %}
+            <a href="{{ event.url }}" rel="noreferrer"><time>{{ event.ts|timestamp }}</time><span>{{ event.kind }}{% if event.issue_number %} #{{ event.issue_number }}{% endif %}</span></a>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="empty-state">The archive hour was complete; this repository had no supported issue, comment, or release events in it.</p>
+      {% endif %}
+    </section>
+  {% else %}
+    <section class="waiting-state">
+      <span class="waiting-mark" aria-hidden="true"></span>
+      <p>Waiting for an explicit run.</p>
+      <small>The server does not poll in the background.</small>
+    </section>
+  {% endif %}
+
+  <section class="section-shell live-method">
+    <div class="section-heading">
+      <div><p class="kicker">WHAT RUNS</p><h2>The same source boundary, in public.</h2></div>
+    </div>
+    <ol class="method-steps">
+      <li><b>01</b><span>Download one published GH Archive gzip.</span></li>
+      <li><b>02</b><span>Normalize supported events into the shared contract.</span></li>
+      <li><b>03</b><span>Persist coverage and run detector v2 without model triage.</span></li>
+      <li><b>04</b><span>Publish source failures or immature history honestly.</span></li>
+    </ol>
+  </section>
+{% endblock %}

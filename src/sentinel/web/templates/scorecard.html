@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block content %}
+  <section class="hero scorecard-hero">
+    <div class="eyebrow"><span>FROZEN HOLDOUT</span><span>UNEDITED RESULTS</span></div>
+    <p class="kicker">504 / 504 repository-hours covered</p>
+    <h1>The empty alert column<br> is a result.</h1>
+    <p class="lede">Detector v2 removed all 20 v1 alerts—including one lucky marginal true positive—and published the four acknowledged incidents it missed.</p>
+  </section>
+
+  <section class="metric-row" aria-label="V1 detector headline metrics">
+    <div><span>RESOLVED PRECISION</span><strong>{{ scorecard.v1_metrics.no_agent.precision|confidence }}</strong><small>v1 · detector only</small></div>
+    <div><span>MEDIAN LEAD</span><strong>{{ "%.0f"|format(scorecard.v1_metrics.no_agent.median_lead_minutes) }}m</strong><small>one resolved TP</small></div>
+    <div><span>FALSE POSITIVES</span><strong>{{ "%.1f"|format(scorecard.v1_metrics.no_agent.false_positives_per_week) }}</strong><small>per week</small></div>
+    <div><span>ARCHIVE COVERAGE</span><strong>{{ scorecard.coverage.ratio|confidence }}</strong><small>{{ scorecard.coverage.complete_repo_hours }} repo-hours</small></div>
+  </section>
+
+  <section class="section-shell comparison-section">
+    <div class="section-heading">
+      <div><p class="kicker">V1 → V2</p><h2>Noise collapsed. Recall cost rose.</h2></div>
+      <p>No holdout tuning followed this result. Undefined metrics remain undefined.</p>
+    </div>
+    <div class="comparison-grid">
+      <article class="version-card">
+        <span class="version-tag">DETECTOR V1</span>
+        <strong>20</strong><p>firings</p>
+        <ul><li>18 unresolved</li><li>1 false positive</li><li>1 marginal true positive</li><li>3 published misses</li></ul>
+      </article>
+      <div class="comparison-arrow" aria-hidden="true">→</div>
+      <article class="version-card selected">
+        <span class="version-tag">DETECTOR V2 · FROZEN</span>
+        <strong>0</strong><p>firings</p>
+        <ul><li>20 alerts removed</li><li>0 false positives / week</li><li>precision undefined</li><li>4 published misses</li></ul>
+      </article>
+    </div>
+    <p class="truth-note"><b>What this says:</b> mature repositories with small breakage bursts are outside this detector’s demonstrated recall envelope. The webpack issue storm remains its positive reproduction.</p>
+  </section>
+
+  <section class="section-shell table-section">
+    <div class="section-heading">
+      <div><p class="kicker">ALL V1 FIRINGS</p><h2>Nothing hidden below the fold.</h2></div>
+      <p>Full triage mode shown. Routing stays deterministic even where contextual triage rejected the burst.</p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Timestamp</th><th>Entity / hypothesis</th><th>Confidence</th><th>Verdict</th><th>Mode / route</th></tr></thead>
+        <tbody>
+          {% for row in scorecard.v1_firings %}
+            <tr>
+              <td><a class="timestamp" href="{{ row.url }}" rel="noreferrer">{{ row.ts|timestamp }}</a></td>
+              <td><b>{{ row.entity }}</b><span class="cell-detail">{{ row.hypothesis }}</span></td>
+              <td>{{ row.confidence|confidence }}</td>
+              <td><span class="verdict verdict-{{ row.verdict|lower }}">{{ row.verdict }}</span></td>
+              <td><b>{{ row.mode }}</b><span class="cell-detail">{{ row.severity }} → {{ row.audience }}</span></td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="section-shell misses-section">
+    <div class="section-heading">
+      <div><p class="kicker">PUBLISHED MISSES</p><h2>The incidents the detector did not catch.</h2></div>
+      <p>These are acknowledged breakage reports with no covering firing. They are part of the scorecard, not a footnote.</p>
+    </div>
+    <div class="miss-columns">
+      <div>
+        <h3>V1 · {{ scorecard.v1_misses|length }} misses</h3>
+        {% for miss in scorecard.v1_misses %}
+          <article class="miss-card">
+            <div><span class="miss-badge">MISS</span><b>{{ miss.entity }} #{{ miss.issue_number }}</b></div>
+            <a class="timestamp" href="{{ miss.report_url }}" rel="noreferrer">reported {{ miss.reported_at|timestamp }}</a>
+            <p>{{ miss.report_excerpt }}</p>
+            <a class="timestamp ack-link" href="{{ miss.ack_url }}" rel="noreferrer">acknowledged {{ miss.ack_ts|timestamp }}</a>
+          </article>
+        {% endfor %}
+      </div>
+      <div>
+        <h3>V2 · {{ scorecard.v2_misses|length }} misses</h3>
+        {% for miss in scorecard.v2_misses %}
+          <article class="miss-card {% if loop.first %}new-miss{% endif %}">
+            <div><span class="miss-badge">MISS</span><b>{{ miss.entity }} #{{ miss.issue_number }}</b></div>
+            <a class="timestamp" href="{{ miss.report_url }}" rel="noreferrer">reported {{ miss.reported_at|timestamp }}</a>
+            <p>{{ miss.report_excerpt }}</p>
+            <a class="timestamp ack-link" href="{{ miss.ack_url }}" rel="noreferrer">acknowledged {{ miss.ack_ts|timestamp }}</a>
+          </article>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+
+  <section class="integrity-strip">
+    <p class="kicker">FROZEN IDENTITIES</p>
+    <div class="integrity-grid two-up">
+      <div><span>v2 detector config sha256</span><code>{{ scorecard.v2.config_hash }}</code></div>
+      <div><span>v2 feedback snapshot sha256</span><code>{{ scorecard.v2.feedback_hash }}</code></div>
+      <div><span>v1 detector config sha256</span><code>{{ scorecard.v1.config_hash }}</code></div>
+      <div><span>v1 feedback snapshot sha256</span><code>{{ scorecard.v1.feedback_hash }}</code></div>
+    </div>
+  </section>
+{% endblock %}

@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block content %}
+  <section class="hero replay-hero">
+    <div class="eyebrow"><span>OFFLINE REPLAY</span><span>RECOMPUTED NOW</span></div>
+    <p class="kicker">webpack / v5.99.0</p>
+    <h1>Sentinel named the release<br> before maintainers did.</h1>
+    <p class="lede">One public incident. Two independently observed release events. No future data in the model context.</p>
+    <div class="hero-proof" aria-label="Lead time">
+      <strong>{{ replay.lead_minutes }}<small>MIN</small></strong>
+      <span>before maintainer<br>confirmation</span>
+    </div>
+  </section>
+
+  <section class="provenance" aria-label="Replay provenance">
+    <div><span>INPUT</span><b>{{ replay.source.event_count }} normalized source events</b></div>
+    <div><span>DETECTOR</span><b>{{ replay.firing.detector_version }}</b></div>
+    <div><span>TRIAGE</span><b>{{ replay.triage.model }} · fixture {{ replay.triage.cache_source }}</b></div>
+    <div><span>NETWORK</span><b>disabled for replay</b></div>
+  </section>
+
+  <section class="section-shell replay-section">
+    <div class="section-heading">
+      <div>
+        <p class="kicker">COMPRESSED EVENT TIME</p>
+        <h2>Release → rate rise → firing → confirmation</h2>
+      </div>
+      <p>Each marker links to the public GitHub object. The detector and triage result were regenerated for this request.</p>
+    </div>
+
+    <ol class="timeline" aria-label="Webpack incident timeline">
+      <li class="timeline-item timeline-release">
+        <div class="timeline-marker">01</div>
+        <div class="timeline-copy">
+          <a class="timestamp" href="{{ replay.release.url }}" rel="noreferrer">{{ replay.release.ts|timestamp }}</a>
+          <p class="timeline-label">Release observed</p>
+          <h3>webpack {{ replay.release.version }}</h3>
+          <p>GitHub publishes the release. npm independently reports it 63 seconds later.</p>
+        </div>
+      </li>
+
+      <li class="timeline-item timeline-rise">
+        <div class="timeline-marker">02</div>
+        <div class="timeline-copy">
+          <a class="timestamp" href="{{ replay.first_report.url }}" rel="noreferrer">{{ replay.first_report.ts|timestamp }}</a>
+          <p class="timeline-label">Issue rate climbs</p>
+          <h3>Runtime regression reports begin</h3>
+          <p>Issue #{{ replay.first_report.issue_number }} reports that v5.99.0 breaks at runtime while v5.98.0 works.</p>
+          <div class="rate-readout" aria-label="Firing metric calculation">
+            <span><b>{{ replay.firing.numerator|int }}</b> comments</span>
+            <span class="operator">÷</span>
+            <span><b>{{ replay.firing.denominator|int }}</b> active threads</span>
+            <span class="operator">=</span>
+            <span><b>{{ "%.1f"|format(replay.firing.observed) }}</b> / thread</span>
+          </div>
+        </div>
+      </li>
+
+      <li class="timeline-item timeline-firing">
+        <div class="timeline-marker">03</div>
+        <div class="timeline-copy wide">
+          <a class="timestamp" href="{{ replay.firing.url }}" rel="noreferrer">{{ replay.firing.ts|timestamp }}</a>
+          <p class="timeline-label">Sentinel fires</p>
+          <div class="triage-card">
+            <div class="triage-topline">
+              <div>
+                <span class="status-pill">REAL BREAKAGE</span>
+                <h3>{{ replay.triage.culprit_ref }}</h3>
+              </div>
+              <div class="confidence"><b>{{ replay.triage.confidence|confidence }}</b><span>confidence</span></div>
+            </div>
+            <p class="cause">{{ replay.triage.cause }}</p>
+            <dl class="signal-grid">
+              <div><dt>Observed</dt><dd>{{ "%.2f"|format(replay.firing.observed) }}</dd></div>
+              <div><dt>Baseline</dt><dd>{{ "%.2f"|format(replay.firing.baseline) }}</dd></div>
+              <div><dt>Robust z</dt><dd>{{ "%.1f"|format(replay.firing.robust_z) }}</dd></div>
+              <div><dt>Route</dt><dd>{{ replay.firing.route }}</dd></div>
+            </dl>
+            <div class="evidence">
+              <p class="mini-label">EXACT PRE-FIRING EVIDENCE</p>
+              {% for quote in replay.triage.evidence_quotes %}
+                <blockquote>“{{ quote }}”</blockquote>
+              {% endfor %}
+            </div>
+            <p class="cutoff">Input cutoff <a class="timestamp" href="{{ replay.firing.url }}" rel="noreferrer">{{ replay.triage.input_max_ts|timestamp }}</a> · later confirmation excluded</p>
+          </div>
+        </div>
+      </li>
+
+      <li class="timeline-item timeline-ack">
+        <div class="timeline-marker">04</div>
+        <div class="timeline-copy">
+          <a class="timestamp" href="{{ replay.acknowledgement.url }}" rel="noreferrer">{{ replay.acknowledgement.ts|timestamp }}</a>
+          <p class="timeline-label">Maintainer acknowledgement</p>
+          <h3>“Found buggy places”</h3>
+          <p>{{ replay.acknowledgement.text }}</p>
+          <div class="delta-callout">
+            <strong>{{ replay.lead_minutes }} minutes</strong>
+            <span>Sentinel had already named v5.99.0.</span>
+          </div>
+        </div>
+      </li>
+    </ol>
+  </section>
+
+  <section class="integrity-strip">
+    <p class="kicker">REPLAY INTEGRITY</p>
+    <div class="integrity-grid">
+      <div><span>source events sha256</span><code>{{ replay.source.normalized_events_sha256 }}</code></div>
+      <div><span>frozen config sha256</span><code>{{ replay.config_sha256 }}</code></div>
+      <div><span>exact request hash</span><code>{{ replay.triage.prompt_hash }}</code></div>
+    </div>
+  </section>
+{% endblock %}

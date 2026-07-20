@@ -105,9 +105,7 @@ class FakeAnthropicClient:
                 "type": "message",
                 "role": "assistant",
                 "model": "claude-sonnet-5",
-                "content": [
-                    {"type": "text", "text": json.dumps(self.output)}
-                ],
+                "content": [{"type": "text", "text": json.dumps(self.output)}],
                 "stop_reason": "end_turn",
             },
         )
@@ -275,9 +273,7 @@ def test_live_seed_rejection_falls_back_to_exact_unseeded_request(
         cache_dir=tmp_path / "cache",
         fixture_dir=tmp_path / "fixtures",
     )
-    record = json.loads(
-        (tmp_path / "fixtures" / f"{run.prompt_hash}.json").read_text()
-    )
+    record = json.loads((tmp_path / "fixtures" / f"{run.prompt_hash}.json").read_text())
 
     assert len(responses.calls) == 2
     assert responses.calls[0]["extra_body"] == {"seed": 0}
@@ -288,9 +284,7 @@ def test_live_seed_rejection_falls_back_to_exact_unseeded_request(
 
 
 def test_no_feedback_changes_exact_prompt_hash() -> None:
-    full = _openai_request(
-        _firing(), [_issue()], feedback_context="No prior feedback."
-    )
+    full = _openai_request(_firing(), [_issue()], feedback_context="No prior feedback.")
     ablated = _openai_request(_firing(), [_issue()], no_feedback=True)
 
     assert full.mode == "full"
@@ -356,9 +350,7 @@ def test_anthropic_live_response_is_provider_scoped_and_replays(
     assert record["request_identity"]["model"] == "claude-sonnet-5"
     assert record["request_identity"]["request"] == record["request"]
     assert client.calls[0]["headers"]["x-api-key"] == "test-anthropic-key"
-    assert client.calls[0]["json"]["output_config"]["format"]["type"] == (
-        "json_schema"
-    )
+    assert client.calls[0]["json"]["output_config"]["format"]["type"] == ("json_schema")
 
 
 def test_offline_mode_never_falls_through_to_live_provider(
@@ -479,9 +471,7 @@ def test_markdown_visible_quote_is_grounded_to_exact_source(tmp_path: Path) -> N
         cache_dir=tmp_path / "cache",
         fixture_dir=tmp_path / "fixtures",
     )
-    record = json.loads(
-        (tmp_path / "fixtures" / f"{run.prompt_hash}.json").read_text()
-    )
+    record = json.loads((tmp_path / "fixtures" / f"{run.prompt_hash}.json").read_text())
 
     assert run.output.evidence_quotes == (
         "We figured it doesn't follow our "
@@ -533,9 +523,7 @@ def test_percent_decoded_link_quote_is_grounded_to_exact_source(
         cache_dir=tmp_path / "cache",
         fixture_dir=tmp_path / "fixtures",
     )
-    record = json.loads(
-        (tmp_path / "fixtures" / f"{run.prompt_hash}.json").read_text()
-    )
+    record = json.loads((tmp_path / "fixtures" / f"{run.prompt_hash}.json").read_text())
 
     assert run.output.evidence_quotes == (source,)
     assert record["evidence_grounding"] == [
@@ -592,9 +580,7 @@ def test_committed_webpack_fixtures_are_pre_firing_and_name_culprit() -> None:
 
         payload = json.loads(request["input"][1]["content"])
         events = payload["pre_firing_events"]
-        assert payload["firing"]["firing_id"] == (
-            "firing:9f151a8243fe964d47d56400"
-        )
+        assert payload["firing"]["firing_id"] == ("firing:9f151a8243fe964d47d56400")
         assert len(events) == 12
         assert payload["input_window"]["max_event_ts"] == "2025-04-07T18:27:04Z"
         assert payload["feedback"]["enabled"] is feedback_enabled
@@ -602,9 +588,7 @@ def test_committed_webpack_fixtures_are_pre_firing_and_name_culprit() -> None:
         assert all(parse_timestamp(event["ts"]) < firing_ts for event in events)
 
         output = TriageOutput.from_mapping(record["response"])
-        source_texts = [
-            " ".join((event.get("text") or "").split()) for event in events
-        ]
+        source_texts = [" ".join((event.get("text") or "").split()) for event in events]
         assert output.real is True
         assert output.culprit_ref == "v5.99.0"
         assert output.confidence == 0.98
@@ -618,6 +602,7 @@ def test_committed_webpack_fixtures_are_pre_firing_and_name_culprit() -> None:
 def test_committed_webpack_v2_fixtures_are_exact_and_pre_firing() -> None:
     fixture_dir = Path(__file__).parent / "fixtures" / "triage"
     expected_modes = {
+        "42978ab2a88d53b077361e8749d54c3c5f63f3c54f9672be390c4308a10f3b4c": True,
         "8a8e84a669ab09ef0f5b271a481a33cb9cbdda8bec5e9a7295613b534d6caf25": True,
         "96686e532f18a193de07145eae97cc25cb4b78dc485fd64940c9663a3146e4fd": False,
     }
@@ -630,16 +615,27 @@ def test_committed_webpack_v2_fixtures_are_exact_and_pre_firing() -> None:
     )
 
     for prompt_hash, feedback_enabled in expected_modes.items():
-        serialized = (fixture_dir / f"{prompt_hash}.json").read_text(
-            encoding="utf-8"
-        )
+        serialized = (fixture_dir / f"{prompt_hash}.json").read_text(encoding="utf-8")
         record = json.loads(serialized)
         request = record["request"]
+        hashed_document = (
+            record["request_identity"] if record.get("cache_version") == 2 else request
+        )
         canonical = json.dumps(
-            request, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+            hashed_document,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
         )
         assert hashlib.sha256(canonical.encode("utf-8")).hexdigest() == prompt_hash
         assert record["request_hash"] == prompt_hash
+        if record.get("cache_version") == 2:
+            assert record["provider"] == "openai"
+            assert record["request_identity"] == {
+                "model": "gpt-5.6",
+                "provider": "openai",
+                "request": request,
+            }
         assert request["model"] == "gpt-5.6"
         assert "temperature" not in request
         assert "seed" not in request
@@ -647,9 +643,7 @@ def test_committed_webpack_v2_fixtures_are_exact_and_pre_firing() -> None:
 
         payload = json.loads(request["input"][1]["content"])
         events = payload["pre_firing_events"]
-        assert payload["firing"]["firing_id"] == (
-            "firing:07cb50298e4a5badf1114403"
-        )
+        assert payload["firing"]["firing_id"] == ("firing:07cb50298e4a5badf1114403")
         assert len(events) == 28
         assert payload["input_window"]["max_event_ts"] == "2025-04-07T18:52:11Z"
         assert payload["feedback"]["enabled"] is feedback_enabled
@@ -657,9 +651,7 @@ def test_committed_webpack_v2_fixtures_are_exact_and_pre_firing() -> None:
         assert all(parse_timestamp(event["ts"]) < firing_ts for event in events)
 
         output = TriageOutput.from_mapping(record["response"])
-        source_texts = [
-            " ".join((event.get("text") or "").split()) for event in events
-        ]
+        source_texts = [" ".join((event.get("text") or "").split()) for event in events]
         assert output.real is True
         assert output.culprit_ref == "v5.99.0"
         assert output.confidence == 0.99

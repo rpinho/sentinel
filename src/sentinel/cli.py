@@ -42,6 +42,24 @@ app.add_typer(ingest_app, name="ingest")
 app.add_typer(feedback_app, name="feedback")
 
 
+@app.command("serve")
+def serve(
+    host: str = typer.Option("127.0.0.1", help="Interface to bind."),
+    port: int = typer.Option(8000, min=1, max=65535, help="TCP port to bind."),
+    reload: bool = typer.Option(False, help="Reload on local source changes."),
+) -> None:
+    """Serve the replay, frozen scorecard, and live archive surfaces."""
+
+    import uvicorn
+
+    uvicorn.run(
+        "sentinel.web.app:app",
+        host=host,
+        port=port,
+        reload=reload,
+    )
+
+
 @ingest_app.command("gharchive")
 def ingest_gharchive(
     repo: str = typer.Option(..., "--repo", help="GitHub owner/repo to retain."),

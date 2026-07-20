@@ -25,7 +25,7 @@ END = datetime(2025, 4, 7, 23, tzinfo=UTC)
 ACK_TS = datetime(2025, 4, 7, 20, 14, 4, tzinfo=UTC)
 FIRING_TS = datetime(2025, 4, 7, 18, 55, 2, tzinfo=UTC)
 EXPECTED_TRIAGE_HASHES = {
-    "full": "8a8e84a669ab09ef0f5b271a481a33cb9cbdda8bec5e9a7295613b534d6caf25",
+    "full": "42978ab2a88d53b077361e8749d54c3c5f63f3c54f9672be390c4308a10f3b4c",
     "no_feedback": "96686e532f18a193de07145eae97cc25cb4b78dc485fd64940c9663a3146e4fd",
 }
 
@@ -81,9 +81,12 @@ def verify(database: Path, config_path: Path, fixture_dir: Path) -> None:
         "issues_opened_per_active_participant",
         "comments_per_active_issue_thread",
     ]
-    assert firing.meta["metric_evaluations"][
-        "comments_per_active_issue_thread"
-    ]["bot_excluded"]["baseline_samples"] == 5
+    assert (
+        firing.meta["metric_evaluations"]["comments_per_active_issue_thread"][
+            "bot_excluded"
+        ]["baseline_samples"]
+        == 5
+    )
     release = firing.meta["independent_corroboration"]["recent_release"]
     assert release["version"] == "5.99.0"
     assert release["sources"] == ["gharchive", "npm_registry"]
@@ -123,20 +126,22 @@ def verify(database: Path, config_path: Path, fixture_dir: Path) -> None:
         if FIRING_TS - timedelta(hours=24) <= event.ts < FIRING_TS
     ]
     triage_requests = {
-        "full": _legacy_openai_request(build_triage_request(
+        "full": build_triage_request(
             firing,
             pre_firing_events,
             feedback_context=feedback_context,
             provider="openai",
             model="gpt-5.6",
-        )),
-        "no_feedback": _legacy_openai_request(build_triage_request(
-            firing,
-            pre_firing_events,
-            no_feedback=True,
-            provider="openai",
-            model="gpt-5.6",
-        )),
+        ),
+        "no_feedback": _legacy_openai_request(
+            build_triage_request(
+                firing,
+                pre_firing_events,
+                no_feedback=True,
+                provider="openai",
+                model="gpt-5.6",
+            )
+        ),
     }
     triage_outputs = {
         mode: _verify_triage_fixture(
@@ -149,9 +154,7 @@ def verify(database: Path, config_path: Path, fixture_dir: Path) -> None:
         mode: request.prompt_hash for mode, request in triage_requests.items()
     } == EXPECTED_TRIAGE_HASHES
     assert all(output.real for output in triage_outputs.values())
-    assert all(
-        output.culprit_ref == "v5.99.0" for output in triage_outputs.values()
-    )
+    assert all(output.culprit_ref == "v5.99.0" for output in triage_outputs.values())
     assert all(output.confidence == 0.99 for output in triage_outputs.values())
 
     print(f"PASS continuous archive hours: {len(complete_hours)} complete")
@@ -175,9 +178,7 @@ def verify(database: Path, config_path: Path, fixture_dir: Path) -> None:
             for mode, output in triage_outputs.items()
         )
     )
-    print(
-        f"PASS pre-ack lead: {(ACK_TS - firing.ts).total_seconds() / 60:.1f} minutes"
-    )
+    print(f"PASS pre-ack lead: {(ACK_TS - firing.ts).total_seconds() / 60:.1f} minutes")
 
 
 def _legacy_openai_request(request: TriageRequest) -> TriageRequest:
@@ -201,8 +202,13 @@ def _verify_triage_fixture(path: Path, request: TriageRequest) -> TriageOutput:
     ):
         assert forbidden not in serialized
     record: dict[str, Any] = json.loads(serialized)
+    hashed_document = (
+        record["request_identity"]
+        if record.get("cache_version") == 2
+        else record["request"]
+    )
     canonical = json.dumps(
-        record["request"],
+        hashed_document,
         ensure_ascii=False,
         sort_keys=True,
         separators=(",", ":"),
@@ -210,6 +216,13 @@ def _verify_triage_fixture(path: Path, request: TriageRequest) -> TriageOutput:
     assert hashlib.sha256(canonical.encode("utf-8")).hexdigest() == request.prompt_hash
     assert record["request_hash"] == request.prompt_hash
     assert record["request"] == dict(request.api_payload)
+    if record.get("cache_version") == 2:
+        assert record["provider"] == "openai"
+        assert record["request_identity"] == {
+            "model": "gpt-5.6",
+            "provider": "openai",
+            "request": record["request"],
+        }
     assert record["requested_model"] == "gpt-5.6"
     assert record["returned_model"] == "gpt-5.6-sol"
     assert "temperature" not in record["request"]
@@ -219,8 +232,7 @@ def _verify_triage_fixture(path: Path, request: TriageRequest) -> TriageOutput:
     assert payload["firing"]["firing_id"] == "firing:07cb50298e4a5badf1114403"
     assert payload["input_window"]["max_event_ts"] == "2025-04-07T18:52:11Z"
     assert all(
-        event["ts"] < "2025-04-07T18:55:02Z"
-        for event in payload["pre_firing_events"]
+        event["ts"] < "2025-04-07T18:55:02Z" for event in payload["pre_firing_events"]
     )
 
     output = TriageOutput.from_mapping(record["response"])

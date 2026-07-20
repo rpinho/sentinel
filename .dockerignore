@@ -1,0 +1,8 @@
+.cache
+.env
+.git
+.venv
+__pycache__
+*.duckdb
+*.pyc
+VALIDATION_REPORT.md

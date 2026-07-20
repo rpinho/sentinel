@@ -130,9 +130,7 @@ class ProviderBackend(Protocol):
     api_key_env: str
     default_model: str
 
-    def build_payload(
-        self, *, model: str, user_content: str
-    ) -> Mapping[str, Any]: ...
+    def build_payload(self, *, model: str, user_content: str) -> Mapping[str, Any]: ...
 
     def create(
         self,
@@ -176,9 +174,7 @@ class OpenAIBackend:
         api_key: str,
     ) -> ProviderResponse:
         live_client = client or OpenAI(api_key=api_key)
-        response = _create_openai_response(
-            cast(OpenAIClient, live_client), api_payload
-        )
+        response = _create_openai_response(cast(OpenAIClient, live_client), api_payload)
         output_text = getattr(response, "output_text", None)
         if not isinstance(output_text, str) or not output_text.strip():
             raise TriageResponseError(
@@ -219,9 +215,7 @@ class AnthropicBackend:
         api_key: str,
     ) -> ProviderResponse:
         owns_client = client is None
-        live_client = client or httpx.Client(
-            timeout=httpx.Timeout(180.0, connect=20.0)
-        )
+        live_client = client or httpx.Client(timeout=httpx.Timeout(180.0, connect=20.0))
         try:
             response = _create_anthropic_response(
                 cast(AnthropicClient, live_client),
@@ -446,9 +440,7 @@ def build_triage_request(
         user_content=_render_user_payload(user_payload),
     )
     prompt_hash = _provider_request_hash(provider, resolved_model, api_payload)
-    legacy_prompt_hash = (
-        _hash_document(api_payload) if provider == "openai" else None
-    )
+    legacy_prompt_hash = _hash_document(api_payload) if provider == "openai" else None
     return TriageRequest(
         provider=provider,
         model=resolved_model,
@@ -602,24 +594,6 @@ def triage_firing(
         _write_record(cache_path, record)
         return _run_from_record(record, request, source="fixture")
 
-    # Provider-scoped identities are v2. Preserve exact replay for published
-    # OpenAI fixtures created under the legacy payload-only identity.
-    if allow_legacy_replay and request.legacy_prompt_hash:
-        legacy_request = replace(
-            request,
-            prompt_hash=request.legacy_prompt_hash,
-            legacy_prompt_hash=None,
-        )
-        legacy_cache = Path(cache_dir) / f"{legacy_request.prompt_hash}.json"
-        legacy_fixture = Path(fixture_dir) / f"{legacy_request.prompt_hash}.json"
-        if legacy_cache.exists():
-            record = _read_record(legacy_cache, legacy_request)
-            return _run_from_record(record, legacy_request, source="cache")
-        if legacy_fixture.exists():
-            record = _read_record(legacy_fixture, legacy_request)
-            _write_record(legacy_cache, record)
-            return _run_from_record(record, legacy_request, source="fixture")
-
     # OpenAI seed remains an optional best-effort hint. Anthropic's exact
     # request is already ready for lookup and dispatch.
     unseeded_request = request
@@ -634,6 +608,25 @@ def triage_firing(
             record = _read_record(fixture_path, request)
             _write_record(cache_path, record)
             return _run_from_record(record, request, source="fixture")
+
+    # Provider-scoped identities are v2 and take precedence. Preserve exact
+    # replay for published OpenAI fixtures created under the legacy
+    # payload-only identity only when no provider-scoped record exists.
+    if allow_legacy_replay and unseeded_request.legacy_prompt_hash:
+        legacy_request = replace(
+            unseeded_request,
+            prompt_hash=unseeded_request.legacy_prompt_hash,
+            legacy_prompt_hash=None,
+        )
+        legacy_cache = Path(cache_dir) / f"{legacy_request.prompt_hash}.json"
+        legacy_fixture = Path(fixture_dir) / f"{legacy_request.prompt_hash}.json"
+        if legacy_cache.exists():
+            record = _read_record(legacy_cache, legacy_request)
+            return _run_from_record(record, legacy_request, source="cache")
+        if legacy_fixture.exists():
+            record = _read_record(legacy_fixture, legacy_request)
+            _write_record(legacy_cache, record)
+            return _run_from_record(record, legacy_request, source="fixture")
 
     if not allow_live:
         raise TriageCacheMissError(
@@ -859,9 +852,10 @@ def _read_record(path: Path, request: TriageRequest) -> dict[str, Any]:
     if not isinstance(cached_request, dict):
         raise TriageResponseError(f"triage cache request payload mismatch in {path}")
     if cache_version == 1:
-        if request.provider != "openai" or _hash_document(
-            cached_request
-        ) != request.prompt_hash:
+        if (
+            request.provider != "openai"
+            or _hash_document(cached_request) != request.prompt_hash
+        ):
             raise TriageResponseError(
                 f"legacy triage cache request payload mismatch in {path}"
             )
@@ -962,9 +956,7 @@ def _ground_evidence_quotes(
 
 def _quote_candidates(source: str) -> set[str]:
     sentences = [
-        part.strip()
-        for part in re.split(r"(?<=[.!?])\s+|\n+", source)
-        if part.strip()
+        part.strip() for part in re.split(r"(?<=[.!?])\s+|\n+", source) if part.strip()
     ]
     candidates = set(sentences)
     for width in (2, 3):

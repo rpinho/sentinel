@@ -15,6 +15,37 @@ uv run pytest -q
 uv run sentinel --help
 ```
 
+## Judge-facing web surfaces
+
+```bash
+uv run sentinel serve
+```
+
+Open `http://127.0.0.1:8000`. The server exposes:
+
+- `/replay/webpack-v5.99.0`: reruns detector v2 from 245 committed normalized
+  source events, then resolves the exact GPT-5.6 fixture with live calls disabled.
+- `/scorecard`: publishes all 20 frozen v1 firings, the v1-to-v2 `20 → 0`
+  comparison, and all three v1/four v2 acknowledged misses.
+- `/live`: fetches one recent completed GH Archive hour only after a visible button
+  press, persists coverage, and runs detector v2 without model triage.
+
+The replay input is source data rather than a stored detector result or screenshot.
+Regenerate it from the validated DuckDB cache with:
+
+```bash
+uv run python scripts/build_web_replay_fixture.py
+```
+
+The included `Dockerfile` is the hosted-deploy path for any container-capable ASGI
+host. It needs no model key for `/replay` or `/scorecard`; `/live` makes a public
+GH Archive download but no model call. Build and test the production image locally:
+
+```bash
+docker build -t sentinel .
+docker run --rm -p 8000:8000 sentinel
+```
+
 ## Ingest any event stream
 
 Every adapter produces this contract:
@@ -224,9 +255,27 @@ uv run python scripts/verify_detector_v2_acceptance.py \
 - The firing is 79 minutes before the `20:14:04Z` substantive acknowledgment.
 - GPT-5.6 full and no-feedback triage both name `v5.99.0` at 0.99 confidence from
   28 strictly pre-firing events; the newest input is `18:52:11Z`.
-- Exact prompt hashes: full `8a8e84a6...af25`; no-feedback `96686e53...e4fd`.
-- Both committed fixtures replay offline, omit temperature and unsupported seed, and
+- Exact prompt hashes: provider-scoped full `42978ab2...3b4c`; legacy no-feedback
+  `96686e53...e4fd`.
+- Both committed fixtures replay offline, omit temperature and the rejected seed, and
   exclude the later acknowledgment and PR `#19398`.
 
 See `HANDOFF.md` for the product brief, `TRIAGE.md` for the implemented agent contract,
 and `FEEDBACK_LOOP.md` for the learning-loop rationale.
+
+## How Codex accelerated the build
+
+Codex worked as the implementation and validation partner across the same repository: it
+traced the temporal-leakage risk into hard input assertions, reproduced detector v2 from
+raw source events, built the provider/cache boundary, generated deterministic replay data,
+implemented the three server-rendered surfaces, and browser-tested desktop and mobile
+layouts. It also preserved negative results instead of tuning them away: the frozen v2
+holdout still shows zero firings and four misses. Human product judgment set the claim,
+the frozen-data protocol, and the rule that a result that cannot be reproduced does not ship.
+
+## Deliberately deferred
+
+Slack escalation is represented as deterministic severity and routing in each firing
+card instead of an untestable notification. Authentication, multi-tenancy, and a
+knowledge-base/RAG layer over past incidents remain out of scope for this single-tenant
+public-data demonstration.
