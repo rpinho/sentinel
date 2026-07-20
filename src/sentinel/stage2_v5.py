@@ -182,6 +182,24 @@ def build_batch_schema(row_ids: Sequence[str]) -> dict[str, Any]:
         },
         **verdict["properties"],
     }
+    verdict["required"] = ["row_id", *verdict["required"]]
+    verdict["properties"]["cause"]["maxLength"] = 300
+    verdict["properties"]["culprit_ref"]["anyOf"][0]["maxLength"] = 120
+    verdict["properties"]["evidence_quotes"]["maxItems"] = 2
+    verdict["properties"]["evidence_quotes"]["items"]["maxLength"] = 400
+    return {
+        "type": "object",
+        "properties": {
+            "verdicts": {
+                "type": "array",
+                "items": verdict,
+                "minItems": len(row_ids),
+                "maxItems": len(row_ids),
+            }
+        },
+        "required": ["verdicts"],
+        "additionalProperties": False,
+    }
 
 
 def _compact_batch_event(event: Mapping[str, Any]) -> dict[str, Any]:
@@ -220,24 +238,6 @@ def _compact_batch_event(event: Mapping[str, Any]) -> dict[str, Any]:
         "kind": event["kind"],
         "text": event.get("text"),
         "meta": compact_meta,
-    }
-    verdict["required"] = ["row_id", *verdict["required"]]
-    verdict["properties"]["cause"]["maxLength"] = 300
-    verdict["properties"]["culprit_ref"]["anyOf"][0]["maxLength"] = 120
-    verdict["properties"]["evidence_quotes"]["maxItems"] = 2
-    verdict["properties"]["evidence_quotes"]["items"]["maxLength"] = 400
-    return {
-        "type": "object",
-        "properties": {
-            "verdicts": {
-                "type": "array",
-                "items": verdict,
-                "minItems": len(row_ids),
-                "maxItems": len(row_ids),
-            }
-        },
-        "required": ["verdicts"],
-        "additionalProperties": False,
     }
 
 

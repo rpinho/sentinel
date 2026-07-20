@@ -284,6 +284,7 @@ def test_batch_runs_all_candidates_in_one_subscription_call(
     batch = build_batch_request(candidate_requests, protocol=_protocol())
     payload = json.loads(str(batch["identity"]["user_content"]))
     assert batch["candidate_count"] == 2
+    assert batch["identity"]["json_schema"]["type"] == "object"
     assert len(payload["candidates"]) == 2
     assert payload["run"]["candidate_count"] == 2
     assert batch["identity"]["effort"] == "low"
