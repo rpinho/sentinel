@@ -136,6 +136,10 @@ def freeze_holdout(
         ],
     }
     snapshot_hash = canonical_sha256(snapshot)
+    try:
+        frozen_snapshot_path = str(snapshot_path.relative_to(repo_root))
+    except ValueError as exc:
+        raise ValueError("holdout output directory must be inside the repository") from exc
     manifest = {
         "schema_version": HOLDOUT_SCHEMA_VERSION,
         "holdout_id": holdout_id,
@@ -144,7 +148,7 @@ def freeze_holdout(
         "detector_config_path": detector_config_path,
         "detector_config_sha256": config_sha256,
         "detector_version": config.version,
-        "feedback_snapshot_path": "holdout/feedback-snapshot.json",
+        "feedback_snapshot_path": frozen_snapshot_path,
         "feedback_snapshot_sha256": snapshot_hash,
         "selection_policy": selection_policy,
         "repositories": list(repositories),
