@@ -1,0 +1,868 @@
+{
+  "burst_ablation": {
+    "detector_version": "sha256:ae275eb90bff",
+    "feature_importance": {
+      "raw_active_threads": 0.09819808827472436,
+      "raw_activity_phase_z": 0.12260001721985163,
+      "raw_comment_count": 0.07894084161578598,
+      "raw_issue_count": 0.6774355082480563,
+      "raw_unique_participants": 0.02282554464158172
+    },
+    "hyperparameters": {
+      "C": 0.1,
+      "l1_ratio": 1.0,
+      "max_iter": 2000,
+      "penalty": "l1",
+      "random_state": 0,
+      "repository_class_weighted": true,
+      "solver": "liblinear"
+    },
+    "model_sha256": "ae275eb90bffe7ee9ffefb3d9e3810f30c599f49bb82c822b6e6fd48284632a8",
+    "selection": {
+      "candidates_evaluated": 1386,
+      "method": "leave_one_repository_out",
+      "metric": "row-level F1",
+      "oof_metrics": {
+        "average_precision": 0.11916491099334145,
+        "f1": 0.19212218649517684,
+        "precision": 0.11484863046612205,
+        "recall": 0.5872235872235873,
+        "repository_macro_auc": 0.8604472388162703,
+        "roc_auc": 0.847774088645973
+      },
+      "oof_predictions_sha256": "0c3a1e9e1b5be8a77f30415bd671de73c186e7138653a67161233f49dbe6b9a4"
+    },
+    "threshold": 0.63
+  },
+  "dataset_content_sha256": "5d94c941eedba3f90de12aa135220da3609bf48c11330739cb3e895867951881",
+  "label_audit": {
+    "audit_sha256": "67afc5422d29770b731d035b5ec8d78d04054bbf60e66b50ed46ac1045748d2c",
+    "by_source": {
+      "completed_bug_closure": {
+        "accepted": 20,
+        "ambiguous": 0,
+        "obvious_label_noise_rate": 0.0,
+        "rejected": 0,
+        "reviewed": 20
+      },
+      "merged_fixing_pr": {
+        "accepted": 17,
+        "ambiguous": 0,
+        "obvious_label_noise_rate": 0.15,
+        "rejected": 3,
+        "reviewed": 20
+      },
+      "substantive_maintainer_comment": {
+        "accepted": 13,
+        "ambiguous": 4,
+        "obvious_label_noise_rate": 0.15,
+        "rejected": 3,
+        "reviewed": 20
+      }
+    },
+    "candidate_sample_sha256": "6a9caded4177f8848b0d2970b0a387618bc16ba5cf7368bcacf60d543c98390a",
+    "counts": {
+      "accepted": 50,
+      "ambiguous": 4,
+      "rejected": 6,
+      "reviewed": 60
+    }
+  },
+  "power": {
+    "achieved_train_positive_incidents": 425,
+    "maximum_single_repository_positive_share": 0.35,
+    "minimum_train_positive_incidents": 200,
+    "observed_largest_repository": "microsoft/vscode",
+    "observed_largest_repository_positive_share": 0.10588235294117647,
+    "observed_largest_repository_positives": 45
+  },
+  "primary": {
+    "detector_version": "sha256:57021d95ec13",
+    "feature_importance": {
+      "bot_excluded_active_threads": 0.023273995100604777,
+      "bot_excluded_activity_phase_z": 0.021014600827361143,
+      "breakage_issue_share": 0.2603606923099195,
+      "cross_thread_tfidf_mean": 0.008452092220975007,
+      "new_issue_count": 0.01173352451324043,
+      "new_issue_share": 0.36266904050814996,
+      "repeated_payload_share": 0.2777292480461678,
+      "shared_version_thread_count": 0.015740052007154462,
+      "shared_version_thread_share": 0.019026754466427074
+    },
+    "hyperparameters": {
+      "C": 0.01,
+      "l1_ratio": 1.0,
+      "max_iter": 2000,
+      "penalty": "l1",
+      "random_state": 0,
+      "repository_class_weighted": true,
+      "solver": "liblinear"
+    },
+    "model_sha256": "57021d95ec13ef5d8c1f52f95e6008152b7c1a6ddccbe7fe5f77aa042a2a3f9d",
+    "selection": {
+      "candidates_evaluated": 1386,
+      "method": "leave_one_repository_out",
+      "metric": "row-level F1",
+      "oof_metrics": {
+        "average_precision": 0.1317548987890046,
+        "f1": 0.2222222222222222,
+        "precision": 0.12804193186072632,
+        "recall": 0.8402948402948403,
+        "repository_macro_auc": 0.8843632380959229,
+        "roc_auc": 0.8645429665847214
+      },
+      "oof_predictions_sha256": "2cb02a4dde0d39f9a654780b956c08ae28f1e3e3e2aa14a49af91b53fc434427"
+    },
+    "threshold": 0.62
+  },
+  "protocol_sha256": "11ff6e7b47e2ac5514c6f8540ed74acac23b9c078512ca046dcee1638e32e43a",
+  "schema_version": 1,
+  "search": {
+    "burst": [
+      {
+        "C": 0.1,
+        "metrics": {
+          "average_precision": 0.11916491099334145,
+          "f1": 0.19212218649517684,
+          "precision": 0.11484863046612205,
+          "recall": 0.5872235872235873,
+          "repository_macro_auc": 0.8604472388162703,
+          "roc_auc": 0.847774088645973
+        },
+        "penalty": "l1",
+        "threshold": 0.63
+      },
+      {
+        "C": 0.3,
+        "metrics": {
+          "average_precision": 0.11931139091315708,
+          "f1": 0.19186046511627908,
+          "precision": 0.13622291021671826,
+          "recall": 0.32432432432432434,
+          "repository_macro_auc": 0.85797864882818,
+          "roc_auc": 0.8468724570996253
+        },
+        "penalty": "l2",
+        "threshold": 0.69
+      },
+      {
+        "C": 0.3,
+        "metrics": {
+          "average_precision": 0.11931139091315708,
+          "f1": 0.1918305597579425,
+          "precision": 0.10938578329882678,
+          "recall": 0.7788697788697788,
+          "repository_macro_auc": 0.85797864882818,
+          "roc_auc": 0.8468724570996253
+        },
+        "penalty": "l2",
+        "threshold": 0.58
+      },
+      {
+        "C": 3.0,
+        "metrics": {
+          "average_precision": 0.11935404553797324,
+          "f1": 0.19177253478523895,
+          "precision": 0.10934805105208692,
+          "recall": 0.7788697788697788,
+          "repository_macro_auc": 0.857222999596811,
+          "roc_auc": 0.8468245508620749
+        },
+        "penalty": "l1",
+        "threshold": 0.58
+      },
+      {
+        "C": 10.0,
+        "metrics": {
+          "average_precision": 0.11935044920465775,
+          "f1": 0.19177253478523895,
+          "precision": 0.10934805105208692,
+          "recall": 0.7788697788697788,
+          "repository_macro_auc": 0.8571946939830537,
+          "roc_auc": 0.8468329118563643
+        },
+        "penalty": "l1",
+        "threshold": 0.58
+      },
+      {
+        "C": 1.0,
+        "metrics": {
+          "average_precision": 0.119341346114658,
+          "f1": 0.19177253478523895,
+          "precision": 0.10934805105208692,
+          "recall": 0.7788697788697788,
+          "repository_macro_auc": 0.8572136616954283,
+          "roc_auc": 0.8468263586446241
+        },
+        "penalty": "l2",
+        "threshold": 0.58
+      },
+      {
+        "C": 3.0,
+        "metrics": {
+          "average_precision": 0.11934886500360835,
+          "f1": 0.19177253478523895,
+          "precision": 0.10934805105208692,
+          "recall": 0.7788697788697788,
+          "repository_macro_auc": 0.8571946939830537,
+          "roc_auc": 0.8468263586446241
+        },
+        "penalty": "l2",
+        "threshold": 0.58
+      },
+      {
+        "C": 10.0,
+        "metrics": {
+          "average_precision": 0.11934732862034464,
+          "f1": 0.19177253478523895,
+          "precision": 0.10934805105208692,
+          "recall": 0.7788697788697788,
+          "repository_macro_auc": 0.8571958025567628,
+          "roc_auc": 0.8468317819922713
+        },
+        "penalty": "l2",
+        "threshold": 0.58
+      },
+      {
+        "C": 1.0,
+        "metrics": {
+          "average_precision": 0.11933065779543668,
+          "f1": 0.1917145449047475,
+          "precision": 0.10931034482758621,
+          "recall": 0.7788697788697788,
+          "repository_macro_auc": 0.8572297441702095,
+          "roc_auc": 0.8468265846174428
+        },
+        "penalty": "l1",
+        "threshold": 0.58
+      },
+      {
+        "C": 0.01,
+        "metrics": {
+          "average_precision": 0.11694845489558167,
+          "f1": 0.19165378670788252,
+          "precision": 0.10961810466760961,
+          "recall": 0.7616707616707616,
+          "repository_macro_auc": 0.8615418573370074,
+          "roc_auc": 0.8460159071305948
+        },
+        "penalty": "l1",
+        "threshold": 0.6
+      },
+      {
+        "C": 1.0,
+        "metrics": {
+          "average_precision": 0.119341346114658,
+          "f1": 0.19158200290275762,
+          "precision": 0.13594232749742532,
+          "recall": 0.32432432432432434,
+          "repository_macro_auc": 0.8572136616954283,
+          "roc_auc": 0.8468263586446241
+        },
+        "penalty": "l2",
+        "threshold": 0.69
+      },
+      {
+        "C": 0.01,
+        "metrics": {
+          "average_precision": 0.11939152760986738,
+          "f1": 0.19148936170212766,
+          "precision": 0.13861386138613863,
+          "recall": 0.3095823095823096,
+          "repository_macro_auc": 0.8616370637447394,
+          "roc_auc": 0.848341506393562
+        },
+        "penalty": "l2",
+        "threshold": 0.82
+      },
+      {
+        "C": 0.01,
+        "metrics": {
+          "average_precision": 0.11939152760986738,
+          "f1": 0.19147344801795063,
+          "precision": 0.13763440860215054,
+          "recall": 0.3144963144963145,
+          "repository_macro_auc": 0.8616370637447394,
+          "roc_auc": 0.848341506393562
+        },
+        "penalty": "l2",
+        "threshold": 0.77
+      },
+      {
+        "C": 0.3,
+        "metrics": {
+          "average_precision": 0.11926811964196679,
+          "f1": 0.19144307469180566,
+          "precision": 0.13580246913580246,
+          "recall": 0.32432432432432434,
+          "repository_macro_auc": 0.8571408421957183,
+          "roc_auc": 0.8469251087663668
+        },
+        "penalty": "l1",
+        "threshold": 0.69
+      },
+      {
+        "C": 0.1,
+        "metrics": {
+          "average_precision": 0.11916491099334145,
+          "f1": 0.19142419601837674,
+          "precision": 0.13904338153503892,
+          "recall": 0.3071253071253071,
+          "repository_macro_auc": 0.8604472388162703,
+          "roc_auc": 0.847774088645973
+        },
+        "penalty": "l1",
+        "threshold": 0.85
+      },
+      {
+        "C": 0.03,
+        "metrics": {
+          "average_precision": 0.11921184134983978,
+          "f1": 0.19134396355353075,
+          "precision": 0.13846153846153847,
+          "recall": 0.3095823095823096,
+          "repository_macro_auc": 0.8615279566834632,
+          "roc_auc": 0.8475017913995198
+        },
+        "penalty": "l2",
+        "threshold": 0.82
+      },
+      {
+        "C": 0.3,
+        "metrics": {
+          "average_precision": 0.11926811964196679,
+          "f1": 0.19130959565479783,
+          "precision": 0.10904712762297901,
+          "recall": 0.7788697788697788,
+          "repository_macro_auc": 0.8571408421957183,
+          "roc_auc": 0.8469251087663668
+        },
+        "penalty": "l1",
+        "threshold": 0.58
+      },
+      {
+        "C": 1.0,
+        "metrics": {
+          "average_precision": 0.11933065779543668,
+          "f1": 0.19130434782608696,
+          "precision": 0.13566289825282632,
+          "recall": 0.32432432432432434,
+          "repository_macro_auc": 0.8572297441702095,
+          "roc_auc": 0.8468265846174428
+        },
+        "penalty": "l1",
+        "threshold": 0.69
+      },
+      {
+        "C": 1.0,
+        "metrics": {
+          "average_precision": 0.11933065779543668,
+          "f1": 0.19127773527161437,
+          "precision": 0.1388888888888889,
+          "recall": 0.3071253071253071,
+          "repository_macro_auc": 0.8572297441702095,
+          "roc_auc": 0.8468265846174428
+        },
+        "penalty": "l1",
+        "threshold": 0.84
+      },
+      {
+        "C": 0.01,
+        "metrics": {
+          "average_precision": 0.11939152760986738,
+          "f1": 0.191044776119403,
+          "precision": 0.13719185423365488,
+          "recall": 0.3144963144963145,
+          "repository_macro_auc": 0.8616370637447394,
+          "roc_auc": 0.848341506393562
+        },
+        "penalty": "l2",
+        "threshold": 0.76
+      },
+      {
+        "C": 3.0,
+        "metrics": {
+          "average_precision": 0.11934886500360835,
+          "f1": 0.191027496382055,
+          "precision": 0.13538461538461538,
+          "recall": 0.32432432432432434,
+          "repository_macro_auc": 0.8571946939830537,
+          "roc_auc": 0.8468263586446241
+        },
+        "penalty": "l2",
+        "threshold": 0.69
+      },
+      {
+        "C": 0.3,
+        "metrics": {
+          "average_precision": 0.11926811964196679,
+          "f1": 0.19098548510313215,
+          "precision": 0.1385809312638581,
+          "recall": 0.3071253071253071,
+          "repository_macro_auc": 0.8571408421957183,
+          "roc_auc": 0.8469251087663668
+        },
+        "penalty": "l1",
+        "threshold": 0.84
+      },
+      {
+        "C": 0.03,
+        "metrics": {
+          "average_precision": 0.11921184134983978,
+          "f1": 0.19083969465648856,
+          "precision": 0.13842746400885936,
+          "recall": 0.3071253071253071,
+          "repository_macro_auc": 0.8615279566834632,
+          "roc_auc": 0.8475017913995198
+        },
+        "penalty": "l2",
+        "threshold": 0.83
+      },
+      {
+        "C": 0.1,
+        "metrics": {
+          "average_precision": 0.1192462225388866,
+          "f1": 0.19083969465648856,
+          "precision": 0.13842746400885936,
+          "recall": 0.3071253071253071,
+          "repository_macro_auc": 0.8611578113736643,
+          "roc_auc": 0.8473427065352017
+        },
+        "penalty": "l2",
+        "threshold": 0.83
+      },
+      {
+        "C": 0.03,
+        "metrics": {
+          "average_precision": 0.11921184134983978,
+          "f1": 0.19076923076923077,
+          "precision": 0.13885778275475924,
+          "recall": 0.3046683046683047,
+          "repository_macro_auc": 0.8615279566834632,
+          "roc_auc": 0.8475017913995198
+        },
+        "penalty": "l2",
+        "threshold": 0.84
+      }
+    ],
+    "coherence": [
+      {
+        "C": 0.01,
+        "metrics": {
+          "average_precision": 0.1317548987890046,
+          "f1": 0.2222222222222222,
+          "precision": 0.12804193186072632,
+          "recall": 0.8402948402948403,
+          "repository_macro_auc": 0.8843632380959229,
+          "roc_auc": 0.8645429665847214
+        },
+        "penalty": "l1",
+        "threshold": 0.62
+      },
+      {
+        "C": 0.01,
+        "metrics": {
+          "average_precision": 0.1317548987890046,
+          "f1": 0.22164614387556708,
+          "precision": 0.1276595744680851,
+          "recall": 0.8402948402948403,
+          "repository_macro_auc": 0.8843632380959229,
+          "roc_auc": 0.8645429665847214
+        },
+        "penalty": "l1",
+        "threshold": 0.61
+      },
+      {
+        "C": 0.01,
+        "metrics": {
+          "average_precision": 0.1317548987890046,
+          "f1": 0.22150882825040127,
+          "precision": 0.1274002954209749,
+          "recall": 0.8476658476658476,
+          "repository_macro_auc": 0.8843632380959229,
+          "roc_auc": 0.8645429665847214
+        },
+        "penalty": "l1",
+        "threshold": 0.58
+      },
+      {
+        "C": 0.01,
+        "metrics": {
+          "average_precision": 0.1317548987890046,
+          "f1": 0.22142624552263107,
+          "precision": 0.12762762762762764,
+          "recall": 0.8353808353808354,
+          "repository_macro_auc": 0.8843632380959229,
+          "roc_auc": 0.8645429665847214
+        },
+        "penalty": "l1",
+        "threshold": 0.63
+      },
+      {
+        "C": 0.01,
+        "metrics": {
+          "average_precision": 0.12774067683972723,
+          "f1": 0.22106631989596878,
+          "precision": 0.12738853503184713,
+          "recall": 0.8353808353808354,
+          "repository_macro_auc": 0.8779032692200105,
+          "roc_auc": 0.8637022347129953
+        },
+        "penalty": "l2",
+        "threshold": 0.6
+      },
+      {
+        "C": 0.01,
+        "metrics": {
+          "average_precision": 0.1317548987890046,
+          "f1": 0.22093023255813954,
+          "precision": 0.12718482707326143,
+          "recall": 0.8402948402948403,
+          "repository_macro_auc": 0.8843632380959229,
+          "roc_auc": 0.8645429665847214
+        },
+        "penalty": "l1",
+        "threshold": 0.6
+      },
+      {
+        "C": 0.01,
+        "metrics": {
+          "average_precision": 0.1317548987890046,
+          "f1": 0.22087067861715748,
+          "precision": 0.1269782848730217,
+          "recall": 0.8476658476658476,
+          "repository_macro_auc": 0.8843632380959229,
+          "roc_auc": 0.8645429665847214
+        },
+        "penalty": "l1",
+        "threshold": 0.57
+      },
+      {
+        "C": 0.01,
+        "metrics": {
+          "average_precision": 0.12774067683972723,
+          "f1": 0.22077073807968647,
+          "precision": 0.1273069679849341,
+          "recall": 0.8304668304668305,
+          "repository_macro_auc": 0.8779032692200105,
+          "roc_auc": 0.8637022347129953
+        },
+        "penalty": "l2",
+        "threshold": 0.61
+      },
+      {
+        "C": 0.01,
+        "metrics": {
+          "average_precision": 0.1317548987890046,
+          "f1": 0.220649726600193,
+          "precision": 0.12694300518134716,
+          "recall": 0.8427518427518428,
+          "repository_macro_auc": 0.8843632380959229,
+          "roc_auc": 0.8645429665847214
+        },
+        "penalty": "l1",
+        "threshold": 0.59
+      },
+      {
+        "C": 0.01,
+        "metrics": {
+          "average_precision": 0.1317548987890046,
+          "f1": 0.2203334423014057,
+          "precision": 0.12707390648567118,
+          "recall": 0.828009828009828,
+          "repository_macro_auc": 0.8843632380959229,
+          "roc_auc": 0.8645429665847214
+        },
+        "penalty": "l1",
+        "threshold": 0.64
+      },
+      {
+        "C": 0.01,
+        "metrics": {
+          "average_precision": 0.1317548987890046,
+          "f1": 0.22018348623853212,
+          "precision": 0.12703213610586012,
+          "recall": 0.8255528255528255,
+          "repository_macro_auc": 0.8843632380959229,
+          "roc_auc": 0.8645429665847214
+        },
+        "penalty": "l1",
+        "threshold": 0.65
+      },
+      {
+        "C": 0.01,
+        "metrics": {
+          "average_precision": 0.12774067683972723,
+          "f1": 0.22018348623853212,
+          "precision": 0.12703213610586012,
+          "recall": 0.8255528255528255,
+          "repository_macro_auc": 0.8779032692200105,
+          "roc_auc": 0.8637022347129953
+        },
+        "penalty": "l2",
+        "threshold": 0.62
+      },
+      {
+        "C": 0.01,
+        "metrics": {
+          "average_precision": 0.12774067683972723,
+          "f1": 0.2200988467874794,
+          "precision": 0.12709284627092846,
+          "recall": 0.8206388206388207,
+          "repository_macro_auc": 0.8779032692200105,
+          "roc_auc": 0.8637022347129953
+        },
+        "penalty": "l2",
+        "threshold": 0.63
+      },
+      {
+        "C": 0.01,
+        "metrics": {
+          "average_precision": 0.1317548987890046,
+          "f1": 0.22009569377990432,
+          "precision": 0.12646627565982405,
+          "recall": 0.8476658476658476,
+          "repository_macro_auc": 0.8843632380959229,
+          "roc_auc": 0.8645429665847214
+        },
+        "penalty": "l1",
+        "threshold": 0.56
+      },
+      {
+        "C": 0.01,
+        "metrics": {
+          "average_precision": 0.12774067683972723,
+          "f1": 0.2200925313945803,
+          "precision": 0.12714776632302405,
+          "recall": 0.8181818181818182,
+          "repository_macro_auc": 0.8779032692200105,
+          "roc_auc": 0.8637022347129953
+        },
+        "penalty": "l2",
+        "threshold": 0.64
+      },
+      {
+        "C": 0.01,
+        "metrics": {
+          "average_precision": 0.12774067683972723,
+          "f1": 0.21999352960207053,
+          "precision": 0.12667660208643816,
+          "recall": 0.8353808353808354,
+          "repository_macro_auc": 0.8779032692200105,
+          "roc_auc": 0.8637022347129953
+        },
+        "penalty": "l2",
+        "threshold": 0.59
+      },
+      {
+        "C": 0.03,
+        "metrics": {
+          "average_precision": 0.13090202824062647,
+          "f1": 0.2199933132731528,
+          "precision": 0.1273219814241486,
+          "recall": 0.8083538083538083,
+          "repository_macro_auc": 0.8809628635141854,
+          "roc_auc": 0.8633858727669083
+        },
+        "penalty": "l1",
+        "threshold": 0.65
+      },
+      {
+        "C": 0.01,
+        "metrics": {
+          "average_precision": 0.1317548987890046,
+          "f1": 0.21973684210526315,
+          "precision": 0.12685150018989746,
+          "recall": 0.8206388206388207,
+          "repository_macro_auc": 0.8843632380959229,
+          "roc_auc": 0.8645429665847214
+        },
+        "penalty": "l1",
+        "threshold": 0.66
+      },
+      {
+        "C": 0.01,
+        "metrics": {
+          "average_precision": 0.1317548987890046,
+          "f1": 0.21967526265520534,
+          "precision": 0.12618873445501097,
+          "recall": 0.8476658476658476,
+          "repository_macro_auc": 0.8843632380959229,
+          "roc_auc": 0.8645429665847214
+        },
+        "penalty": "l1",
+        "threshold": 0.55
+      },
+      {
+        "C": 0.01,
+        "metrics": {
+          "average_precision": 0.1317548987890046,
+          "f1": 0.21961282132656298,
+          "precision": 0.1260932944606414,
+          "recall": 0.8501228501228502,
+          "repository_macro_auc": 0.8843632380959229,
+          "roc_auc": 0.8645429665847214
+        },
+        "penalty": "l1",
+        "threshold": 0.54
+      },
+      {
+        "C": 0.01,
+        "metrics": {
+          "average_precision": 0.1317548987890046,
+          "f1": 0.21958085705348765,
+          "precision": 0.12580645161290321,
+          "recall": 0.8624078624078624,
+          "repository_macro_auc": 0.8843632380959229,
+          "roc_auc": 0.8645429665847214
+        },
+        "penalty": "l1",
+        "threshold": 0.48
+      },
+      {
+        "C": 0.03,
+        "metrics": {
+          "average_precision": 0.13090202824062647,
+          "f1": 0.21938946662193895,
+          "precision": 0.12703962703962704,
+          "recall": 0.8034398034398035,
+          "repository_macro_auc": 0.8809628635141854,
+          "roc_auc": 0.8633858727669083
+        },
+        "penalty": "l1",
+        "threshold": 0.66
+      },
+      {
+        "C": 0.03,
+        "metrics": {
+          "average_precision": 0.13090202824062647,
+          "f1": 0.2193722578467769,
+          "precision": 0.12715179968701096,
+          "recall": 0.7985257985257985,
+          "repository_macro_auc": 0.8809628635141854,
+          "roc_auc": 0.8633858727669083
+        },
+        "penalty": "l1",
+        "threshold": 0.67
+      },
+      {
+        "C": 0.01,
+        "metrics": {
+          "average_precision": 0.12774067683972723,
+          "f1": 0.21924237344954745,
+          "precision": 0.12694099378881987,
+          "recall": 0.8034398034398035,
+          "repository_macro_auc": 0.8779032692200105,
+          "roc_auc": 0.8637022347129953
+        },
+        "penalty": "l2",
+        "threshold": 0.66
+      },
+      {
+        "C": 0.03,
+        "metrics": {
+          "average_precision": 0.13090202824062647,
+          "f1": 0.21924083769633507,
+          "precision": 0.1264628161570404,
+          "recall": 0.8230958230958231,
+          "repository_macro_auc": 0.8809628635141854,
+          "roc_auc": 0.8633858727669083
+        },
+        "penalty": "l1",
+        "threshold": 0.59
+      }
+    ]
+  },
+  "selection_protocol": {
+    "ablation_family": "burst features only",
+    "estimator": "deterministic standardized logistic regression",
+    "headline_test_metrics": [
+      "precision",
+      "recall",
+      "roc_auc",
+      "median_lead_minutes"
+    ],
+    "primary_family": "coherence features only",
+    "repository_balance": "Every training repository receives equal total weight; positive and negative classes receive equal weight within repositories containing both classes.",
+    "selection": "Leave-one-repository-out predictions on train repositories only.",
+    "test_repositories_never_used_for_model_or_threshold_selection": true,
+    "threshold_selection": "maximize train OOF row-level F1, then precision, recall, ROC AUC, and the higher threshold",
+    "uncertainty": "deterministic whole-repository bootstrap confidence intervals"
+  },
+  "sklearn_version": "1.9.0",
+  "source_attribution": {
+    "by_source": {
+      "completed_bug_closure": 137,
+      "merged_fixing_pr": 135,
+      "substantive_maintainer_comment": 153
+    },
+    "inside_old_spike_population": 129,
+    "outside_old_spike_population": 296,
+    "outside_old_spike_share": 0.6964705882352941
+  },
+  "study_id": "sentinel-coherence-v4",
+  "test_rows_used": 0,
+  "train_positive_hours": 407,
+  "train_positive_incidents": 425,
+  "train_repositories": [
+    "angular/angular",
+    "ansible/ansible",
+    "apache/airflow",
+    "apache/arrow",
+    "bitcoin/bitcoin",
+    "containerd/containerd",
+    "dart-lang/sdk",
+    "denoland/deno",
+    "docker/compose",
+    "dotnet/aspnetcore",
+    "dotnet/efcore",
+    "dotnet/maui",
+    "elastic/elasticsearch",
+    "elastic/kibana",
+    "electron/electron",
+    "eslint/eslint",
+    "facebook/react",
+    "fastapi/fastapi",
+    "godotengine/godot",
+    "gradle/gradle",
+    "grafana/grafana",
+    "hashicorp/terraform",
+    "helm/helm",
+    "huggingface/transformers",
+    "istio/istio",
+    "jupyterlab/jupyterlab",
+    "kubernetes/kubernetes",
+    "laravel/framework",
+    "microsoft/TypeScript",
+    "microsoft/playwright",
+    "microsoft/terminal",
+    "microsoft/vscode",
+    "moby/moby",
+    "mui/material-ui",
+    "neovim/neovim",
+    "nextcloud/server",
+    "nodejs/node",
+    "npm/cli",
+    "numpy/numpy",
+    "nuxt/nuxt",
+    "open-telemetry/opentelemetry-collector",
+    "opencv/opencv",
+    "pallets/flask",
+    "pandas-dev/pandas",
+    "pnpm/pnpm",
+    "prometheus/prometheus",
+    "pytest-dev/pytest",
+    "redis/redis",
+    "scikit-learn/scikit-learn",
+    "spring-projects/spring-boot",
+    "storybookjs/storybook",
+    "sveltejs/svelte",
+    "tauri-apps/tauri",
+    "tokio-rs/tokio",
+    "vercel/next.js",
+    "vitejs/vite",
+    "vuejs/core",
+    "webpack/webpack"
+  ],
+  "train_rows": 11280
+}
