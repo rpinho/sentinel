@@ -167,7 +167,17 @@ def test_v2_release_corroboration_admits_one_interval_but_caps_severity() -> Non
 def test_v2_same_source_metric_breadth_does_not_bypass_persistence() -> None:
     second_metric = replace(_metric(), metric_id="comment_rate_echo")
     config = replace(_config(), metrics=(_metric(), second_metric))
-    events = [*_healthy_history(hours=(12,)), *_burst(12)]
+    events = [
+        *_healthy_history(hours=(12,)),
+        Event(
+            START - timedelta(hours=1),
+            "webpack/webpack",
+            "release",
+            text="v5.99.0",
+            meta={"version": "v5.99.0", "source": "gharchive"},
+        ),
+        *_burst(12),
+    ]
 
     run = evaluate_detection(
         events,
