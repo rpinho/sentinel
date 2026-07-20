@@ -14,13 +14,18 @@ from typing import Any, Iterable, Mapping, Sequence, cast
 
 from sentinel.adapters.gharchive import GHArchiveAdapter
 from sentinel.adapters.npm import NpmAdapter
-from sentinel.detector_v3 import build_labeled_dataset, canonical_sha256
+from sentinel.detector_v3 import (
+    apply_label_audit,
+    build_labeled_dataset,
+    canonical_sha256,
+)
 from sentinel.types import Event, format_timestamp, parse_timestamp
 
 DEFAULT_PROTOCOL = Path("holdout/v3/study-protocol.json")
 DEFAULT_EVENTS = Path("holdout/v3/events.json.gz")
 DEFAULT_DATASET = Path("holdout/v3/dataset.json")
 DEFAULT_POSITIVES = Path("holdout/v3/positives.json")
+DEFAULT_AUDIT = Path("holdout/v3/label-audit.json")
 
 
 def main() -> None:
@@ -29,6 +34,7 @@ def main() -> None:
     parser.add_argument("--events", type=Path, default=DEFAULT_EVENTS)
     parser.add_argument("--dataset", type=Path, default=DEFAULT_DATASET)
     parser.add_argument("--positives", type=Path, default=DEFAULT_POSITIVES)
+    parser.add_argument("--audit", type=Path, default=DEFAULT_AUDIT)
     parser.add_argument("--cache", type=Path, default=Path(".cache/gharchive"))
     parser.add_argument("--workers", type=int, default=8)
     parser.add_argument(
@@ -58,7 +64,9 @@ def main() -> None:
     _validate_source(source, protocol_hash=protocol_hash)
     rows = cast(Sequence[Mapping[str, Any]], source["events"])
     events = [Event.from_dict(row) for row in rows]
-    dataset = build_labeled_dataset(events, protocol)
+    dataset = apply_label_audit(
+        build_labeled_dataset(events, protocol), _read_object(args.audit)
+    )
     dataset["source"] = {
         "events_path": str(args.events),
         "events_sha256": source["hashes"]["events_sha256"],
@@ -81,6 +89,7 @@ def main() -> None:
         "study_id": dataset["study_id"],
         "label_rule_version": dataset["label_rule_version"],
         "class_balance": dataset["class_balance"],
+        "label_audit": dataset["label_audit"],
         "positive_incidents": dataset["positive_incidents"],
         "positive_incidents_sha256": dataset["hashes"][
             "positive_incidents_sha256"

@@ -13,6 +13,7 @@ import math
 import re
 import statistics
 from collections import Counter, defaultdict
+from copy import deepcopy
 from datetime import UTC, datetime, timedelta
 from itertools import combinations
 from typing import Any, Iterable, Mapping, Sequence, cast
@@ -211,6 +212,79 @@ def build_labeled_dataset(
             "rows_sha256": canonical_sha256(row_payload),
         },
     }
+
+
+def apply_label_audit(
+    dataset: Mapping[str, Any], audit: Mapping[str, Any]
+) -> dict[str, Any]:
+    """Apply the frozen semantic review without hiding auto-label failures."""
+
+    if audit.get("schema_version") != 1:
+        raise ValueError("unsupported v3 label-audit schema")
+    reviews = cast(Sequence[Mapping[str, Any]], audit.get("reviews") or ())
+    review_by_issue: dict[tuple[str, int], Mapping[str, Any]] = {}
+    for review in reviews:
+        key = (str(review["entity"]), int(review["issue_number"]))
+        if key in review_by_issue:
+            raise ValueError(f"duplicate v3 label review for {key}")
+        if review.get("status") not in {"accepted", "ambiguous", "rejected"}:
+            raise ValueError(f"invalid v3 label-review status for {key}")
+        review_by_issue[key] = review
+
+    result = deepcopy(dict(dataset))
+    auto_candidates = cast(list[dict[str, Any]], result["positive_incidents"])
+    candidate_keys = {
+        (str(incident["entity"]), int(incident["issue_number"]))
+        for incident in auto_candidates
+    }
+    if candidate_keys != set(review_by_issue):
+        missing = sorted(candidate_keys - set(review_by_issue))
+        extra = sorted(set(review_by_issue) - candidate_keys)
+        raise ValueError(
+            f"v3 label audit does not cover auto-label candidates; "
+            f"missing={missing} extra={extra}"
+        )
+
+    accepted: list[dict[str, Any]] = []
+    rejected_ids: set[str] = set()
+    for incident in auto_candidates:
+        key = (str(incident["entity"]), int(incident["issue_number"]))
+        review = review_by_issue[key]
+        incident["audit"] = {
+            "status": review["status"],
+            "reason": review["reason"],
+        }
+        if review["status"] == "rejected":
+            rejected_ids.add(str(incident["incident_id"]))
+        else:
+            accepted.append(incident)
+
+    rows = cast(list[dict[str, Any]], result["rows"])
+    for row in rows:
+        row["auto_label"] = int(row["label"])
+        row["incident_ids"] = [
+            incident_id
+            for incident_id in cast(list[str], row["incident_ids"])
+            if incident_id not in rejected_ids
+        ]
+        row["label"] = int(bool(row["incident_ids"]))
+
+    result["auto_label_candidates"] = auto_candidates
+    result["positive_incidents"] = accepted
+    result["class_balance"] = _class_balance(rows, accepted)
+    result["label_audit"] = {
+        "audit_version": audit["audit_version"],
+        "policy": audit["policy"],
+        "counts": dict(cast(Mapping[str, Any], audit["counts"])),
+        "obvious_label_noise_rate": audit["obvious_label_noise_rate"],
+        "audit_sha256": canonical_sha256(audit),
+    }
+    hashes = cast(dict[str, Any], result["hashes"])
+    hashes["auto_label_candidates_sha256"] = canonical_sha256(auto_candidates)
+    hashes["positive_incidents_sha256"] = canonical_sha256(accepted)
+    hashes["rows_sha256"] = canonical_sha256(rows)
+    hashes["label_audit_sha256"] = canonical_sha256(audit)
+    return result
 
 
 def _build_window(

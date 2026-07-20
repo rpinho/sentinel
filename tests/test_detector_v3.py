@@ -1,6 +1,10 @@
 from datetime import UTC, datetime, timedelta
 
-from sentinel.detector_v3 import MODEL_FEATURES, build_labeled_dataset
+from sentinel.detector_v3 import (
+    MODEL_FEATURES,
+    apply_label_audit,
+    build_labeled_dataset,
+)
 from sentinel.types import Event
 
 ARCHIVE_START = datetime(2025, 1, 1, tzinfo=UTC)
@@ -131,3 +135,51 @@ def test_v3_treats_unacknowledged_spike_as_negative() -> None:
     assert dataset["class_balance"]["train"]["candidate_hours"] == 1
     assert dataset["class_balance"]["train"]["positive_incidents"] == 0
     assert dataset["rows"][0]["label"] == 0
+
+
+def test_v3_audit_preserves_auto_label_but_rejects_false_match() -> None:
+    events = [
+        _event(
+            2,
+            kind="issue",
+            issue=7,
+            text="Regression: build crashes",
+            actor="reporter-a",
+        ),
+        _event(8, kind="comment", issue=7, text="same crash", actor="user-b"),
+        _event(14, kind="comment", issue=8, text="routine", actor="user-c"),
+        _event(20, kind="comment", issue=9, text="routine", actor="user-d"),
+        _event(26, kind="comment", issue=10, text="routine", actor="user-e"),
+        _event(
+            5,
+            kind="comment",
+            issue=7,
+            text="Can you see if Insiders fixed this?",
+            actor="maintainer",
+            association="MEMBER",
+            offset_hours=1,
+        ),
+    ]
+    raw = build_labeled_dataset(events, _protocol())
+    audit = {
+        "schema_version": 1,
+        "audit_version": "test-audit",
+        "policy": "test",
+        "counts": {"accepted": 0, "ambiguous": 0, "rejected": 1},
+        "obvious_label_noise_rate": 1.0,
+        "reviews": [
+            {
+                "entity": "owner/test",
+                "issue_number": 7,
+                "status": "rejected",
+                "reason": "question, not acknowledgment",
+            }
+        ],
+    }
+
+    audited = apply_label_audit(raw, audit)
+
+    assert audited["rows"][0]["auto_label"] == 1
+    assert audited["rows"][0]["label"] == 0
+    assert audited["positive_incidents"] == []
+    assert audited["auto_label_candidates"][0]["audit"]["status"] == "rejected"

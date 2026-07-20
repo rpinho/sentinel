@@ -1,0 +1,614 @@
+{
+  "class_balance": {
+    "all": {
+      "candidate_hours": 792,
+      "negative_hours": 769,
+      "positive_hour_rate": 0.02904040404040404,
+      "positive_hours": 23,
+      "positive_incidents": 25
+    },
+    "by_repository": {
+      "denoland/deno": {
+        "candidate_hours": 16,
+        "positive_hours": 0,
+        "positive_incidents": 0
+      },
+      "elastic/kibana": {
+        "candidate_hours": 220,
+        "positive_hours": 3,
+        "positive_incidents": 3
+      },
+      "electron/electron": {
+        "candidate_hours": 10,
+        "positive_hours": 0,
+        "positive_incidents": 0
+      },
+      "facebook/react": {
+        "candidate_hours": 2,
+        "positive_hours": 0,
+        "positive_incidents": 0
+      },
+      "grafana/grafana": {
+        "candidate_hours": 49,
+        "positive_hours": 0,
+        "positive_incidents": 0
+      },
+      "hashicorp/terraform": {
+        "candidate_hours": 4,
+        "positive_hours": 0,
+        "positive_incidents": 0
+      },
+      "kubernetes/kubernetes": {
+        "candidate_hours": 84,
+        "positive_hours": 1,
+        "positive_incidents": 1
+      },
+      "microsoft/vscode": {
+        "candidate_hours": 360,
+        "positive_hours": 15,
+        "positive_incidents": 16
+      },
+      "moby/moby": {
+        "candidate_hours": 5,
+        "positive_hours": 0,
+        "positive_incidents": 0
+      },
+      "nodejs/node": {
+        "candidate_hours": 5,
+        "positive_hours": 2,
+        "positive_incidents": 3
+      },
+      "npm/cli": {
+        "candidate_hours": 4,
+        "positive_hours": 0,
+        "positive_incidents": 0
+      },
+      "prometheus/prometheus": {
+        "candidate_hours": 2,
+        "positive_hours": 0,
+        "positive_incidents": 0
+      },
+      "vercel/next.js": {
+        "candidate_hours": 28,
+        "positive_hours": 0,
+        "positive_incidents": 0
+      },
+      "webpack/webpack": {
+        "candidate_hours": 3,
+        "positive_hours": 2,
+        "positive_incidents": 2
+      }
+    },
+    "test": {
+      "candidate_hours": 524,
+      "negative_hours": 506,
+      "positive_hour_rate": 0.03435114503816794,
+      "positive_hours": 18,
+      "positive_incidents": 19
+    },
+    "train": {
+      "candidate_hours": 268,
+      "negative_hours": 263,
+      "positive_hour_rate": 0.018656716417910446,
+      "positive_hours": 5,
+      "positive_incidents": 6
+    }
+  },
+  "label_audit": {
+    "audit_sha256": "05396daaf8babdef9dc00151d577350db2bc87bb7c5938a359115eebc7d4805d",
+    "audit_version": "substantive-ack-human-v1",
+    "counts": {
+      "accepted": 20,
+      "ambiguous": 5,
+      "rejected": 3
+    },
+    "obvious_label_noise_rate": 0.10714285714285714,
+    "policy": "Review every deterministic maintainer-substantive-v3 match against the full issue-opening report and full acknowledgment comment. accepted and ambiguous remain positive; rejected is relabeled negative. Ambiguous is retained only when the maintainer connects the report to a known fix, workaround, or underlying defect without an explicit reproduction statement."
+  },
+  "label_rule_version": "maintainer-substantive-v3",
+  "positive_incidents": [
+    {
+      "ack_excerpt": "🤷 I confirmed I was on the latest Insiders (commit 88c059) which was after the fix went in",
+      "ack_ts": "2025-03-28T20:00:20Z",
+      "ack_url": "https://github.com/microsoft/vscode/issues/244625#issuecomment-2762330454",
+      "audit": {
+        "reason": "Maintainer confirms the tested build postdates the shipped fix.",
+        "status": "accepted"
+      },
+      "candidate_ts": "2025-03-28T18:57:23.000001Z",
+      "entity": "microsoft/vscode",
+      "incident_id": "v3incident:6be9b0bacc6cc1cb6882",
+      "issue_number": 244625,
+      "lead_minutes": 62.95,
+      "report_excerpt": "No `onDidStartTaskProblemMatchers` sent - create a new extension `yo code` - add proposed API: ``` \"enabledApiProposals\": [ \"taskProblemMatcherStatus\" ], ``` - run `npx vscode-dts dev` - in the extension `activate` add the following code: ``` vscode.tasks.onDidStartTaskProblemMatchers(e => { console.log('Task started:…",
+      "report_ts": "2025-03-25T16:28:42Z",
+      "report_url": "https://github.com/microsoft/vscode/issues/244625",
+      "row_id": "v3row:3380e0c82075a754db31",
+      "split": "test",
+      "window_id": "2025-03-28"
+    },
+    {
+      "ack_excerpt": "@benibenj I did not see in the last couple of days, so I'm assuming this bug was fixed. Thank you, I'm closing this issue.",
+      "ack_ts": "2025-04-01T13:17:45Z",
+      "ack_url": "https://github.com/microsoft/vscode/issues/244540#issuecomment-2769325895",
+      "audit": {
+        "reason": "Maintainer closes as resolved based on non-recurrence, but does not identify a fix.",
+        "status": "ambiguous"
+      },
+      "candidate_ts": "2025-04-01T09:38:56.000001Z",
+      "entity": "microsoft/vscode",
+      "incident_id": "v3incident:e1b90099f6617458f7ca",
+      "issue_number": 244540,
+      "lead_minutes": 218.817,
+      "report_excerpt": "Scrolling in the editor window now hides the source code Type: <b>Bug</b> A regression happens in the latest code-insiders. I search for something in my Python project. I open the relevant file that had the pattern I was searching for. Then I scroll in the editor to see the Python file (either with window slider or mo…",
+      "report_ts": "2025-03-25T04:12:27Z",
+      "report_url": "https://github.com/microsoft/vscode/issues/244540",
+      "row_id": "v3row:5230b53e4c8fe9c5de18",
+      "split": "test",
+      "window_id": "2025-03-28"
+    },
+    {
+      "ack_excerpt": "Should be fixed in https://github.com/elastic/kibana/pull/216781",
+      "ack_ts": "2025-04-02T09:40:56Z",
+      "ack_url": "https://github.com/elastic/kibana/issues/216763#issuecomment-2772009245",
+      "audit": {
+        "reason": "Maintainer links the pull request that fixes the failing test.",
+        "status": "accepted"
+      },
+      "candidate_ts": "2025-04-02T08:56:42.000001Z",
+      "entity": "elastic/kibana",
+      "incident_id": "v3incident:c10d3c3d721c38a42960",
+      "issue_number": 216763,
+      "lead_minutes": 44.233,
+      "report_excerpt": "Failing test: Stateful Observability - Deployment-agnostic API Integration Tests.x-pack/test/api_integration/deployment_agnostic/apis/observability/ai_assistant/distributed_lock_manager/distributed_lock_manager·spec·ts - Stateful Observability - Deployment-agnostic API integration tests observability AI Assistant Lock…",
+      "report_ts": "2025-04-02T08:43:34Z",
+      "report_url": "https://github.com/elastic/kibana/issues/216763",
+      "row_id": "v3row:fd1d493001608dff92ca",
+      "split": "train",
+      "window_id": "2025-03-28"
+    },
+    {
+      "ack_excerpt": "I believe we have fixed the issue. Can you all try again?",
+      "ack_ts": "2025-04-05T00:58:14Z",
+      "ack_url": "https://github.com/microsoft/vscode/issues/244689#issuecomment-2779990412",
+      "audit": {
+        "reason": "Maintainer states that the login issue was fixed and asks affected users to retry.",
+        "status": "accepted"
+      },
+      "candidate_ts": "2025-04-02T11:52:18.000001Z",
+      "entity": "microsoft/vscode",
+      "incident_id": "v3incident:ac02cfff7520d2dc01df",
+      "issue_number": 244689,
+      "lead_minutes": 3665.933,
+      "report_excerpt": "VS Code Could not login to Azure <!-- ⚠️⚠️ Do Not Delete This! bug_report_template ⚠️⚠️ --> <!-- Please read our Rules of Conduct: https://opensource.microsoft.com/codeofconduct/ --> <!-- 🕮 Read our guide about submitting issues: https://github.com/microsoft/vscode/wiki/Submitting-Bugs-and-Suggestions --> <!-- 🔎 Searc…",
+      "report_ts": "2025-03-26T02:38:11Z",
+      "report_url": "https://github.com/microsoft/vscode/issues/244689",
+      "row_id": "v3row:c091cb2a5461fd6a4899",
+      "split": "test",
+      "window_id": "2025-03-28"
+    },
+    {
+      "ack_excerpt": "[Test Runner for Java (vscjava.vscode-java-test)](https://apac01.safelinks.protection.outlook.com/?url=https%3A%2F%2Fmarketplace.visualstudio.com%2Fitems%3FitemName%3Dvscjava.vscode-java-test&data=05%7C02%7CSheng.Chen%40microsoft.com%7Cdf3258b5c0eb4e98758408dd727105ba%7C72f988bf86f141af91ab2d7cd011db47%7C1%7C0%7C63879…",
+      "ack_ts": "2025-04-03T06:06:55Z",
+      "ack_url": "https://github.com/microsoft/vscode/issues/245400#issuecomment-2774586006",
+      "audit": {
+        "reason": "Maintainer names the prerelease containing the fix.",
+        "status": "accepted"
+      },
+      "candidate_ts": "2025-04-02T23:48:15.000001Z",
+      "entity": "microsoft/vscode",
+      "incident_id": "v3incident:756ba73e52543d5da576",
+      "issue_number": 245400,
+      "lead_minutes": 378.667,
+      "report_excerpt": "Enable Java test feature not working for testing Java <!-- ⚠️⚠️ Do Not Delete This! bug_report_template ⚠️⚠️ --> <!-- Please read our Rules of Conduct: https://opensource.microsoft.com/codeofconduct/ --> <!-- 🕮 Read our guide about submitting issues: https://github.com/microsoft/vscode/wiki/Submitting-Bugs-and-Suggest…",
+      "report_ts": "2025-04-02T23:23:10Z",
+      "report_url": "https://github.com/microsoft/vscode/issues/245400",
+      "row_id": "v3row:6097328ca574141923f6",
+      "split": "test",
+      "window_id": "2025-03-28"
+    },
+    {
+      "ack_excerpt": "I believe it is not yet fixed with insiders. I am planning to come up with a fix. Before that, I would like to confirm if it can be repro with insiders. I will share the commit later. `@hasPolicy` indicates if there are any settings configured by the Admin or not. Based on the perf profile that is shared above, having…",
+      "ack_ts": "2025-04-07T15:36:59Z",
+      "ack_url": "https://github.com/microsoft/vscode/issues/245719#issuecomment-2783788448",
+      "audit": {
+        "reason": "Maintainer says the issue remains and commits to a fix after confirming the profile.",
+        "status": "accepted"
+      },
+      "candidate_ts": "2025-04-04T19:59:15.000001Z",
+      "entity": "microsoft/vscode",
+      "incident_id": "v3incident:6c7bb25010026f5f1456",
+      "issue_number": 245719,
+      "lead_minutes": 4057.733,
+      "report_excerpt": "Considerable Input Delay After 1.99 Type: <b>Performance Issue</b> I originally wrote this issue for the VSCodeVim plugin, but after trying to grab a screen recording for the issue I saw it appear in the base editor. For a sufficiently large repository the editor slows down to a crawl and buffers input from the keyboa…",
+      "report_ts": "2025-04-04T19:59:15Z",
+      "report_url": "https://github.com/microsoft/vscode/issues/245719",
+      "row_id": "v3row:b075ecb131b0e2b63fc5",
+      "split": "test",
+      "window_id": "2025-03-28"
+    },
+    {
+      "ack_excerpt": "It's fixed in Insiders but not 1.99",
+      "ack_ts": "2025-04-06T21:50:32Z",
+      "ack_url": "https://github.com/microsoft/vscode/issues/245759#issuecomment-2781689415",
+      "audit": {
+        "reason": "Maintainer states that the defect is fixed in Insiders but not the stable release.",
+        "status": "accepted"
+      },
+      "candidate_ts": "2025-04-05T10:36:25.000001Z",
+      "entity": "microsoft/vscode",
+      "incident_id": "v3incident:df2e0d10ddd65bb6d2e2",
+      "issue_number": 245759,
+      "lead_minutes": 2114.117,
+      "report_excerpt": "Cannot attach to process - \"Error listing processes: process terminated with exit code: 44210\" <!-- ⚠️⚠️ Do Not Delete This! bug_report_template ⚠️⚠️ --> <!-- Please read our Rules of Conduct: https://opensource.microsoft.com/codeofconduct/ --> <!-- 🕮 Read our guide about submitting issues: https://github.com/microsof…",
+      "report_ts": "2025-04-05T10:01:29Z",
+      "report_url": "https://github.com/microsoft/vscode/issues/245759",
+      "row_id": "v3row:e31350ef3783ca43659a",
+      "split": "test",
+      "window_id": "2025-03-28"
+    },
+    {
+      "ack_excerpt": "see [fix regression on open cell output in editor #245898](https://github.com/microsoft/vscode/pull/245898)",
+      "ack_ts": "2025-04-07T20:50:40Z",
+      "ack_url": "https://github.com/microsoft/vscode/issues/245772#issuecomment-2784597312",
+      "audit": {
+        "reason": "Maintainer links the regression-fix pull request.",
+        "status": "accepted"
+      },
+      "candidate_ts": "2025-04-05T15:31:21.000001Z",
+      "entity": "microsoft/vscode",
+      "incident_id": "v3incident:4843ddd2e32a482eb826",
+      "issue_number": 245772,
+      "lead_minutes": 3199.317,
+      "report_excerpt": "Unable to open 'lnteractive-1.interactive (output) Invalid cell URl <!-- Please search existing issues to avoid creating duplicates. --> ## Environment data - VS Code version: XXX - Jupyter Extension version (available under the Extensions sidebar): 2025.3.0 - Python Extension version (available under the Extensions s…",
+      "report_ts": "2025-04-05T15:11:09Z",
+      "report_url": "https://github.com/microsoft/vscode/issues/245772",
+      "row_id": "v3row:f27f2990e4d2a488ecdb",
+      "split": "test",
+      "window_id": "2025-03-28"
+    },
+    {
+      "ack_excerpt": "Thanks! Can you see if this repro's for you on [Insiders](https://code.visualstudio.com/insiders/)? This seems to be fixed there..",
+      "ack_ts": "2025-04-08T16:46:34Z",
+      "ack_url": "https://github.com/microsoft/vscode/issues/245707#issuecomment-2787074401",
+      "audit": {
+        "reason": "Maintainer states the exact report appears fixed in Insiders.",
+        "status": "accepted"
+      },
+      "candidate_ts": "2025-04-07T15:53:53.000001Z",
+      "entity": "microsoft/vscode",
+      "incident_id": "v3incident:398b8aa14f805a0eb151",
+      "issue_number": 245707,
+      "lead_minutes": 1492.683,
+      "report_excerpt": "Error starting github: CodeExpectedError: Variable 'github_token' Error starting github: CodeExpectedError: Variable 'github_token' must be defined in an 'inputs' section of the debug or task configuration. cc @digitarald Here is my config: ``` { \"@azure.argTenant\": \"\", \"mcp\": { \"servers\": { \"github\": { \"command\": \"do…",
+      "report_ts": "2025-04-04T17:50:17Z",
+      "report_url": "https://github.com/microsoft/vscode/issues/245707",
+      "row_id": "v3row:aec4954d2ec5103e19d2",
+      "split": "test",
+      "window_id": "2025-03-28"
+    },
+    {
+      "ack_excerpt": "Root cause: Allowed Extensions configuration is not registered on shared process",
+      "ack_ts": "2025-04-08T09:51:20Z",
+      "ack_url": "https://github.com/microsoft/vscode/issues/245886#issuecomment-2785876632",
+      "audit": {
+        "reason": "Maintainer identifies the root cause.",
+        "status": "accepted"
+      },
+      "candidate_ts": "2025-04-07T15:53:53.000001Z",
+      "entity": "microsoft/vscode",
+      "incident_id": "v3incident:16f9aea1a538acb28970",
+      "issue_number": 245886,
+      "lead_minutes": 1077.45,
+      "report_excerpt": "VS Code Extension specific version is allowlisted, newsest version get's installed <!-- ⚠️⚠️ Do Not Delete This! bug_report_template ⚠️⚠️ --> <!-- Please read our Rules of Conduct: https://opensource.microsoft.com/codeofconduct/ --> <!-- 🕮 Read our guide about submitting issues: https://github.com/microsoft/vscode/wik…",
+      "report_ts": "2025-04-07T15:42:45Z",
+      "report_url": "https://github.com/microsoft/vscode/issues/245886",
+      "row_id": "v3row:aec4954d2ec5103e19d2",
+      "split": "test",
+      "window_id": "2025-03-28"
+    },
+    {
+      "ack_excerpt": "I get it now- have https://github.com/microsoft/vscode-copilot-release/issues/7290 for this, I don't know whether there's anything notebook specific after that fix.",
+      "ack_ts": "2025-04-07T18:54:31Z",
+      "ack_url": "https://github.com/microsoft/vscode/issues/244673#issuecomment-2784269215",
+      "audit": {
+        "reason": "Maintainer connects the report to a tracked upstream defect and fix, but leaves notebook-specific impact open.",
+        "status": "ambiguous"
+      },
+      "candidate_ts": "2025-04-07T17:54:41.000001Z",
+      "entity": "microsoft/vscode",
+      "incident_id": "v3incident:927fd346dc77be09efd3",
+      "issue_number": 244673,
+      "lead_minutes": 59.833,
+      "report_excerpt": "Bug: Previous chat context rendered when it shouldn't be <!-- ⚠️⚠️ Do Not Delete This! bug_report_template ⚠️⚠️ --> <!-- Please read our Rules of Conduct: https://opensource.microsoft.com/codeofconduct/ --> <!-- 🕮 Read our guide about submitting issues: https://github.com/microsoft/vscode/wiki/Submitting-Bugs-and-Sugg…",
+      "report_ts": "2025-03-25T22:32:02Z",
+      "report_url": "https://github.com/microsoft/vscode/issues/244673",
+      "row_id": "v3row:6923be531eb13f1119e9",
+      "split": "test",
+      "window_id": "2025-03-28"
+    },
+    {
+      "ack_excerpt": "Found buggy places - https://github.com/webpack/webpack/pull/19398, I hope that's all, the release will be after merge",
+      "ack_ts": "2025-04-07T20:14:04Z",
+      "ack_url": "https://github.com/webpack/webpack/issues/19394#issuecomment-2784517989",
+      "audit": {
+        "reason": "Maintainer identifies buggy locations, the fix pull request, and the planned release.",
+        "status": "accepted"
+      },
+      "candidate_ts": "2025-04-07T18:55:02.000001Z",
+      "entity": "webpack/webpack",
+      "incident_id": "v3incident:716978cb408e44f16d69",
+      "issue_number": 19394,
+      "lead_minutes": 79.033,
+      "report_excerpt": "Regression on v5.99.0, useRef3 not defined <!-- Please don't delete this template because we'll close your issue --> <!-- Before creating an issue please make sure you are using the latest version of webpack. --> # Bug report <!-- Please ask questions on StackOverflow or the GitHub Discussions. --> <!-- https://github…",
+      "report_ts": "2025-04-07T18:04:49Z",
+      "report_url": "https://github.com/webpack/webpack/issues/19394",
+      "row_id": "v3row:54021a6dedb089037f9e",
+      "split": "test",
+      "window_id": "2025-03-28"
+    },
+    {
+      "ack_excerpt": "@robojumper Thank you very already fixed here - https://github.com/webpack/webpack/pull/19398, release will be soon",
+      "ack_ts": "2025-04-07T21:07:19Z",
+      "ack_url": "https://github.com/webpack/webpack/issues/19397#issuecomment-2784629892",
+      "audit": {
+        "reason": "Maintainer states the regression is fixed by the same pull request and a release is imminent.",
+        "status": "accepted"
+      },
+      "candidate_ts": "2025-04-07T20:46:02.000001Z",
+      "entity": "webpack/webpack",
+      "incident_id": "v3incident:4b508e4ca2c03228a09c",
+      "issue_number": 19397,
+      "lead_minutes": 21.283,
+      "report_excerpt": "Regression in v5.99.0 - Cannot use 'import.meta' outside a module <!-- Please don't delete this template because we'll close your issue --> <!-- Before creating an issue please make sure you are using the latest version of webpack. --> # Bug report <!-- Please ask questions on StackOverflow or the GitHub Discussions. …",
+      "report_ts": "2025-04-07T20:01:57Z",
+      "report_url": "https://github.com/webpack/webpack/issues/19397",
+      "row_id": "v3row:9d6ead79279845963352",
+      "split": "test",
+      "window_id": "2025-03-28"
+    },
+    {
+      "ack_excerpt": "Also I am not able to install the pre-release version because the latest version is stable version. Can you please share the steps to reproduce?",
+      "ack_ts": "2025-05-05T10:14:58Z",
+      "ack_url": "https://github.com/microsoft/vscode/issues/247928#issuecomment-2850537797",
+      "audit": {
+        "reason": "Maintainer independently reports being unable to install the prerelease, confirming the failure.",
+        "status": "accepted"
+      },
+      "candidate_ts": "2025-05-05T08:56:10.000001Z",
+      "entity": "microsoft/vscode",
+      "incident_id": "v3incident:9eaf02590b9fccfa0ef6",
+      "issue_number": 247928,
+      "lead_minutes": 78.8,
+      "report_excerpt": "Users on the pre-release channel are not getting updated to the newer version of our extension <!-- ⚠️⚠️ Do Not Delete This! bug_report_template ⚠️⚠️ --> <!-- Please read our Rules of Conduct: https://opensource.microsoft.com/codeofconduct/ --> <!-- 🕮 Read our guide about submitting issues: https://github.com/microsof…",
+      "report_ts": "2025-05-01T02:36:39Z",
+      "report_url": "https://github.com/microsoft/vscode/issues/247928",
+      "row_id": "v3row:1c125cf298f824004c3a",
+      "split": "test",
+      "window_id": "2025-05-05"
+    },
+    {
+      "ack_excerpt": "This should be fixed in Insiders/tomorrow's stable release",
+      "ack_ts": "2025-05-07T21:57:41Z",
+      "ack_url": "https://github.com/microsoft/vscode/issues/248195#issuecomment-2860486969",
+      "audit": {
+        "reason": "Maintainer states that the defect is fixed in Insiders and the next stable release.",
+        "status": "accepted"
+      },
+      "candidate_ts": "2025-05-06T09:46:43.000001Z",
+      "entity": "microsoft/vscode",
+      "incident_id": "v3incident:8a9b0f9f119fe91bcece",
+      "issue_number": 248195,
+      "lead_minutes": 2170.967,
+      "report_excerpt": "problem in the chat for copilot i can not run a command it under the file changed Type: <b>Bug</b> i have this problem with chat interface for copilot it give me a command to run like there is a button with run but it under the file changed i can not click it also it not like me do anything VS Code version: Code 1.99.…",
+      "report_ts": "2025-05-06T09:30:32Z",
+      "report_url": "https://github.com/microsoft/vscode/issues/248195",
+      "row_id": "v3row:c3c1ec34ae741770f3e0",
+      "split": "test",
+      "window_id": "2025-05-05"
+    },
+    {
+      "ack_excerpt": "This was resolved with the release of https://github.com/nodejs/node/releases/tag/v24.0.1 The removal will still happen for 25.x and to avoid breakage then (and deprecation warnings now) the jwa module has [releases](https://github.com/auth0/node-jwa/releases) that avoid use of the deprecated, to be removed, functiona…",
+      "ack_ts": "2025-05-09T08:10:42Z",
+      "ack_url": "https://github.com/nodejs/node/issues/58203#issuecomment-2865582904",
+      "audit": {
+        "reason": "Maintainer names the patch release resolving the crash.",
+        "status": "accepted"
+      },
+      "candidate_ts": "2025-05-07T13:37:48.000001Z",
+      "entity": "nodejs/node",
+      "incident_id": "v3incident:e288159bd2857ba521ad",
+      "issue_number": 58203,
+      "lead_minutes": 2552.9,
+      "report_excerpt": "Crash in dependencies using SlowBuffer in v24 ### Version v24.0.0 ### Platform ```text Linux a3399d7de011 5.15.167.4-microsoft-standard-WSL2 #1 SMP Tue Nov 5 00:21:55 UTC 2024 x86_64 Linux ``` ### Subsystem _No response_ ### What steps will reproduce the bug? 1. Use the node:alpine Docker image (which now uses Node.js…",
+      "report_ts": "2025-05-07T00:44:50Z",
+      "report_url": "https://github.com/nodejs/node/issues/58203",
+      "row_id": "v3row:e2b31951f77a95a36187",
+      "split": "train",
+      "window_id": "2025-05-05"
+    },
+    {
+      "ack_excerpt": "This test keeps failing on the PR branches, any idea how to fix it? [History of this failure](https://ops.kibana.dev/s/ci/app/r/s/y7kDa)",
+      "ack_ts": "2025-05-08T10:09:21Z",
+      "ack_url": "https://github.com/elastic/kibana/issues/220375#issuecomment-2862501432",
+      "audit": {
+        "reason": "Maintainer confirms that the tracked test keeps failing on pull-request branches.",
+        "status": "accepted"
+      },
+      "candidate_ts": "2025-05-07T13:50:43.000001Z",
+      "entity": "elastic/kibana",
+      "incident_id": "v3incident:3019e16cc78636f942f6",
+      "issue_number": 220375,
+      "lead_minutes": 1218.633,
+      "report_excerpt": "Failing test: X-Pack Cloud Security Posture Functional Tests.x-pack/test/cloud_security_posture_functional/pages/findings_alerts·ts - Cloud Security Posture Findings Page - Alerts \"before each\" hook for \"Creates a detection rule from the Take Action button and navigates to rule page\" A test failed on a tracked branch …",
+      "report_ts": "2025-05-07T13:25:17Z",
+      "report_url": "https://github.com/elastic/kibana/issues/220375",
+      "row_id": "v3row:864dfbcc8b311e0982b2",
+      "split": "train",
+      "window_id": "2025-05-05"
+    },
+    {
+      "ack_excerpt": "It has been fixed in 1.30 by https://github.com/kubernetes/kubernetes/pull/119561",
+      "ack_ts": "2025-05-09T09:27:17Z",
+      "ack_url": "https://github.com/kubernetes/kubernetes/issues/131688#issuecomment-2865836295",
+      "audit": {
+        "reason": "Maintainer links the pull request that fixed the kubelet panic.",
+        "status": "accepted"
+      },
+      "candidate_ts": "2025-05-09T08:58:11.000001Z",
+      "entity": "kubernetes/kubernetes",
+      "incident_id": "v3incident:7f0e811a44b1d64f480e",
+      "issue_number": 131688,
+      "lead_minutes": 29.1,
+      "report_excerpt": "Kubelet service panic ### What happened? Kubelet service exited due to panic. Log is here: [0506.txt](https://github.com/user-attachments/files/20116037/0506.txt) kubelet[6048]: panic: assignment to entry in nil map kubelet[6048]: goroutine 443 [running]: kubelet[6048]: k8s.io/apimachinery/pkg/util/sets.Set[...].Inser…",
+      "report_ts": "2025-05-09T08:42:35Z",
+      "report_url": "https://github.com/kubernetes/kubernetes/issues/131688",
+      "row_id": "v3row:26179848a16152cf5ecb",
+      "split": "test",
+      "window_id": "2025-05-05"
+    },
+    {
+      "ack_excerpt": "Re: zlib -- once this is fixed in webstreams, perhaps an option for zlib for throwing on garbage after the end could also be added using the same underlying impl.",
+      "ack_ts": "2025-05-11T10:05:55Z",
+      "ack_url": "https://github.com/nodejs/node/issues/58247#issuecomment-2869667198",
+      "audit": {
+        "reason": "Maintainer discusses the shared implementation fix and a follow-on zlib behavior, but uses conditional wording.",
+        "status": "ambiguous"
+      },
+      "candidate_ts": "2025-05-09T16:56:46.000001Z",
+      "entity": "nodejs/node",
+      "incident_id": "v3incident:52f66e2e328c6a338611",
+      "issue_number": 58247,
+      "lead_minutes": 2469.15,
+      "report_excerpt": "DecompressionStream should not accept data after the end ### Version 24.0.1 ### Platform ```text Darwin macbook-air.taile5a6b.ts.net 24.4.0 Darwin Kernel Version 24.4.0: Fri Apr 11 18:34:14 PDT 2025; root:xnu-11417.101.15~117/RELEASE_ARM64_T8122 arm64 ``` ### Subsystem webstreams ### What steps will reproduce the bug?…",
+      "report_ts": "2025-05-09T10:06:36Z",
+      "report_url": "https://github.com/nodejs/node/issues/58247",
+      "row_id": "v3row:a32f41b4143407e7fc4e",
+      "split": "train",
+      "window_id": "2025-05-05"
+    },
+    {
+      "ack_excerpt": "I don't think the original intention was to call `stream.write(Buffer.alloc(1))` for each received chunk, and the following patch fixes the issue ```diff diff --git a/test/parallel/test-http2-close-while-writing.js b/test/parallel/test-http2-close-while-writing.js index d8537c31b00..231bf712d40 100644 --- a/test/paral…",
+      "ack_ts": "2025-05-10T14:51:56Z",
+      "ack_url": "https://github.com/nodejs/node/issues/58252#issuecomment-2868942604",
+      "audit": {
+        "reason": "Maintainer explains the unintended behavior and supplies the correcting patch.",
+        "status": "accepted"
+      },
+      "candidate_ts": "2025-05-09T16:56:46.000001Z",
+      "entity": "nodejs/node",
+      "incident_id": "v3incident:b744dd7cd034f40283be",
+      "issue_number": 58252,
+      "lead_minutes": 1315.167,
+      "report_excerpt": "`parallel/test-http2-close-while-writing` is flaky ### Test `test-http2-close-while-writing` ### Platform macOS x64 ### Console output ```console --- duration_ms: 120080.257 exitcode: -15 severity: fail stack: timeout ... ``` ### Build links - https://ci.nodejs.org/job/node-test-commit-osx/64920/nodes=osx13-x64/testRe…",
+      "report_ts": "2025-05-09T16:29:53Z",
+      "report_url": "https://github.com/nodejs/node/issues/58252",
+      "row_id": "v3row:a32f41b4143407e7fc4e",
+      "split": "train",
+      "window_id": "2025-05-05"
+    },
+    {
+      "ack_excerpt": "I'm suspicious this is https://github.com/microsoft/vscode-copilot-release/issues/9336#issuecomment-2875088578 can you try the workaround there and let us know how it goes?",
+      "ack_ts": "2025-05-13T05:42:29Z",
+      "ack_url": "https://github.com/microsoft/vscode/issues/248656#issuecomment-2875110849",
+      "audit": {
+        "reason": "Maintainer links a suspected known duplicate and its workaround rather than directly reproducing.",
+        "status": "ambiguous"
+      },
+      "candidate_ts": "2025-05-11T19:54:24.000001Z",
+      "entity": "microsoft/vscode",
+      "incident_id": "v3incident:999128d01a1b416a53d0",
+      "issue_number": 248656,
+      "lead_minutes": 2028.083,
+      "report_excerpt": "Sign in to GitHub.com Chat Type: <b>Bug</b> I tried to sign in to GitHub.com through Chat, but the button isn't working or responding. I’ve reinstalled the application, I’m already logged in and synced but it still doesn't work. VS Code version: Code 1.100.0 (19e0f9e681ecb8e5c09d8784acaa601316ca4571, 2025-05-07T12:48:…",
+      "report_ts": "2025-05-11T19:16:03Z",
+      "report_url": "https://github.com/microsoft/vscode/issues/248656",
+      "row_id": "v3row:77ebc84bf9dfa342ffe0",
+      "split": "test",
+      "window_id": "2025-05-05"
+    },
+    {
+      "ack_excerpt": "Will be resolved by https://github.com/elastic/kibana/pull/220791",
+      "ack_ts": "2025-05-14T14:09:51Z",
+      "ack_url": "https://github.com/elastic/kibana/issues/220599#issuecomment-2880398420",
+      "audit": {
+        "reason": "Maintainer links the pull request that will resolve the failing test.",
+        "status": "accepted"
+      },
+      "candidate_ts": "2025-05-12T03:52:41.000001Z",
+      "entity": "elastic/kibana",
+      "incident_id": "v3incident:cbd551e415874ef245c5",
+      "issue_number": 220599,
+      "lead_minutes": 3497.167,
+      "report_excerpt": "Failing test: Stateful Observability - Deployment-agnostic API Integration Tests.x-pack/test/api_integration/deployment_agnostic/apis/observability/ai_assistant/knowledge_base/knowledge_base_8·18_upgrade_test·spec·ts - Stateful Observability - Deployment-agnostic API integration tests observability AI Assistant Knowle…",
+      "report_ts": "2025-05-09T03:18:43Z",
+      "report_url": "https://github.com/elastic/kibana/issues/220599",
+      "row_id": "v3row:89342893bcd18ff0d2d9",
+      "split": "train",
+      "window_id": "2025-05-05"
+    },
+    {
+      "ack_excerpt": "I'm guessing this is a duplicate of https://github.com/microsoft/vscode-copilot-release/issues/9336#issuecomment-2875088578 ... can you please try the workaround steps there and let us know?",
+      "ack_ts": "2025-05-13T05:36:41Z",
+      "ack_url": "https://github.com/microsoft/vscode/issues/248732#issuecomment-2875102699",
+      "audit": {
+        "reason": "Maintainer links a likely duplicate and workaround but phrases the match as a guess.",
+        "status": "ambiguous"
+      },
+      "candidate_ts": "2025-05-12T14:59:08.000001Z",
+      "entity": "microsoft/vscode",
+      "incident_id": "v3incident:c96cdbdc3e28d5c6d65d",
+      "issue_number": 248732,
+      "lead_minutes": 877.55,
+      "report_excerpt": "Sign In to GitHub.com Chat not working I tried to sign in to GitHub.com through Chat, but the button isn't working or responding.",
+      "report_ts": "2025-05-12T14:24:21Z",
+      "report_url": "https://github.com/microsoft/vscode/issues/248732",
+      "row_id": "v3row:1dfe32ab4288e257676c",
+      "split": "test",
+      "window_id": "2025-05-05"
+    },
+    {
+      "ack_excerpt": "Sorry for causing this, I missed this case in the refactoring. I fixed this here already: https://github.com/microsoft/vscode/commit/27f9b6e2b0e24ddf4cc0913b11ac8d6a6aea25ea > What's the recommended fix for this pattern? I have some ideas, but also would love to get your opinions on this. ## Working (but deprecated) C…",
+      "ack_ts": "2025-05-15T09:28:23Z",
+      "ack_url": "https://github.com/microsoft/vscode/issues/248784#issuecomment-2883165802",
+      "audit": {
+        "reason": "Maintainer accepts responsibility, identifies the missed case, and links the fixing commit.",
+        "status": "accepted"
+      },
+      "candidate_ts": "2025-05-13T07:53:02.000001Z",
+      "entity": "microsoft/vscode",
+      "incident_id": "v3incident:2008ba3dcc20679b828a",
+      "issue_number": 248784,
+      "lead_minutes": 2975.35,
+      "report_excerpt": "ERR The reader object cannot be used outside its compute function! ``` ERR The reader object cannot be used outside its compute function!: Error: The reader object cannot be used outside its compute function! at Derived._ensureNoRunning (vscode-file://vscode-app/Users/jrieken/Code/vscode/out/vs/base/common/observableI…",
+      "report_ts": "2025-05-13T07:00:45Z",
+      "report_url": "https://github.com/microsoft/vscode/issues/248784",
+      "row_id": "v3row:c84a2bc2dd817a125684",
+      "split": "test",
+      "window_id": "2025-05-05"
+    },
+    {
+      "ack_excerpt": "Fixed in Insiders already",
+      "ack_ts": "2025-05-16T16:05:21Z",
+      "ack_url": "https://github.com/microsoft/vscode/issues/249108#issuecomment-2887134540",
+      "audit": {
+        "reason": "Maintainer states that the exact toolbar defect is already fixed in Insiders.",
+        "status": "accepted"
+      },
+      "candidate_ts": "2025-05-16T15:57:59.000001Z",
+      "entity": "microsoft/vscode",
+      "incident_id": "v3incident:f1ca5c52082eebacfba8",
+      "issue_number": 249108,
+      "lead_minutes": 7.367,
+      "report_excerpt": "Debug toolbar can be moved under macOS window controls where they can't be removed Type: <b>Bug</b> 1. Enter debug mode with a breakpoint set so the debug toolbar shows up 2. Move the debug toolbar to the top left corner where the macOS window controls are 3. Observe that the toolbar can't be moved away anymore as the…",
+      "report_ts": "2025-05-16T15:10:06Z",
+      "report_url": "https://github.com/microsoft/vscode/issues/249108",
+      "row_id": "v3row:3887d80f9ac32827b66d",
+      "split": "test",
+      "window_id": "2025-05-05"
+    }
+  ],
+  "positive_incidents_sha256": "28d3d68e945a6eda7d7867857a054e70bc308b506c30e39fa6528e6f2db18975",
+  "schema_version": 1,
+  "study_id": "sentinel-coherence-v3"
+}

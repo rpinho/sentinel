@@ -1,0 +1,182 @@
+{
+  "schema_version": 1,
+  "audit_version": "substantive-ack-human-v1",
+  "policy": "Review every deterministic maintainer-substantive-v3 match against the full issue-opening report and full acknowledgment comment. accepted and ambiguous remain positive; rejected is relabeled negative. Ambiguous is retained only when the maintainer connects the report to a known fix, workaround, or underlying defect without an explicit reproduction statement.",
+  "reviewed_count": 28,
+  "counts": {
+    "accepted": 20,
+    "ambiguous": 5,
+    "rejected": 3
+  },
+  "obvious_label_noise_rate": 0.10714285714285714,
+  "reviews": [
+    {
+      "entity": "microsoft/vscode",
+      "issue_number": 244625,
+      "status": "accepted",
+      "reason": "Maintainer confirms the tested build postdates the shipped fix."
+    },
+    {
+      "entity": "microsoft/vscode",
+      "issue_number": 244540,
+      "status": "ambiguous",
+      "reason": "Maintainer closes as resolved based on non-recurrence, but does not identify a fix."
+    },
+    {
+      "entity": "elastic/kibana",
+      "issue_number": 216763,
+      "status": "accepted",
+      "reason": "Maintainer links the pull request that fixes the failing test."
+    },
+    {
+      "entity": "microsoft/vscode",
+      "issue_number": 244689,
+      "status": "accepted",
+      "reason": "Maintainer states that the login issue was fixed and asks affected users to retry."
+    },
+    {
+      "entity": "microsoft/vscode",
+      "issue_number": 245400,
+      "status": "accepted",
+      "reason": "Maintainer names the prerelease containing the fix."
+    },
+    {
+      "entity": "microsoft/vscode",
+      "issue_number": 245719,
+      "status": "accepted",
+      "reason": "Maintainer says the issue remains and commits to a fix after confirming the profile."
+    },
+    {
+      "entity": "microsoft/vscode",
+      "issue_number": 245759,
+      "status": "accepted",
+      "reason": "Maintainer states that the defect is fixed in Insiders but not the stable release."
+    },
+    {
+      "entity": "microsoft/vscode",
+      "issue_number": 245772,
+      "status": "accepted",
+      "reason": "Maintainer links the regression-fix pull request."
+    },
+    {
+      "entity": "microsoft/vscode",
+      "issue_number": 245803,
+      "status": "rejected",
+      "reason": "The comment only asks whether Insiders fixed the report; it does not acknowledge or reproduce it."
+    },
+    {
+      "entity": "microsoft/vscode",
+      "issue_number": 245707,
+      "status": "accepted",
+      "reason": "Maintainer states the exact report appears fixed in Insiders."
+    },
+    {
+      "entity": "microsoft/vscode",
+      "issue_number": 245886,
+      "status": "accepted",
+      "reason": "Maintainer identifies the root cause."
+    },
+    {
+      "entity": "microsoft/vscode",
+      "issue_number": 244673,
+      "status": "ambiguous",
+      "reason": "Maintainer connects the report to a tracked upstream defect and fix, but leaves notebook-specific impact open."
+    },
+    {
+      "entity": "webpack/webpack",
+      "issue_number": 19394,
+      "status": "accepted",
+      "reason": "Maintainer identifies buggy locations, the fix pull request, and the planned release."
+    },
+    {
+      "entity": "webpack/webpack",
+      "issue_number": 19397,
+      "status": "accepted",
+      "reason": "Maintainer states the regression is fixed by the same pull request and a release is imminent."
+    },
+    {
+      "entity": "microsoft/vscode",
+      "issue_number": 245912,
+      "status": "rejected",
+      "reason": "Maintainer explicitly cannot reproduce the exact report and refers only to a similar fixed issue."
+    },
+    {
+      "entity": "microsoft/vscode",
+      "issue_number": 247928,
+      "status": "accepted",
+      "reason": "Maintainer independently reports being unable to install the prerelease, confirming the failure."
+    },
+    {
+      "entity": "microsoft/vscode",
+      "issue_number": 248195,
+      "status": "accepted",
+      "reason": "Maintainer states that the defect is fixed in Insiders and the next stable release."
+    },
+    {
+      "entity": "nodejs/node",
+      "issue_number": 58203,
+      "status": "accepted",
+      "reason": "Maintainer names the patch release resolving the crash."
+    },
+    {
+      "entity": "elastic/kibana",
+      "issue_number": 220375,
+      "status": "accepted",
+      "reason": "Maintainer confirms that the tracked test keeps failing on pull-request branches."
+    },
+    {
+      "entity": "kubernetes/kubernetes",
+      "issue_number": 131688,
+      "status": "accepted",
+      "reason": "Maintainer links the pull request that fixed the kubelet panic."
+    },
+    {
+      "entity": "nodejs/node",
+      "issue_number": 58247,
+      "status": "ambiguous",
+      "reason": "Maintainer discusses the shared implementation fix and a follow-on zlib behavior, but uses conditional wording."
+    },
+    {
+      "entity": "nodejs/node",
+      "issue_number": 58252,
+      "status": "accepted",
+      "reason": "Maintainer explains the unintended behavior and supplies the correcting patch."
+    },
+    {
+      "entity": "microsoft/vscode",
+      "issue_number": 248656,
+      "status": "ambiguous",
+      "reason": "Maintainer links a suspected known duplicate and its workaround rather than directly reproducing."
+    },
+    {
+      "entity": "elastic/kibana",
+      "issue_number": 220599,
+      "status": "accepted",
+      "reason": "Maintainer links the pull request that will resolve the failing test."
+    },
+    {
+      "entity": "microsoft/vscode",
+      "issue_number": 248732,
+      "status": "ambiguous",
+      "reason": "Maintainer links a likely duplicate and workaround but phrases the match as a guess."
+    },
+    {
+      "entity": "microsoft/vscode",
+      "issue_number": 248784,
+      "status": "accepted",
+      "reason": "Maintainer accepts responsibility, identifies the missed case, and links the fixing commit."
+    },
+    {
+      "entity": "electron/electron",
+      "issue_number": 47097,
+      "status": "rejected",
+      "reason": "The comment asks for missing reproduction code; the phrase match comes from generic text about likelihood of getting fixed."
+    },
+    {
+      "entity": "microsoft/vscode",
+      "issue_number": 249108,
+      "status": "accepted",
+      "reason": "Maintainer states that the exact toolbar defect is already fixed in Insiders."
+    }
+  ]
+}
