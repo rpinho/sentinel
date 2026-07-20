@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import gzip
+import inspect
 import json
 from pathlib import Path
 from typing import Any, Mapping, Sequence, cast
@@ -168,10 +169,14 @@ def select_model(
                 probabilities[validation] = classifier.predict_proba(
                     scaler.transform(matrix[validation])
                 )[:, 1]
+            ranking_metrics = _ranking_metrics(labels, probabilities, groups)
             for threshold in THRESHOLDS:
-                metrics = _metrics(
-                    labels, probabilities >= threshold, probabilities, groups
-                )
+                metrics = {
+                    **_classification_metrics(
+                        labels, probabilities >= threshold
+                    ),
+                    **ranking_metrics,
+                }
                 candidate = {
                     "penalty": penalty,
                     "C": regularization,
@@ -229,6 +234,7 @@ def select_model(
         "threshold": selected["threshold"],
         "hyperparameters": {
             "penalty": selected["penalty"],
+            "l1_ratio": 1.0 if selected["penalty"] == "l1" else 0.0,
             "C": selected["C"],
             "solver": "liblinear",
             "max_iter": 2000,
@@ -276,12 +282,21 @@ def select_model(
 
 
 def _classifier(*, penalty: str, regularization: float) -> LogisticRegression:
+    parameters: dict[str, Any] = {
+        "C": regularization,
+        "solver": "liblinear",
+        "max_iter": 2000,
+        "random_state": 0,
+    }
+    penalty_default = inspect.signature(LogisticRegression).parameters[
+        "penalty"
+    ].default
+    if penalty_default == "deprecated":
+        parameters["l1_ratio"] = 1.0 if penalty == "l1" else 0.0
+    else:
+        parameters["penalty"] = penalty
     return LogisticRegression(
-        penalty=penalty,
-        C=regularization,
-        solver="liblinear",
-        max_iter=2000,
-        random_state=0,
+        **parameters,
     )
 
 
@@ -302,9 +317,19 @@ def _repository_class_weights(
     return weights * (len(weights) / weights.sum())
 
 
-def _metrics(
+def _classification_metrics(
     labels: np.ndarray,
     predictions: np.ndarray,
+) -> dict[str, float]:
+    return {
+        "precision": float(precision_score(labels, predictions, zero_division=0)),
+        "recall": float(recall_score(labels, predictions, zero_division=0)),
+        "f1": float(f1_score(labels, predictions, zero_division=0)),
+    }
+
+
+def _ranking_metrics(
+    labels: np.ndarray,
     probabilities: np.ndarray,
     groups: np.ndarray,
 ) -> dict[str, float]:
@@ -316,9 +341,6 @@ def _metrics(
                 float(roc_auc_score(labels[selected], probabilities[selected]))
             )
     return {
-        "precision": float(precision_score(labels, predictions, zero_division=0)),
-        "recall": float(recall_score(labels, predictions, zero_division=0)),
-        "f1": float(f1_score(labels, predictions, zero_division=0)),
         "roc_auc": float(roc_auc_score(labels, probabilities)),
         "average_precision": float(average_precision_score(labels, probabilities)),
         "repository_macro_auc": (
