@@ -99,6 +99,24 @@ class GHArchiveAdapter:
         try:
             with gzip.open(path, "rt", encoding="utf-8", errors="strict") as archive:
                 for line_number, line in enumerate(archive, start=1):
+                    # GH Archive files contain millions of unrelated events.  Pull
+                    # the repository name from the stable envelope before paying
+                    # the JSON-decoding cost when a study supplies a repo filter.
+                    # The parsed value is still checked below, so this is only a
+                    # safe fast rejection path rather than a source of truth.
+                    if entity_filter:
+                        repo_marker = '"repo":'
+                        repo_start = line.find(repo_marker)
+                        name_start = line.find('"name":"', repo_start)
+                        name_end = line.find('"', name_start + 8)
+                        if (
+                            repo_start >= 0
+                            and name_start >= 0
+                            and name_end >= 0
+                            and line[name_start + 8 : name_end].casefold()
+                            not in entity_filter
+                        ):
+                            continue
                     try:
                         raw = json.loads(line)
                     except (UnicodeDecodeError, json.JSONDecodeError) as exc:
@@ -121,7 +139,12 @@ class GHArchiveAdapter:
         raw: Mapping[str, Any], archive_hour: datetime
     ) -> Event | None:
         event_type = raw.get("type")
-        if event_type not in {"IssuesEvent", "IssueCommentEvent", "ReleaseEvent"}:
+        if event_type not in {
+            "IssuesEvent",
+            "IssueCommentEvent",
+            "PullRequestEvent",
+            "ReleaseEvent",
+        }:
             return None
 
         repo_name = str((raw.get("repo") or {}).get("name") or "").strip()
@@ -158,7 +181,12 @@ class GHArchiveAdapter:
                     "url": issue.get("html_url"),
                     "author": (issue.get("user") or {}).get("login"),
                     "author_type": (issue.get("user") or {}).get("type"),
+                    "author_association": issue.get("author_association"),
                     "is_pull_request": bool(issue.get("pull_request")),
+                    "state": issue.get("state"),
+                    "state_reason": issue.get("state_reason"),
+                    "closed_at": issue.get("closed_at"),
+                    "closed_by": (issue.get("closed_by") or {}).get("login"),
                     "labels": [
                         label.get("name")
                         for label in issue.get("labels") or []
@@ -186,6 +214,31 @@ class GHArchiveAdapter:
                     "author_association": comment.get("author_association"),
                     "issue_state": issue.get("state"),
                     "is_pull_request": bool(issue.get("pull_request")),
+                },
+            )
+
+        if event_type == "PullRequestEvent":
+            pull = payload.get("pull_request") or {}
+            title = str(pull.get("title") or "").strip()
+            body = str(pull.get("body") or "").strip()
+            text = "\n\n".join(part for part in (title, body) if part) or None
+            return Event(
+                ts=parse_timestamp(raw["created_at"]),
+                entity=repo_name,
+                kind="pull_request",
+                text=text,
+                meta={
+                    **common_meta,
+                    "pull_request_number": pull.get("number"),
+                    "author": (pull.get("user") or {}).get("login"),
+                    "author_type": (pull.get("user") or {}).get("type"),
+                    "author_association": pull.get("author_association"),
+                    "merged": bool(pull.get("merged")),
+                    "merged_at": pull.get("merged_at"),
+                    "closed_at": pull.get("closed_at"),
+                    "url": pull.get("html_url"),
+                    "base_ref": (pull.get("base") or {}).get("ref"),
+                    "head_ref": (pull.get("head") or {}).get("ref"),
                 },
             )
 

@@ -6,8 +6,12 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any, Literal, Mapping, TypeAlias, cast
 
-EventKind: TypeAlias = Literal["issue", "comment", "release", "metric"]
-EVENT_KINDS = frozenset({"issue", "comment", "release", "metric"})
+EventKind: TypeAlias = Literal[
+    "issue", "comment", "pull_request", "release", "metric"
+]
+EVENT_KINDS = frozenset(
+    {"issue", "comment", "pull_request", "release", "metric"}
+)
 
 
 def parse_timestamp(value: str | datetime) -> datetime:
