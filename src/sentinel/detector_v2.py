@@ -207,6 +207,7 @@ def evaluate_v2(
                         raw=raw.to_dict(),
                         bot_excluded=excluded.to_dict(),
                         meta={
+                            "metric_contract": _metric_contract(metric),
                             "phase": {
                                 "hour_of_day": bucket.hour,
                                 "day_class": _day_class(bucket),
@@ -322,6 +323,25 @@ def evaluate_v2(
                             ),
                         },
                         "primary_metric": primary_metric.metric_id,
+                        "metric_contracts": {
+                            metric_id: _metric_contract(metric_by_id[metric_id])
+                            for metric_id in candidate_ids
+                        },
+                        "baseline_contract": {
+                            "phase": "same UTC hour and weekday/weekend class",
+                            "history_days": config.phase_history_days,
+                            "minimum_phase_samples": config.minimum_phase_samples,
+                            "center": "median",
+                            "dispersion": (
+                                "max(1.4826 * median_absolute_deviation, "
+                                "metric absolute floor, metric fraction-of-center floor)"
+                            ),
+                            "locking": (
+                                "one-pass bootstrap excludes directional robust-z values "
+                                "at or above mild_z_threshold; unfiltered fallback when "
+                                "the locked pool is thin"
+                            ),
+                        },
                         "metric_evaluations": {
                             metric_id: {
                                 "raw": scores[
@@ -360,6 +380,52 @@ def _activity_event(event: Event, config: DetectorConfig) -> bool:
     return event.kind in config.kinds and all(
         event.meta.get(key) in values for key, values in config.meta_in.items()
     )
+
+
+def _metric_contract(metric: RateMetricConfig) -> dict[str, Any]:
+    definitions = {
+        "issues_opened_per_active_participant": {
+            "numerator": "non-pull-request issues opened in the interval",
+            "denominator": (
+                "unique actors with non-pull-request issue or comment activity "
+                "in the interval"
+            ),
+        },
+        "comments_per_active_issue_thread": {
+            "numerator": "non-pull-request issue comments created in the interval",
+            "denominator": (
+                "unique non-pull-request issue threads with issue or comment "
+                "activity in the interval; an observable active-thread proxy, "
+                "not a historical count of every open issue"
+            ),
+        },
+        "first_time_participant_event_share": {
+            "numerator": (
+                "non-pull-request issue and comment events produced by actors first "
+                "observed in the continuous baseline-plus-detection window"
+            ),
+            "denominator": (
+                "all non-pull-request issue and comment events in the interval"
+            ),
+        },
+        "issue_activity_volume": {
+            "numerator": "raw configured issue and comment events in the interval",
+            "denominator": "same raw event count; the scored value is the numerator",
+        },
+    }
+    return {
+        "metric_id": metric.metric_id,
+        "source": metric.source,
+        "direction": metric.direction,
+        "alert_enabled": metric.alert_enabled,
+        **definitions[metric.source],
+        "minimum_exposure": metric.minimum_exposure,
+        "absolute_rate_floor": metric.absolute_rate_floor,
+        "minimum_absolute_change": metric.minimum_absolute_change,
+        "robust_z_threshold": metric.robust_z_threshold,
+        "dispersion_floor_absolute": metric.dispersion_floor_absolute,
+        "dispersion_floor_fraction": metric.dispersion_floor_fraction,
+    }
 
 
 def _actor(event: Event) -> str | None:

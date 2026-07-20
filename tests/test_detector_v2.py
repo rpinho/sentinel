@@ -124,6 +124,14 @@ def test_v2_requires_persistence_and_uses_phase_matched_robust_baseline() -> Non
     assert firing.baseline_mean == 1
     assert firing.detector_version == "test:v2"
     assert firing.meta["severity"]["breadth"] == 1
+    contract = firing.meta["metric_contracts"][
+        "comments_per_active_issue_thread"
+    ]
+    assert contract["numerator"] == (
+        "non-pull-request issue comments created in the interval"
+    )
+    assert "active-thread proxy" in contract["denominator"]
+    assert firing.meta["baseline_contract"]["center"] == "median"
     assert run.verdict_counts["candidate"] == 1
     assert run.verdict_counts["firing"] == 1
 
