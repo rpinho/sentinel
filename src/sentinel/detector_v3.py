@@ -378,7 +378,9 @@ def _build_repo_window(
                 (
                     event
                     for event in sorted(visible, key=lambda event: event.ts)
-                    if BREAKAGE_REPORT.search(event.text or "")
+                    if event.kind == "issue"
+                    and event.meta.get("action") == "opened"
+                    and BREAKAGE_REPORT.search(event.text or "")
                 ),
                 None,
             )
