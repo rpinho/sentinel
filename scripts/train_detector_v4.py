@@ -23,6 +23,7 @@ from sklearn.model_selection import LeaveOneGroupOut
 from sklearn.preprocessing import StandardScaler
 
 from sentinel.detector_v3 import canonical_sha256
+from sentinel.detector_v4 import build_audit_candidates
 from sentinel.model_v4 import MODEL_SCHEMA_VERSION, finalize_model, verify_model
 
 DEFAULT_PROTOCOL = Path("holdout/v4/study-protocol.json")
@@ -30,6 +31,7 @@ DEFAULT_DATASET = Path("holdout/v4/dataset-train.json.gz")
 DEFAULT_MODEL = Path("holdout/v4/model.json")
 DEFAULT_BURST_MODEL = Path("holdout/v4/burst-model.json")
 DEFAULT_REPORT = Path("holdout/v4/training-report.json")
+DEFAULT_AUDIT = Path("holdout/v4/label-audit-train.json")
 C_VALUES = (0.01, 0.03, 0.1, 0.3, 1.0, 3.0, 10.0)
 PENALTIES = ("l1", "l2")
 THRESHOLDS = tuple(round(index * 0.01, 2) for index in range(1, 100))
@@ -42,11 +44,14 @@ def main() -> None:
     parser.add_argument("--model", type=Path, default=DEFAULT_MODEL)
     parser.add_argument("--burst-model", type=Path, default=DEFAULT_BURST_MODEL)
     parser.add_argument("--report", type=Path, default=DEFAULT_REPORT)
+    parser.add_argument("--audit", type=Path, default=DEFAULT_AUDIT)
     args = parser.parse_args()
 
     protocol = _read_object(args.protocol)
     dataset = _read_gzip_object(args.dataset)
+    audit = _read_object(args.audit)
     _verify_train_dataset(dataset, protocol)
+    _verify_train_audit(dataset, protocol, audit)
     rows = cast(Sequence[Mapping[str, Any]], dataset["rows"])
     feature_names = cast(Mapping[str, Sequence[str]], dataset["feature_names"])
     primary, primary_search = select_model(
@@ -87,6 +92,12 @@ def main() -> None:
         "train_positive_incidents": positive_incidents,
         "train_repositories": sorted({str(row["entity"]) for row in rows}),
         "source_attribution": dataset["source_attribution"],
+        "label_audit": {
+            "audit_sha256": audit["audit_sha256"],
+            "candidate_sample_sha256": audit["candidate_sample_sha256"],
+            "counts": audit["counts"],
+            "by_source": audit["by_source"],
+        },
         "power": {
             "minimum_train_positive_incidents": targets[
                 "minimum_train_positive_incidents"
@@ -349,6 +360,38 @@ def _verify_train_dataset(
         targets["maximum_single_train_repository_positive_share"]
     ):
         raise RuntimeError("one repository dominates v4 training positives")
+
+
+def _verify_train_audit(
+    dataset: Mapping[str, Any],
+    protocol: Mapping[str, Any],
+    audit: Mapping[str, Any],
+) -> None:
+    if audit.get("split") != "train" or audit.get("study_id") != dataset.get(
+        "study_id"
+    ):
+        raise RuntimeError("v4 train label audit identity mismatch")
+    unstamped = {
+        key: value for key, value in audit.items() if key != "audit_sha256"
+    }
+    if canonical_sha256(unstamped) != audit.get("audit_sha256"):
+        raise RuntimeError("v4 train label audit hash mismatch")
+    expected_sample = build_audit_candidates(dataset, protocol)
+    if audit.get("candidate_sample_sha256") != expected_sample.get(
+        "sample_sha256"
+    ):
+        raise RuntimeError("v4 train label audit sample mismatch")
+    targets = cast(Mapping[str, Any], protocol["power_targets"])
+    maximum_noise = float(targets["maximum_obvious_label_noise_rate_per_source"])
+    by_source = cast(Mapping[str, Mapping[str, Any]], audit.get("by_source") or {})
+    expected_sources = set(cast(Mapping[str, Any], dataset["source_attribution"])["by_source"])
+    if set(by_source) != expected_sources:
+        raise RuntimeError("v4 train label audit does not cover every source")
+    for source, result in by_source.items():
+        if int(result["reviewed"]) == 0:
+            raise RuntimeError(f"v4 train label source {source} was not audited")
+        if float(result["obvious_label_noise_rate"]) > maximum_noise:
+            raise RuntimeError(f"v4 train label source {source} is too noisy")
 
 
 def _report_model(model: Mapping[str, Any]) -> dict[str, Any]:

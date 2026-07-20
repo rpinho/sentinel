@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "study_id": "sentinel-coherence-v4",
+  "reviewer": "Codex manual semantic review",
+  "policy": "Review the deterministic SHA-256 sample for every label source. Accepted and ambiguous matches remain positive. Rejected means the evidence does not confirm a software incident under the source definition. All samples not listed as overrides were individually reviewed and accepted.",
+  "default_status": "accepted",
+  "default_reasons": {
+    "completed_bug_closure": "The report describes a software defect and the later non-reporter completed closure retains a qualifying bug label.",
+    "merged_fixing_pr": "The report describes a software defect and the merged pull request explicitly closes or fixes that issue.",
+    "substantive_maintainer_comment": "The report describes a software defect and the maintainer response substantively confirms, diagnoses, duplicates, or links a fix for it."
+  },
+  "splits": {
+    "train": {
+      "candidate_sample_sha256": "6a9caded4177f8848b0d2970b0a387618bc16ba5cf7368bcacf60d543c98390a",
+      "overrides": {
+        "v4incident:81d7843eba372b243d14": {
+          "status": "rejected",
+          "reason": "The linked pull request cleans up duplicated dependency documentation; the issue is not a software incident."
+        },
+        "v4incident:b480421156397b176efc": {
+          "status": "rejected",
+          "reason": "The issue requests planned removal of DebugExecutor and is maintenance work, not an incident."
+        },
+        "v4incident:6609b25cbe824f110544": {
+          "status": "rejected",
+          "reason": "The pull request corrects documentation wording only; the sampled report is not an operational software incident."
+        },
+        "v4incident:c35a522223d536b8a7de": {
+          "status": "rejected",
+          "reason": "The maintainer explicitly cannot reproduce the report and asks for additional investigation rather than confirming it."
+        },
+        "v4incident:8f286b0db0d273bda12f": {
+          "status": "rejected",
+          "reason": "This is a release-candidate testing coordination issue; the comment discusses a separate provider breakage."
+        },
+        "v4incident:d1639d723626d3cd4dbc": {
+          "status": "rejected",
+          "reason": "The maintainer questions whether the usage is documented and invites a proposal without confirming a defect."
+        },
+        "v4incident:dfeafa477b1baf70fdd2": {
+          "status": "ambiguous",
+          "reason": "The maintainer connects the regression to a known change but has not yet established the precise cause."
+        },
+        "v4incident:a074af08c33db69f8f97": {
+          "status": "ambiguous",
+          "reason": "The maintainer suggests a likely duplicate and a main-branch workaround but uses tentative language."
+        },
+        "v4incident:b3de281a85c64667d8c7": {
+          "status": "ambiguous",
+          "reason": "The maintainer proposes a plausible causal chain for the CI failure but remains explicitly speculative."
+        },
+        "v4incident:d04ac12fcc3784dbca19": {
+          "status": "ambiguous",
+          "reason": "The maintainer cannot reproduce the headline failure but identifies an input-schema mismatch consistent with it."
+        }
+      }
+    }
+  }
+}
