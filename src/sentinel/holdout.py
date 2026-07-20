@@ -706,6 +706,23 @@ def mode_metrics(
 
 
 def routing_for_firing(firing: Firing) -> dict[str, str]:
+    detector_severity = firing.meta.get("severity")
+    if isinstance(detector_severity, dict):
+        level = str(detector_severity.get("severity") or "watch")
+        audiences = {
+            "interrupt": "repository maintainers + ecosystem owners",
+            "digest": "periodic anomaly digest",
+            "watch": "queryable detector record",
+        }
+        attention = float(detector_severity.get("attention_score") or 0.0)
+        return {
+            "severity": level,
+            "audience": audiences.get(level, "queryable detector record"),
+            "rationale": (
+                "v2 breadth × depth × velocity × confidence attention score "
+                f"{attention:.3f}"
+            ),
+        }
     total = int(firing.meta.get("bucket_total") or firing.observed)
     if total >= 20:
         return {

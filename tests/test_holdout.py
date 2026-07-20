@@ -1,3 +1,4 @@
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 
 from sentinel.holdout import (
@@ -244,6 +245,18 @@ def test_detector_misses_and_routing_are_disclosed() -> None:
     assert routing_for_firing(_firing(bucket_total=20))["severity"] == "critical"
     assert routing_for_firing(_firing(bucket_total=12))["severity"] == "high"
     assert routing_for_firing(_firing(bucket_total=6))["severity"] == "watch"
+    v2_firing = replace(
+        _firing(),
+        meta={
+            "bucket_total": 12,
+            "severity": {"severity": "digest", "attention_score": 0.375},
+        },
+    )
+    assert routing_for_firing(v2_firing) == {
+        "severity": "digest",
+        "audience": "periodic anomaly digest",
+        "rationale": "v2 breadth × depth × velocity × confidence attention score 0.375",
+    }
 
 
 def test_freeze_hash_is_canonical_and_week_has_168_hours() -> None:

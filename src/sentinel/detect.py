@@ -21,7 +21,7 @@ MetricDirection = Literal["spike", "drop"]
 MetricSource = Literal[
     "issues_opened_per_active_participant",
     "comments_per_active_issue_thread",
-    "first_time_participant_share",
+    "first_time_participant_event_share",
     "issue_activity_volume",
 ]
 
@@ -116,6 +116,8 @@ class DetectorConfig:
     bot_regular_gap_mad_seconds: float = 0.0
     severity_digest_threshold: float = 0.0
     severity_interrupt_threshold: float = 1.0
+    severity_depth_saturation_multiplier: float = 2.0
+    severity_lower_confidence_cap: float = 0.5
     metrics: tuple[RateMetricConfig, ...] = ()
 
     def __post_init__(self) -> None:
@@ -157,6 +159,14 @@ class DetectorConfig:
                 raise ValueError("v2 severity_interrupt_threshold must be in [0, 1]")
             if self.severity_digest_threshold > self.severity_interrupt_threshold:
                 raise ValueError("v2 severity thresholds are reversed")
+            if self.severity_depth_saturation_multiplier <= 1:
+                raise ValueError(
+                    "v2 severity depth saturation multiplier must exceed one"
+                )
+            if not 0 <= self.severity_lower_confidence_cap < 1:
+                raise ValueError(
+                    "v2 lower-confidence severity cap must be in [0, 1)"
+                )
         if self.cooldown_buckets < 0:
             raise ValueError("cooldown_buckets cannot be negative")
         object.__setattr__(self, "kinds", tuple(self.kinds))
@@ -244,6 +254,12 @@ class DetectorConfig:
             ),
             severity_interrupt_threshold=float(
                 raw.get("severity_interrupt_threshold", 1.0)
+            ),
+            severity_depth_saturation_multiplier=float(
+                raw.get("severity_depth_saturation_multiplier", 2.0)
+            ),
+            severity_lower_confidence_cap=float(
+                raw.get("severity_lower_confidence_cap", 0.5)
             ),
             metrics=metrics,
         )

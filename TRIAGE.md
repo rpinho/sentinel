@@ -40,10 +40,12 @@ maintainer acknowledgment.
 Sentinel uses the
 [OpenAI Responses API structured-output contract](https://developers.openai.com/api/docs/guides/structured-outputs)
 with GPT-5.6 and strict `text.format` JSON schema.
-The live endpoint rejects `temperature: 0`. During holdout seeding it also rejected a
-fixed seed passed in the Responses request body with HTTP 400, `Unknown parameter: 'seed'`.
-Neither field is sent. The source of truth for reproducibility is the SHA-256 of the exact
-effective request plus its committed response fixture.
+The live endpoint rejects `temperature: 0`, so temperature is omitted entirely. A later
+live check confirmed that the endpoint accepts `seed`; new live cache seeds therefore send
+fixed `seed: 0` as a best-effort aid and include it in the request hash. Historical no-seed
+fixtures remain replayable under their original exact hashes. The source of truth for
+reproducibility is still the SHA-256 of the exact effective request plus its committed
+response fixture, not sampling controls.
 
 The event lookup is bounded to 24 hours. If the rendered input exceeds 500,000 characters,
 `signal-first-v1` deterministically retains issue/release signals and recent context before

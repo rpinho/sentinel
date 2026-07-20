@@ -68,6 +68,7 @@ class _Score:
 @dataclass(frozen=True, slots=True)
 class _BucketContext:
     events: tuple[Event, ...]
+    bot_excluded_events: tuple[Event, ...]
     raw_participants: frozenset[str]
     excluded_participants: frozenset[str]
     automated_actors: Mapping[str, tuple[str, ...]]
@@ -136,6 +137,7 @@ def evaluate_v2(
             excluded_participants = _participants(excluded_events)
             contexts[(entity, bucket)] = _BucketContext(
                 events=bucket_events,
+                bot_excluded_events=excluded_events,
                 raw_participants=frozenset(raw_participants),
                 excluded_participants=frozenset(excluded_participants),
                 automated_actors=automated,
@@ -395,9 +397,12 @@ def _metric_point(
     elif metric.source == "comments_per_active_issue_thread":
         numerator = float(len(comments))
         denominator = float(len(threads))
-    elif metric.source == "first_time_participant_share":
-        numerator = float(len(participants & first_time))
-        denominator = float(len(participants))
+    elif metric.source == "first_time_participant_event_share":
+        relevant_events = (*issue_events, *comments)
+        numerator = float(
+            sum(1 for event in relevant_events if _actor(event) in first_time)
+        )
+        denominator = float(len(relevant_events))
     else:
         numerator = float(len(events))
         denominator = float(len(events))
@@ -741,16 +746,22 @@ def _severity(
     metrics: Mapping[str, RateMetricConfig],
     config: DetectorConfig,
 ) -> dict[str, Any]:
-    raw_participants = len(context.raw_participants)
-    excluded_participants = len(context.excluded_participants)
-    breadth = (
-        excluded_participants / raw_participants if raw_participants else 0.0
+    breadth = max(
+        _metric_breadth(
+            context=context,
+            score=scores[(entity, metric_id, "bot_excluded", bucket)],
+            metric=metrics[metric_id],
+        )
+        for metric_id in candidate_ids
     )
     depth = max(
         min(
             1.0,
             float(scores[(entity, metric_id, "bot_excluded", bucket)].score or 0.0)
-            / (2 * metrics[metric_id].robust_z_threshold),
+            / (
+                config.severity_depth_saturation_multiplier
+                * metrics[metric_id].robust_z_threshold
+            ),
         )
         for metric_id in candidate_ids
     )
@@ -766,20 +777,20 @@ def _severity(
         )
         for metric_id in candidate_ids
     )
+    expected_phase_samples = _expected_phase_samples(bucket, config)
     phase_confidence = min(
-        1.0,
-        min(
-            scores[(entity, metric_id, "bot_excluded", bucket)].baseline_samples
-            / (2 * config.minimum_phase_samples)
-            for metric_id in candidate_ids
-        ),
+        scores[(entity, metric_id, "bot_excluded", bucket)].baseline_samples
+        / expected_phase_samples
+        for metric_id in candidate_ids
     )
     thin_fallback = any(
         scores[(entity, metric_id, "bot_excluded", bucket)].thin_pool_fallback
         for metric_id in candidate_ids
     )
     structural_confidence = (
-        1.0 if persistent and len(candidate_ids) >= 2 else 0.5
+        1.0
+        if persistent and len(candidate_ids) >= 2
+        else config.severity_lower_confidence_cap
     )
     confidence = min(
         phase_confidence,
@@ -804,6 +815,55 @@ def _severity(
         "interrupt_eligible": interrupt_eligible,
         "independently_corroborated": independently_corroborated,
     }
+
+
+def _metric_breadth(
+    *,
+    context: _BucketContext,
+    score: _Score,
+    metric: RateMetricConfig,
+) -> float:
+    events = tuple(
+        event
+        for event in context.bot_excluded_events
+        if not _is_pull_request(event)
+    )
+    participants = _participants(events)
+    threads = {
+        str(event.meta["issue_number"])
+        for event in events
+        if event.meta.get("issue_number") is not None
+    }
+    if metric.source == "issues_opened_per_active_participant":
+        affected = {
+            actor
+            for event in events
+            if event.kind == "issue"
+            and event.meta.get("action") == "opened"
+            if (actor := _actor(event)) is not None
+        }
+        return len(affected) / len(participants) if participants else 0.0
+    if metric.source == "comments_per_active_issue_thread":
+        affected = {
+            str(event.meta["issue_number"])
+            for event in events
+            if event.kind == "comment"
+            and event.meta.get("action") == "created"
+            and event.meta.get("issue_number") is not None
+        }
+        return len(affected) / len(threads) if threads else 0.0
+    if metric.source == "first_time_participant_event_share":
+        return min(1.0, max(0.0, float(score.value or 0.0)))
+    # A volume collapse is repository-wide by construction.
+    return 1.0
+
+
+def _expected_phase_samples(bucket: datetime, config: DetectorConfig) -> int:
+    return sum(
+        1
+        for days_ago in range(1, config.phase_history_days + 1)
+        if _day_class(bucket - timedelta(days=days_ago)) == _day_class(bucket)
+    )
 
 
 def _firing_timestamp(

@@ -16,7 +16,11 @@ from sentinel.types import format_timestamp
 HOLDOUT_ENTITIES = ("facebook/react", "vercel/next.js", "microsoft/vscode")
 HOLDOUT_START = datetime(2025, 4, 28, tzinfo=UTC)
 HOLDOUT_END = datetime(2025, 5, 20, tzinfo=UTC)
-WEBPACK_HISTORY_START = datetime(2025, 3, 24, tzinfo=UTC)
+# Seventeen continuous days covers the two-week phase pool for the Apr 4-7
+# healthy contrast and incident windows. Continuity is required even though
+# baselines are hour-matched: the first-observed-participant metric must see
+# actors who appeared in any intervening hour.
+WEBPACK_HISTORY_START = datetime(2025, 3, 21, tzinfo=UTC)
 WEBPACK_DETECTION_START = datetime(2025, 4, 7, 12, tzinfo=UTC)
 WEBPACK_END = datetime(2025, 4, 7, 23, tzinfo=UTC)
 
@@ -40,14 +44,8 @@ def main() -> None:
             target="holdout-v2",
         )
     if args.target in {"webpack", "all"}:
-        history_hours = tuple(
-            hour
-            for hour in iter_hours(WEBPACK_HISTORY_START, WEBPACK_DETECTION_START)
-            if 12 <= hour.hour < 23
-        )
-        detection_hours = tuple(iter_hours(WEBPACK_DETECTION_START, WEBPACK_END))
         prepare(
-            hours=history_hours + detection_hours,
+            hours=tuple(iter_hours(WEBPACK_HISTORY_START, WEBPACK_END)),
             entities=("webpack/webpack",),
             database=Path(".cache/webpack-v2.duckdb"),
             cache=args.cache,

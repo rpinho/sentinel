@@ -7,7 +7,7 @@ import json
 import os
 import re
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Literal, Mapping, Protocol, Sequence, cast
@@ -32,6 +32,7 @@ MAX_EVENT_TEXT_CHARS = 12_000
 MIN_RECENT_EVENTS = 20
 MAX_RATE_LIMIT_RETRIES = 4
 MAX_RATE_LIMIT_DELAY_SECONDS = 30.0
+LIVE_SEED = 0
 
 TriageMode = Literal["full", "no_feedback"]
 
@@ -420,6 +421,20 @@ def triage_firing(
         _write_record(cache_path, record)
         return _run_from_record(record, request, source="fixture")
 
+    # Preserve exact replay for fixtures created before the API's seed support
+    # was verified. Every new live seed includes the fixed seed in both the
+    # effective request and its cache identity.
+    request = _with_live_seed(request)
+    cache_path = Path(cache_dir) / f"{request.prompt_hash}.json"
+    fixture_path = Path(fixture_dir) / f"{request.prompt_hash}.json"
+    if cache_path.exists():
+        record = _read_record(cache_path, request)
+        return _run_from_record(record, request, source="cache")
+    if fixture_path.exists():
+        record = _read_record(fixture_path, request)
+        _write_record(cache_path, record)
+        return _run_from_record(record, request, source="fixture")
+
     resolved_key = api_key or os.getenv("OPENAI_API_KEY")
     if client is None and not resolved_key:
         raise TriageCacheMissError(
@@ -469,6 +484,15 @@ def triage_firing(
         cache_source="live",
         input_max_ts=request.input_max_ts,
         response_id=cast(str | None, record["response_id"]),
+    )
+
+
+def _with_live_seed(request: TriageRequest) -> TriageRequest:
+    api_payload = {**request.api_payload, "seed": LIVE_SEED}
+    return replace(
+        request,
+        api_payload=api_payload,
+        prompt_hash=_hash_document(api_payload),
     )
 
 

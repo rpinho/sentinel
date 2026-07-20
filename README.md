@@ -79,11 +79,13 @@ uv run sentinel triage FIRING_ID --db sentinel.duckdb
 The live API key is loaded from the repository `.env` as `OPENAI_API_KEY`. Each request
 uses GPT-5.6 with
 [Responses structured output](https://developers.openai.com/api/docs/guides/structured-outputs)
-and is hashed from the exact effective API payload. GPT-5.6's Responses endpoint accepts
-only its default sampling behavior, so Sentinel sends neither `temperature` nor `seed`;
-deterministic replay comes from the exact cached response, not sampling controls. Live
-responses are written to both `.cache/triage/` and `tests/fixtures/triage/`. On a cache
-miss without a key, Sentinel fails instead of inventing a response.
+and is hashed from the exact effective API payload. GPT-5.6's Responses endpoint rejects
+non-default `temperature`, so Sentinel omits it. New live cache seeds include a fixed
+`seed: 0` as best-effort sampling stability, and that seed is part of the request hash;
+deterministic replay still comes from the exact cached response, not the seed. Historical
+no-seed fixtures remain exact-replay compatible. Live responses are written to both
+`.cache/triage/` and `tests/fixtures/triage/`. On a cache miss without a key, Sentinel
+fails instead of inventing a response.
 
 Triage uses a 24-hour lookback. Requests over 500,000 characters are compacted with the
 versioned `signal-first-v1` policy: issue/release signals and the newest context rank

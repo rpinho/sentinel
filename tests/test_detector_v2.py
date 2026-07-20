@@ -1,3 +1,4 @@
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 
 from sentinel.detect import (
@@ -122,6 +123,7 @@ def test_v2_requires_persistence_and_uses_phase_matched_robust_baseline() -> Non
     ]
     assert firing.baseline_mean == 1
     assert firing.detector_version == "test:v2"
+    assert firing.meta["severity"]["breadth"] == 1
     assert run.verdict_counts["candidate"] == 1
     assert run.verdict_counts["firing"] == 1
 
@@ -257,3 +259,37 @@ def test_v2_never_classifies_automation_from_one_weak_signal() -> None:
 
     assert run.evaluations[0].verdict == "candidate"
     assert "helper-bot" not in run.evaluations[0].meta["automated_actors"]
+
+
+def test_first_time_share_counts_events_not_people() -> None:
+    metric = RateMetricConfig(
+        metric_id="first_time_participant_event_share",
+        source="first_time_participant_event_share",
+        direction="spike",
+        minimum_exposure=1,
+        absolute_rate_floor=0,
+        minimum_absolute_change=0,
+        robust_z_threshold=3,
+        dispersion_floor_absolute=0.1,
+        dispersion_floor_fraction=0.1,
+    )
+    history = _healthy_history(hours=(12,))
+    returning_actor = history[0].meta["actor"]
+    target = [
+        _comment(START.replace(minute=2), issue=1, actor=str(returning_actor)),
+        _comment(START.replace(minute=4), issue=1, actor="newcomer"),
+        _comment(START.replace(minute=6), issue=1, actor="newcomer"),
+        _comment(START.replace(minute=8), issue=2, actor="newcomer"),
+    ]
+    config = replace(_config(), metrics=(metric,))
+
+    run = evaluate_detection(
+        [*history, *target],
+        config,
+        start=START,
+        end=START + timedelta(hours=1),
+    )
+
+    assert run.evaluations[0].raw["numerator"] == 3
+    assert run.evaluations[0].raw["denominator"] == 4
+    assert run.evaluations[0].raw["value"] == 0.75

@@ -165,7 +165,7 @@ def test_live_response_is_cached_as_fixture_and_replays_without_key(
     assert replay.output == live.output
     assert len(client.responses.calls) == 1
     assert "temperature" not in client.responses.calls[0]
-    assert "seed" not in client.responses.calls[0]
+    assert client.responses.calls[0]["seed"] == 0
     assert "extra_body" not in client.responses.calls[0]
 
 
@@ -189,6 +189,7 @@ def test_live_rate_limit_retries_with_server_delay(
     assert len(responses.calls) == 2
     assert sleeps == [1.0]
     assert all("temperature" not in call for call in responses.calls)
+    assert all(call["seed"] == 0 for call in responses.calls)
 
 
 def test_no_feedback_changes_exact_prompt_hash() -> None:
