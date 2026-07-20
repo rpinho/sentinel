@@ -17,7 +17,7 @@ from typing import Any, Mapping
 import httpx
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.concurrency import run_in_threadpool
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -60,9 +60,34 @@ V6_SCORECARD_PATH = PROJECT_ROOT / "holdout" / "v6" / "scorecard.json"
 V6_PROTOCOL_PATH = PROJECT_ROOT / "holdout" / "v6" / "protocol.json"
 V6_VERDICTS_PATH = PROJECT_ROOT / "holdout" / "v6" / "verdicts.json.gz"
 LIVE_STAGE2_CACHE_DIR = STATE_DIR / "live" / "claude-stage2"
+PACKAGED_ARTIFACT_DIR = PACKAGE_DIR / "data" / "artifacts"
 LIVE_CACHE_DIR = STATE_DIR / "live" / "gharchive"
 LIVE_DB_PATH = STATE_DIR / "live" / "sentinel.duckdb"
 CONFIG_PATH = PACKAGE_DIR.parent / "config" / "detector-v2.toml"
+ARTIFACT_PATHS = {
+    "v1": V1_SCORECARD_PATH,
+    "v2": V2_SCORECARD_PATH,
+    "v3": (
+        V3_SCORECARD_PATH
+        if V3_SCORECARD_PATH.is_file()
+        else PACKAGED_ARTIFACT_DIR / "scorecard-v3.json.gz"
+    ),
+    "v4": (
+        V4_SCORECARD_PATH
+        if V4_SCORECARD_PATH.is_file()
+        else PACKAGED_ARTIFACT_DIR / "scorecard-v4.json.gz"
+    ),
+    "v5": (
+        V5_SCORECARD_PATH
+        if V5_SCORECARD_PATH.is_file()
+        else PACKAGED_ARTIFACT_DIR / "scorecard-v5.json.gz"
+    ),
+    "v6": (
+        V6_SCORECARD_PATH
+        if V6_SCORECARD_PATH.is_file()
+        else PACKAGED_ARTIFACT_DIR / "scorecard-v6.json.gz"
+    ),
+}
 
 HERO_ID = "webpack-v5.99.0"
 HERO_ENTITY = "webpack/webpack"
@@ -138,6 +163,22 @@ def create_app() -> FastAPI:
                 "title": "Frozen holdout scorecard · Sentinel",
                 "scorecard": view,
             },
+        )
+
+    @application.get("/artifacts/{version}", include_in_schema=False)
+    async def artifact(version: str) -> FileResponse:
+        path = ARTIFACT_PATHS.get(version)
+        if path is None or not path.is_file():
+            raise HTTPException(status_code=404, detail="unknown artifact")
+        compressed = path.suffix == ".gz"
+        return FileResponse(
+            path,
+            media_type="application/gzip" if compressed else "application/json",
+            filename=(
+                f"sentinel-{version}-scorecard.json.gz"
+                if compressed
+                else f"sentinel-{version}-scorecard.json"
+            ),
         )
 
     @application.get("/live", response_class=HTMLResponse)
@@ -359,7 +400,8 @@ def build_scorecard_view_from_sources() -> dict[str, Any]:
             "incident_recall": None,
             "misses": len(v1["detector_misses"]),
             "hash": v1["holdout"]["detector_config_sha256"],
-            "note": "Only two firings auto-resolved; 18 remained unresolved.",
+            "artifact_url": "/artifacts/v1",
+            "note": "All 20 were judged mixed routine/automation; 18 stayed unresolved by later labels.",
         },
         {
             "version": "v2",
@@ -369,6 +411,7 @@ def build_scorecard_view_from_sources() -> dict[str, Any]:
             "incident_recall": None,
             "misses": len(v2["detector_misses"]),
             "hash": v2["holdout"]["detector_config_sha256"],
+            "artifact_url": "/artifacts/v2",
             "note": "Removed every alert and added a published miss; not a recall win.",
         },
         {
@@ -379,6 +422,7 @@ def build_scorecard_view_from_sources() -> dict[str, Any]:
             "incident_recall": v3["test"]["incident_recall"],
             "misses": len(v3["test"]["misses"]),
             "hash": v3["frozen_identities"]["model_sha256"],
+            "artifact_url": "/artifacts/v3",
             "note": "Underpowered pilot failed: zero held-out incidents caught.",
         },
         {
@@ -389,6 +433,7 @@ def build_scorecard_view_from_sources() -> dict[str, Any]:
             "incident_recall": v4["test"]["incident_recall"],
             "misses": len(v4["test"]["misses"]),
             "hash": v4["frozen_identities"]["model_sha256"],
+            "artifact_url": "/artifacts/v4",
             "note": "Powered test; descriptive because one label source failed audit.",
         },
         {
@@ -400,6 +445,7 @@ def build_scorecard_view_from_sources() -> dict[str, Any]:
             "misses": len(v4["test"]["misses"])
             + v5["end_to_end"]["incidents_killed_by_stage2"],
             "hash": v5["scorecard_sha256"],
+            "artifact_url": "/artifacts/v5",
             "note": "Median one evidence event; the architecture was not fairly tested.",
         },
         {
@@ -410,6 +456,7 @@ def build_scorecard_view_from_sources() -> dict[str, Any]:
             "incident_recall": v6["end_to_end"]["incident_recall"],
             "misses": len(stage1_misses) + len(stage2_misses),
             "hash": v6["scorecard_sha256"],
+            "artifact_url": "/artifacts/v6",
             "note": "Precision stayed roughly flat while 91 labeled incidents were filtered out.",
         },
     ]
@@ -448,6 +495,34 @@ def build_scorecard_view_from_sources() -> dict[str, Any]:
         ),
         "v6_stage1_miss_count": len(stage1_misses),
         "v6_stage2_miss_count": len(stage2_misses),
+        "v4_headline": {
+            "roc_auc": v4["test"]["metrics"]["roc_auc"],
+            "roc_auc_95": v4["test"]["metrics"]["repository_bootstrap_95"][
+                "roc_auc"
+            ],
+            "hour_recall": v4["test"]["metrics"]["recall"],
+            "hour_recall_95": v4["test"]["metrics"]["repository_bootstrap_95"][
+                "recall"
+            ],
+            "incident_recall": v4["test"]["incident_recall"],
+            "precision": v4["test"]["metrics"]["precision"],
+            "precision_95": v4["test"]["metrics"]["repository_bootstrap_95"][
+                "precision"
+            ],
+            "median_lead_hours": v4["test"]["lead_time"]["median_hours"],
+            "test_candidate_hours": v4["power"]["test_rows"],
+            "test_repositories": v4["coverage"]["test_repositories"],
+            "train_incidents": v4["power"]["train_positive_incidents"],
+            "test_incidents": v4["power"]["test_positive_incidents"],
+            "outside_burst_share": v4["population"][
+                "confirmed_incidents_outside_old_spike_share"
+            ],
+            "outside_burst_incidents": v4["population"][
+                "confirmed_incidents_outside_old_spike_population"
+            ],
+            "model_hash": v4["frozen_identities"]["model_sha256"],
+        },
+        "known_llvmbot": v6["known_llvmbot_label_noise_slice"],
     }
 
 

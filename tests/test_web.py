@@ -69,9 +69,11 @@ def test_scorecard_publishes_v1_to_v6_and_complete_v6_miss_ledger() -> None:
     view = build_scorecard_view()
 
     assert response.status_code == 200
-    assert "More evidence did not" in response.text
+    assert "88% of incidents" in response.text
+    assert "0.841" in response.text
+    assert "13.4h" in response.text
     assert "All 125 labeled misses are here" in response.text
-    assert "This is a negative architecture result" in response.text
+    assert "repository-hour is a mixed bag" in response.text
     assert [row["version"] for row in view["progression"]] == [
         "v1",
         "v2",
@@ -93,6 +95,21 @@ def test_scorecard_publishes_v1_to_v6_and_complete_v6_miss_ledger() -> None:
         assert miss["url"] in response.text
     for key in ("protocol_sha256", "request_bundle_sha256", "verdict_bundle_sha256"):
         assert view["v6_identities"][key] in response.text
+    assert view["v4_headline"]["roc_auc"] == 0.8406730100071403
+    assert view["v4_headline"]["incident_recall"] == 0.8815331010452961
+
+
+def test_scorecard_artifacts_are_directly_downloadable() -> None:
+    for version in ("v1", "v2", "v3", "v4", "v5", "v6"):
+        response = client.get(f"/artifacts/{version}")
+        assert response.status_code == 200
+        assert response.headers["content-type"].startswith(
+            ("application/json", "application/gzip")
+        )
+        assert f"sentinel-{version}-scorecard.json" in response.headers[
+            "content-disposition"
+        ]
+    assert client.get("/artifacts/v7").status_code == 404
 
 
 def test_packaged_scorecards_are_exact_holdout_copies() -> None:

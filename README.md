@@ -2,6 +2,10 @@
 
 An anomaly detection + triage agent for public event streams that **grades itself in public**.
 
+> **A learned coherence ranker surfaces 88% of maintainer-confirmed incidents a
+> median 13.4 hours before maintainers confirm them. Adding an LLM triage stage at
+> repository-hour granularity does not work—we measured why.**
+
 Sentinel is a two-stage system:
 
 1. A recall-optimized learned ranker scores every active repository-hour from public
@@ -17,10 +21,31 @@ and the append-only scorecard feedback loop. The judge is provider-agnostic. The
 v6 study used Claude Opus 4.8 through Claude subscription authentication; the offline hero
 uses a committed GPT-5.6 exact-response fixture.
 
-The latest result is intentionally not marketed as a win. Rich evidence raised estimated
-precision from 16.6% to 19.6% versus v5, while end-to-end incident recall fell from 77.0%
-to 56.4%. The frozen conclusion is that hourly GitHub triage remains the limiting
-architecture. The complete miss ledger is visible at `/scorecard`.
+```mermaid
+flowchart LR
+    A["Public events"] --> B["Stage 1: learned coherence ranker"]
+    B --> C["Complete scheduled candidate batch"]
+    C --> D["Stage 2: provider-agnostic precision judge"]
+    D --> E["Deterministic routing + scorecard feedback"]
+    F["Exact cache + frozen hashes"] --> B
+    F --> D
+```
+
+## The frozen arc
+
+| Version | Intervention | Honest result |
+|---|---|---|
+| v1 | Naive burst thresholds | 20 firings; agent rejected all as mixed routine/automation and 18 stayed unresolved by later labels. |
+| v2 | Phase-matched, noise-hardened rates | Zero firings and four published misses: killing noise killed signal. |
+| v3 | First coherence model | Five training positives; underpowered and reported as unknowable. |
+| v4 | Powered, whole-repository-held-out study | **ROC AUC 0.841, 88% incident recall, 13.4h median lead.** 64 / 287 incidents were outside burst windows entirely. |
+| v5 | One giant LLM batch | Evidence-starved: 16.6% precision, 77.0% incident recall. |
+| v6 | Rich evidence in scheduled-size batches | 19.6% precision, 56.4% incident recall. The repository-hour is the wrong triage unit. |
+
+The v6 result is intentionally not marketed as a win. A repository-hour mixes unrelated
+threads, routine automation, and real incidents; richer evidence made the judge more
+confident about the bag, not more accurate about the issue inside it. The full 125-row
+end-to-end miss ledger and every frozen identity are visible at `/scorecard`.
 
 ## Install and test
 
@@ -57,7 +82,8 @@ uv run python scripts/build_web_replay_fixture.py
 
 The included `Dockerfile` is the hosted-deploy path for any container-capable ASGI
 host. It needs no model key for `/replay` or `/scorecard`; `/live` makes a public
-GH Archive download but no model call. Build and test the production image locally:
+GH Archive download and uses Claude subscription auth only when candidates exist.
+Build and test the production image locally:
 
 ```bash
 docker build -t sentinel .
@@ -347,3 +373,14 @@ Slack escalation is represented as deterministic severity and routing in each fi
 card instead of an untestable notification. Authentication, multi-tenancy, and a
 knowledge-base/RAG layer over past incidents remain out of scope for this single-tenant
 public-data demonstration.
+
+## Future work
+
+- Change stage two's unit from a mixed repository-hour to an issue thread or a coherent
+  cross-thread cluster; freeze that as a new study rather than prompt-tuning v6.
+- Add content/actor identity checks for llvmbot-class mirrors that GitHub metadata can
+  misclassify as human users.
+- Collect a fresh post-v6 holdout before making a production precision claim.
+
+For the 60-second judge path, exact commands, and claim-to-hash map, see
+[`SUBMISSION.md`](SUBMISSION.md).

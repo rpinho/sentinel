@@ -3,15 +3,28 @@
   <section class="hero scorecard-hero scorecard-v6-hero">
     <div class="eyebrow"><span>V1 → V6</span><span>FROZEN RESULTS</span></div>
     <p class="kicker">The product is the scorecard</p>
-    <h1>More evidence did not<br>solve precision.</h1>
-    <p class="lede">The rich-evidence judge removed an estimated 56.5% of stage-one alerts. Precision rose only three points over the starved v5 judge, while end-to-end incident recall fell to 56.4%.</p>
+    <h1>88% of incidents.<br>13 hours early.</h1>
+    <p class="lede">A learned coherence ranker surfaces 88% of maintainer-confirmed incidents a median 13.4 hours before confirmation. Adding an LLM triage stage at repository-hour granularity does not work—we measured why.</p>
   </section>
 
-  <section class="metric-row" aria-label="V6 end-to-end headline metrics">
-    <div><span>EST. PRECISION</span><strong>{{ scorecard.end_to_end.precision|percentage }}</strong><small>full noisy label set</small></div>
-    <div><span>INCIDENT RECALL</span><strong>{{ scorecard.end_to_end.incident_recall|percentage }}</strong><small>162 / 287 incidents</small></div>
-    <div><span>EST. ALERTS</span><strong>{{ "%.0f"|format(scorecard.end_to_end.estimated_alerts) }}</strong><small>from 1,724 stage-one alerts</small></div>
-    <div><span>MEDIAN LEAD</span><strong>{{ "%.1f"|format(scorecard.end_to_end.lead_time.median_hours) }}h</strong><small>among surviving incidents</small></div>
+  <section class="metric-row five-up" aria-label="V4 learned ranker headline metrics">
+    <div><span>ROC AUC</span><strong>{{ "%.3f"|format(scorecard.v4_headline.roc_auc) }}</strong><small>95% {{ "%.3f"|format(scorecard.v4_headline.roc_auc_95[0]) }}–{{ "%.3f"|format(scorecard.v4_headline.roc_auc_95[1]) }}</small></div>
+    <div><span>INCIDENT RECALL</span><strong>{{ scorecard.v4_headline.incident_recall|percentage }}</strong><small>hour recall 95% {{ scorecard.v4_headline.hour_recall_95[0]|percentage }}–{{ scorecard.v4_headline.hour_recall_95[1]|percentage }}</small></div>
+    <div><span>PRECISION</span><strong>{{ scorecard.v4_headline.precision|percentage }}</strong><small>95% {{ scorecard.v4_headline.precision_95[0]|percentage }}–{{ scorecard.v4_headline.precision_95[1]|percentage }}</small></div>
+    <div><span>MEDIAN LEAD</span><strong>{{ "%.1f"|format(scorecard.v4_headline.median_lead_hours) }}h</strong><small>253 incidents caught</small></div>
+    <div><span>HELD-OUT COVERAGE</span><strong>{{ scorecard.v4_headline.test_candidate_hours }}</strong><small>active hours · {{ scorecard.v4_headline.test_repositories }} repos</small></div>
+  </section>
+
+  <section class="section-shell v4-result-section">
+    <div class="section-heading">
+      <div><p class="kicker">V4 · THE POSITIVE RESULT</p><h2>Coherence sees incidents bursts miss.</h2></div>
+      <p>The threshold and model were frozen before whole-repository test extraction. Training and test contain {{ scorecard.v4_headline.train_incidents + scorecard.v4_headline.test_incidents }} source-attributed incidents.</p>
+    </div>
+    <div class="result-proof">
+      <strong>{{ scorecard.v4_headline.outside_burst_share|percentage }}</strong>
+      <p><b>{{ scorecard.v4_headline.outside_burst_incidents }} held-out incidents</b> sat entirely outside the old spike population. A burst-only detector could not have seen them.</p>
+      <a href="/artifacts/v4">Open frozen v4 scorecard →</a>
+    </div>
   </section>
 
   <section class="section-shell comparison-section">
@@ -25,7 +38,8 @@
       <div class="stage-row" role="row"><b>V5 / one-event evidence</b><span>1,228 est.</span><span>16.6%</span><span>77.0%</span><span>31</span></div>
       <div class="stage-row selected" role="row"><b>V6 / rich evidence</b><span>{{ "%.0f"|format(scorecard.end_to_end.estimated_alerts) }} est.</span><span>{{ scorecard.end_to_end.precision|percentage }}</span><span>{{ scorecard.end_to_end.incident_recall|percentage }}</span><span>{{ scorecard.end_to_end.true_positive_hours_killed }}</span></div>
     </div>
-    <p class="truth-note"><b>Frozen finding:</b> {{ scorecard.v6_finding.conclusion }} This is a negative architecture result, not a tuned success story.</p>
+    <p class="truth-note"><b>Frozen finding:</b> {{ scorecard.v6_finding.conclusion }} The repository-hour is a mixed bag; richer context made the judge more confident about routine activity, not more accurate about the issue thread inside it.</p>
+    <p class="truth-note nuance-note"><b>Label-noise nuance:</b> stage two rejected {{ scorecard.automation.stage2_rejected }} / {{ scorecard.automation.candidates }} automation-suspect sampled rows and {{ scorecard.known_llvmbot.stage2_rejected_rows }} / {{ scorecard.known_llvmbot.stage1_alert_rows }} known llvmbot-poisoned rows. Some measured recall loss is rejection against known-noisy labels—but the clean-source cut shows that does not explain the failure away.</p>
   </section>
 
   <section class="section-shell evidence-section">
@@ -81,7 +95,7 @@
               <td>{{ row.precision|percentage }}</td>
               <td>{{ row.incident_recall|percentage }}</td>
               <td><span class="miss-badge">{{ row.misses }} MISS{% if row.misses != 1 %}ES{% endif %}</span></td>
-              <td><code class="hash-code">{{ row.hash }}</code></td>
+              <td><a class="artifact-link" href="{{ row.artifact_url }}"><code class="hash-code">{{ row.hash }}</code></a></td>
             </tr>
           {% endfor %}
         </tbody>
@@ -140,10 +154,10 @@
   <section class="integrity-strip">
     <p class="kicker">V6 FROZEN IDENTITIES</p>
     <div class="integrity-grid two-up">
-      <div><span>protocol sha256</span><code>{{ scorecard.v6_identities.protocol_sha256 }}</code></div>
-      <div><span>request bundle sha256</span><code>{{ scorecard.v6_identities.request_bundle_sha256 }}</code></div>
-      <div><span>verdict bundle sha256</span><code>{{ scorecard.v6_identities.verdict_bundle_sha256 }}</code></div>
-      <div><span>scorecard sha256</span><code>{{ scorecard.progression[-1].hash }}</code></div>
+      <div><span>protocol sha256</span><a href="/artifacts/v6"><code>{{ scorecard.v6_identities.protocol_sha256 }}</code></a></div>
+      <div><span>request bundle sha256</span><a href="/artifacts/v6"><code>{{ scorecard.v6_identities.request_bundle_sha256 }}</code></a></div>
+      <div><span>verdict bundle sha256</span><a href="/artifacts/v6"><code>{{ scorecard.v6_identities.verdict_bundle_sha256 }}</code></a></div>
+      <div><span>scorecard sha256</span><a href="/artifacts/v6"><code>{{ scorecard.progression[-1].hash }}</code></a></div>
     </div>
   </section>
 {% endblock %}
