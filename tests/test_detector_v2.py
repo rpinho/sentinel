@@ -136,7 +136,14 @@ def test_v2_release_corroboration_admits_one_interval_but_caps_severity() -> Non
             "webpack/webpack",
             "release",
             text="v5.99.0",
-            meta={"version": "v5.99.0"},
+            meta={"version": "v5.99.0", "source": "gharchive"},
+        ),
+        Event(
+            START - timedelta(hours=5) + timedelta(seconds=63),
+            "webpack/webpack",
+            "release",
+            text=None,
+            meta={"version": "5.99.0", "source": "npm_registry"},
         ),
         *_burst(12),
     ]
@@ -150,9 +157,9 @@ def test_v2_release_corroboration_admits_one_interval_but_caps_severity() -> Non
 
     assert len(run.firings) == 1
     firing = run.firings[0]
-    assert firing.meta["independent_corroboration"]["recent_release"]["meta"][
-        "version"
-    ] == "v5.99.0"
+    release = firing.meta["independent_corroboration"]["recent_release"]
+    assert release["version"] == "5.99.0"
+    assert release["sources"] == ["gharchive", "npm_registry"]
     assert firing.meta["severity"]["interrupt_eligible"] is False
     assert firing.meta["severity"]["severity"] != "interrupt"
 

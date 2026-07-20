@@ -74,6 +74,21 @@ class _BucketContext:
     automated_actors: Mapping[str, tuple[str, ...]]
 
 
+@dataclass(frozen=True, slots=True)
+class _ReleaseCorroboration:
+    version: str
+    events: tuple[Event, ...]
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "version": self.version,
+            "sources": sorted(
+                {str(event.meta.get("source") or "unknown") for event in self.events}
+            ),
+            "events": [event.to_dict() for event in self.events],
+        }
+
+
 def evaluate_v2(
     events: Sequence[Event],
     config: DetectorConfig,
@@ -726,13 +741,37 @@ def _with_verdict(
 
 def _recent_release(
     releases: Iterable[Event], bucket: datetime, config: DetectorConfig
-) -> Event | None:
+) -> _ReleaseCorroboration | None:
     bucket_end = bucket + config.bucket_size
     oldest = bucket - timedelta(hours=config.recent_release_hours)
     candidates = [
         event for event in releases if oldest <= event.ts < bucket_end
     ]
-    return max(candidates, key=lambda event: event.ts, default=None)
+    by_version: dict[str, list[Event]] = defaultdict(list)
+    for event in candidates:
+        version = str(event.meta.get("version") or "").removeprefix("v")
+        if version:
+            by_version[version].append(event)
+    corroborated = [
+        _ReleaseCorroboration(
+            version=version,
+            events=tuple(sorted(events, key=lambda event: event.ts)),
+        )
+        for version, events in by_version.items()
+        if len(
+            {
+                str(event.meta.get("source"))
+                for event in events
+                if event.meta.get("source")
+            }
+        )
+        >= 2
+    ]
+    return max(
+        corroborated,
+        key=lambda item: max(event.ts for event in item.events),
+        default=None,
+    )
 
 
 def _severity(

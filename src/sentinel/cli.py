@@ -105,6 +105,11 @@ def ingest_npm(
     package: str = typer.Option(..., "--package", help="npm package name."),
     start: str = typer.Option(..., help="Inclusive UTC date (YYYY-MM-DD)."),
     end: str = typer.Option(..., help="Exclusive UTC date (YYYY-MM-DD)."),
+    corroborate_repo: str | None = typer.Option(
+        None,
+        "--corroborate-repo",
+        help="Also attach registry releases to this repository entity.",
+    ),
     db: Path = typer.Option(Path("sentinel.duckdb"), help="DuckDB database path."),
 ) -> None:
     """Ingest registry releases and daily download counts from npm."""
@@ -123,8 +128,20 @@ def ingest_npm(
     downloads = list(
         adapter.iter_downloads(package, start_date, end_date - timedelta(days=1))
     )
+    corroborating_releases = [
+        Event(
+            ts=event.ts,
+            entity=corroborate_repo,
+            kind=event.kind,
+            text=event.text,
+            value=event.value,
+            meta={**event.meta, "corroborates_package_entity": package},
+        )
+        for event in releases
+        if corroborate_repo
+    ]
     with SentinelStore(db) as store:
-        release_inserted = store.insert_events(releases)
+        release_inserted = store.insert_events([*releases, *corroborating_releases])
         download_inserted = store.insert_events(downloads)
         store.record_ingestion_window(
             IngestionWindow(
@@ -136,6 +153,18 @@ def ingest_npm(
                 normalized_events=len(releases),
             )
         )
+        if corroborate_repo:
+            store.record_ingestion_window(
+                IngestionWindow(
+                    source="npm_registry",
+                    entity=corroborate_repo,
+                    window_start=start_at,
+                    window_end=end_at,
+                    status="complete",
+                    normalized_events=len(corroborating_releases),
+                    meta={"package": package, "corroboration_attachment": True},
+                )
+            )
         store.record_ingestion_window(
             IngestionWindow(
                 source="npm_downloads",
@@ -147,7 +176,9 @@ def ingest_npm(
             )
         )
     typer.echo(
-        f"NPM package={package} releases={len(releases)} inserted={release_inserted} "
+        f"NPM package={package} releases={len(releases)} "
+        f"corroborating_releases={len(corroborating_releases)} "
+        f"inserted={release_inserted} "
         f"download_days={len(downloads)} inserted={download_inserted}"
     )
 

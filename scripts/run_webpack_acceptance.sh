@@ -13,6 +13,7 @@ uv run sentinel ingest gharchive \
 
 uv run sentinel ingest npm \
   --package webpack \
+  --corroborate-repo webpack/webpack \
   --start 2025-04-07 \
   --end 2025-04-09 \
   --db "$sentinel_db"
