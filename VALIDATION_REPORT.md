@@ -68,9 +68,9 @@ The hero claim is independently verified, not taken on trust.
 
 ## Final v6 publication validation (2026-07-20) — PASS WITH DISCLOSED LIMITATIONS
 
-**Validation target:** `6500ee2` (v6 study, judge-facing web surfaces, packaged scorecard,
-and final GPT-5.6 fixture). This section was written last, after all implementation and
-fixture work.
+**Validation target:** `12e1a0f` (v6 study, v4-leading judge story, judge-facing web
+surfaces, packaged scorecards, submission guide, and final GPT-5.6 fixture). This section
+was updated last, after all implementation and fixture work.
 
 ### Frozen two-stage result
 
@@ -107,7 +107,10 @@ made zero OpenAI calls.
   artifact under `PYTHONHASHSEED=73`.
 - Rebuilt the compact packaged web scorecard fixture independently. It was byte-for-byte
   identical; its canonical view hash is
-  `336c5d4a09b12118a49fdaa806def0c1f193d5966f6c9af0e048c059244b9c68`.
+  `96e2c5ea097c4aab70c64c808b3c13487076c7baea6b459b501267453979e906`.
+- Packaged deterministic gzip copies of the frozen v3–v6 scorecards are directly
+  downloadable from `/artifacts/v3` through `/artifacts/v6`. All four returned HTTP 200
+  from a clean isolated wheel outside the repository.
 - `uv build` produced both sdist and wheel. A clean isolated wheel install from `/tmp`
   loaded six progression rows, all 125 v6 misses, and the offline webpack replay without
   repository-level holdout files.
@@ -117,14 +120,20 @@ made zero OpenAI calls.
 
 ### Web and live validation
 
-- `83 passed` across the full suite. The only warning is Starlette's deprecation notice
+- `84 passed` across the full suite. The only warning is Starlette's deprecation notice
   for its current `httpx` TestClient integration.
 - Browser-tested `/replay/webpack`, `/scorecard`, and `/live` at 1440×900 and 390×844.
   Both widths had `scrollWidth == clientWidth`; navigation, tables, timestamps, hashes,
   replay provenance, and responsive stacking rendered correctly.
-- `/scorecard` publishes v1→v6, exact headline values (19.6% / 56.4%), full- and
-  clean-label cuts, the automation slice, frozen hashes, all 34 stage-one misses, and all
-  91 additional stage-two misses. The original 20-row v1 ledger remains present.
+- The final scorecard leads with the actual positive result (v4 ROC AUC 0.841, 88.2%
+  incident recall, 13.6% precision, 13.4h median lead, and 5,229 held-out active hours),
+  then publishes v1→v6, the v5/v6 negative result, full- and clean-label cuts, the
+  automation slice, frozen hashes, all 34 stage-one misses, and all 91 additional
+  stage-two misses. The original 20-row v1 ledger remains present. Final v4-leading copy
+  and artifact links are covered by server-rendered route tests and reuse the responsive
+  primitives validated above.
+- `SUBMISSION.md` provides the requested 60-second path: one command, three surfaces,
+  measured conclusion, exact claim hashes, and offline reproduction commands.
 - A real POST to `/live` fetched the newest published GH Archive hour for
   `webpack/webpack`. That repository had zero supported events in the hour; Sentinel
   persisted the coverage, reported the seven-day stage-one history as immature, and made
