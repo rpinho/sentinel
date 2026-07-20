@@ -71,7 +71,7 @@ def test_detector_ignores_closed_issues_and_text_free_metrics() -> None:
 
 
 def test_default_config_is_versioned() -> None:
-    config = DetectorConfig.load()
+    config = DetectorConfig.load("src/sentinel/config/default.toml")
 
     assert config.metric_id == "issue_activity_per_hour"
     assert config.version.startswith("sha256:")

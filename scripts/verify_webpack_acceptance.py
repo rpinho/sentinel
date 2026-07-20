@@ -18,7 +18,9 @@ ACK_TS = datetime(2025, 4, 7, 20, 14, 4, tzinfo=UTC)
 
 
 def verify(database: Path) -> None:
-    config = DetectorConfig.load()
+    config = DetectorConfig.load(
+        Path(__file__).resolve().parents[1] / "src/sentinel/config/default.toml"
+    )
     with SentinelStore(database) as store:
         # Daily npm metrics are timestamped at midnight, before the hourly
         # archive replay begins at noon, so load the whole bounded database.

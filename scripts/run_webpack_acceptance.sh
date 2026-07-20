@@ -22,6 +22,7 @@ uv run sentinel detect \
   --entity webpack/webpack \
   --start 2025-04-07T12:00:00Z \
   --end 2025-04-07T23:00:00Z \
+  --config src/sentinel/config/default.toml \
   --db "$sentinel_db" \
   --no-agent \
   --json
