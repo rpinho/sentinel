@@ -713,9 +713,17 @@ def run_claude_subscription_batch(
     ):
         raise TriageResponseError("v5 batch verdicts must be an array of objects")
     raw_verdicts = cast(Sequence[Mapping[str, Any]], raw_value)
-    ordered_requests = sorted(
-        candidate_requests, key=lambda request: str(request["row_id"])
-    )
+    request_by_id = {
+        str(request["row_id"]): request for request in candidate_requests
+    }
+    frozen_order = batch_request.get("row_ids")
+    if frozen_order is None:
+        row_order = sorted(request_by_id)
+    else:
+        row_order = [str(row_id) for row_id in cast(Sequence[Any], frozen_order)]
+        if set(row_order) != set(request_by_id) or len(row_order) != len(request_by_id):
+            raise TriageResponseError("v5/v6 batch row order differs from candidates")
+    ordered_requests = [request_by_id[row_id] for row_id in row_order]
     if len(raw_verdicts) != len(ordered_requests):
         raise TriageResponseError(
             f"v5 batch returned {len(raw_verdicts)} verdicts for "
