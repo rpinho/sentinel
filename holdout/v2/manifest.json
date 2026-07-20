@@ -1,0 +1,27 @@
+{
+  "ack_lookahead_hours": 24,
+  "auto_label_rule_version": "maintainer-substantive-v3",
+  "baseline_start": "2025-04-28T00:00:00Z",
+  "database_path": ".cache/holdout-v2.duckdb",
+  "detection_end": "2025-05-19T00:00:00Z",
+  "detection_start": "2025-05-12T00:00:00Z",
+  "detector_config_path": "src/sentinel/config/detector-v2.toml",
+  "detector_config_sha256": "3b11a572823b54f9ea5a0801df2becef809d5e092962ded5bac556b2d1845106",
+  "detector_version": "sha256:3b11a572823b",
+  "feedback_snapshot_path": "holdout/v2/feedback-snapshot.json",
+  "feedback_snapshot_sha256": "c00c486998a8bc82d0bd08780d209f766bfb7528a8d07cf8399ec151d33a0736",
+  "fixture_dir": "tests/fixtures/triage",
+  "frozen_at": "2026-07-20T11:43:41.492001Z",
+  "frozen_git_commit": "e2ee6717c6ab9a43126452f9cc1c5a796be8454a",
+  "holdout_id": "gharchive-2025-05-12-three-repos-v2",
+  "markdown_path": "holdout/v2/HOLDOUT-v2.md",
+  "raw_cache_dir": ".cache/gharchive",
+  "repositories": [
+    "facebook/react",
+    "vercel/next.js",
+    "microsoft/vscode"
+  ],
+  "schema_version": 1,
+  "scorecard_path": "holdout/v2/scorecard.json",
+  "selection_policy": "First full Monday five weeks after the webpack demo; three predeclared high-traffic JavaScript repositories, selected before archive inspection."
+}
