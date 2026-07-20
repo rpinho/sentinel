@@ -40,6 +40,11 @@ def main() -> None:
 
     run = subparsers.add_parser("run", help="Run and publish the frozen holdout.")
     run.add_argument("--manifest", type=Path, default=Path("holdout/manifest.json"))
+    run.add_argument(
+        "--allow-live-triage",
+        action="store_true",
+        help="Permit billable OpenAI calls for exact fixture cache misses.",
+    )
 
     args = parser.parse_args()
     repo_root = Path(__file__).resolve().parents[1]
@@ -65,7 +70,11 @@ def main() -> None:
         print(f"WINDOW {manifest['detection_start']}..{manifest['detection_end']}")
         print(f"REPOSITORIES {','.join(manifest['repositories'])}")
         return
-    run_holdout(repo_root=repo_root, manifest_path=(repo_root / args.manifest).resolve())
+    run_holdout(
+        repo_root=repo_root,
+        manifest_path=(repo_root / args.manifest).resolve(),
+        allow_live_triage=args.allow_live_triage,
+    )
 
 
 if __name__ == "__main__":

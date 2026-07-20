@@ -172,7 +172,12 @@ def freeze_holdout(
     return manifest
 
 
-def run_holdout(*, repo_root: Path, manifest_path: Path) -> dict[str, Any]:
+def run_holdout(
+    *,
+    repo_root: Path,
+    manifest_path: Path,
+    allow_live_triage: bool = False,
+) -> dict[str, Any]:
     manifest, snapshot = load_frozen_holdout(
         repo_root=repo_root, manifest_path=manifest_path
     )
@@ -210,13 +215,23 @@ def run_holdout(*, repo_root: Path, manifest_path: Path) -> dict[str, Any]:
         print(
             f"DETECT events={len(events)} firings={len(firings)} inserted={inserted}"
         )
-        run_all_triage_modes(
-            store=store,
-            firings=firings,
-            cache_dir=repo_root / ".cache/triage",
-            fixture_dir=fixture_dir,
-            model="gpt-5.6",
-        )
+        previous_key = os.environ.get("OPENAI_API_KEY")
+        if not allow_live_triage:
+            os.environ["OPENAI_API_KEY"] = ""
+        try:
+            run_all_triage_modes(
+                store=store,
+                firings=firings,
+                cache_dir=repo_root / ".cache/triage",
+                fixture_dir=fixture_dir,
+                model="gpt-5.6",
+            )
+        finally:
+            if not allow_live_triage:
+                if previous_key is None:
+                    os.environ.pop("OPENAI_API_KEY", None)
+                else:
+                    os.environ["OPENAI_API_KEY"] = previous_key
         verify_fixture_replay(
             store=store,
             firings=firings,
