@@ -295,6 +295,15 @@ def apply_label_audit(
     result["auto_label_candidates"] = auto_candidates
     result["positive_incidents"] = accepted
     result["class_balance"] = _class_balance(rows, accepted)
+    for window in cast(list[dict[str, Any]], result["coverage"]):
+        window["auto_label_candidates"] = sum(
+            incident["window_id"] == window["window_id"]
+            for incident in auto_candidates
+        )
+        window["positive_incidents"] = sum(
+            incident["window_id"] == window["window_id"]
+            for incident in accepted
+        )
     result["label_audit"] = {
         "audit_version": audit["audit_version"],
         "policy": audit["policy"],

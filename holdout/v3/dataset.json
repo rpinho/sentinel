@@ -662,10 +662,11 @@
       "archive_hours_expected": 504,
       "archive_hours_observed": 504,
       "archive_start": "2025-03-21T00:00:00Z",
+      "auto_label_candidates": 15,
       "candidate_hours": 358,
       "detection_end": "2025-04-08T00:00:00Z",
       "detection_start": "2025-03-28T00:00:00Z",
-      "positive_incidents": 15,
+      "positive_incidents": 13,
       "repositories": 16,
       "window_id": "2025-03-28"
     },
@@ -674,10 +675,11 @@
       "archive_hours_expected": 528,
       "archive_hours_observed": 528,
       "archive_start": "2025-04-28T00:00:00Z",
+      "auto_label_candidates": 13,
       "candidate_hours": 434,
       "detection_end": "2025-05-17T00:00:00Z",
       "detection_start": "2025-05-05T00:00:00Z",
-      "positive_incidents": 13,
+      "positive_incidents": 12,
       "repositories": 16,
       "window_id": "2025-05-05"
     }
