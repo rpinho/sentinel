@@ -1,0 +1,225 @@
+{
+  "automation_suspect_slice": {
+    "candidates": 88,
+    "definition": "Frozen actor/content/repetition heuristic in the v6 request artifact.",
+    "full_label_negative_candidates": 57,
+    "full_label_positive_candidates": 31,
+    "rejection_rate": 0.6818181818181818,
+    "stage2_rejected": 60
+  },
+  "clean_source_cut": {
+    "estimated_alerts": 749.6666666666666,
+    "estimated_false_positive_hours": 666.6666666666666,
+    "hour_recall": 0.5608108108108109,
+    "hour_recall_repository_bootstrap_95": [
+      0.49635036496350365,
+      0.5980392156862745
+    ],
+    "incident_recall": 0.5705128205128205,
+    "incident_recall_repository_bootstrap_95": [
+      0.5073529411764706,
+      0.6033519553072626
+    ],
+    "incidents": 156,
+    "incidents_caught": 89,
+    "positive_hours": 148,
+    "precision": 0.11071587372165408,
+    "precision_repository_bootstrap_95": [
+      0.05293482175009002,
+      0.17207334273624825
+    ],
+    "sources": [
+      "completed_bug_closure",
+      "merged_fixing_pr"
+    ],
+    "true_positive_hours": 83
+  },
+  "end_to_end": {
+    "estimated_alert_reduction": 974.3333333333334,
+    "estimated_alert_reduction_fraction": 0.5651585460170148,
+    "estimated_alerts": 749.6666666666666,
+    "estimated_false_positive_hours": 602.6666666666666,
+    "hour_recall": 0.550561797752809,
+    "hour_recall_repository_bootstrap_95": [
+      0.445,
+      0.6066481994459834
+    ],
+    "incident_recall": 0.5644599303135889,
+    "incident_recall_repository_bootstrap_95": [
+      0.4549019607843137,
+      0.6215538847117794
+    ],
+    "incidents_caught": 162,
+    "incidents_killed_by_stage2": 91,
+    "lead_time": {
+      "count": 162,
+      "maximum_minutes": 4241.85,
+      "median_hours": 12.318333333333333,
+      "median_minutes": 739.1,
+      "minimum_minutes": 0.4
+    },
+    "precision": 0.19608714984437528,
+    "precision_repository_bootstrap_95": [
+      0.11978221415607984,
+      0.28562300319488826
+    ],
+    "stage2_true_alert_survival": 0.625531914893617,
+    "true_positive_hours": 147,
+    "true_positive_hours_killed": 88
+  },
+  "finding": {
+    "conclusion": "Rich evidence left stage-two precision approximately flat; hourly GitHub triage remains the limiting architecture.",
+    "hour_recall_delta_vs_v5": -0.2134831460674157,
+    "precision_delta_vs_v5": 0.030008452422394277
+  },
+  "frozen_identities": {
+    "protocol_sha256": "d2a8a19bf24d69c708637a676298a5f3c37d401071878339c08dc0a88515ac9d",
+    "provider": "anthropic",
+    "request_bundle_sha256": "25a0b558c794624d540d4fc0c4615158f1ea52c0f1c2cc1e168b2f9e5b7c5564",
+    "requested_model": "claude-opus-4-8",
+    "transport": "claude-code-subscription-cli-v1",
+    "v4_scorecard_sha256": "7a823f275f6be144cd9c5eb90b65ce913781c709017075437cad67738d3825ea",
+    "v4_test_dataset_content_sha256": "895395b1b41a733996ceecd7c1c33913e01ffe9482db68a6f8f2ce85c7c0732d",
+    "v5_scorecard_sha256": "5c997bf587d82c801c70234f32a05516a965d2e8fa6260284d497b6235cadf80",
+    "verdict_bundle_sha256": "17c97095c73730051cb2efb049db76367931184f2f76318e6a1d7baac796e88b"
+  },
+  "interpretation": {
+    "architecture": "The frozen v4 high-recall ranker feeds complete scheduled-size candidate batches to Claude with rich, strictly pre-cutoff signal packs.",
+    "clean_source_status": "Confirmatory-grade label-source cut, but not a fresh holdout because v6 reuses the published v4 test and v5 sample.",
+    "cost_status": "Claude ran through claude.ai subscription auth with API credentials removed. USD is modeled equivalent usage, not API billing.",
+    "full_label_status": "Descriptive: the v4 held-out audit found 30% obvious noise in the substantive maintainer-comment source.",
+    "no_openai_calls": true
+  },
+  "known_llvmbot_label_noise_slice": {
+    "audited_rejected_incidents": 5,
+    "incident_ids": [
+      "v4incident:8812fb4253de8599d8d9",
+      "v4incident:e27861784f3982538071",
+      "v4incident:235d2ffdd6cb423229e2",
+      "v4incident:db1299a1d3e21262b9a5",
+      "v4incident:d82506b70ee55fffa23e"
+    ],
+    "stage1_alert_rows": 5,
+    "stage2_rejected_rows": 2
+  },
+  "per_label_source": {
+    "completed_bug_closure": {
+      "end_to_end_caught": 53,
+      "end_to_end_recall": 0.6883116883116883,
+      "incidents": 77,
+      "stage1_caught": 70,
+      "stage1_recall": 0.9090909090909091,
+      "stage2_survival_of_stage1_catches": 0.7571428571428571
+    },
+    "merged_fixing_pr": {
+      "end_to_end_caught": 36,
+      "end_to_end_recall": 0.45569620253164556,
+      "incidents": 79,
+      "stage1_caught": 55,
+      "stage1_recall": 0.6962025316455697,
+      "stage2_survival_of_stage1_catches": 0.6545454545454545
+    },
+    "substantive_maintainer_comment": {
+      "end_to_end_caught": 73,
+      "end_to_end_recall": 0.5572519083969466,
+      "incidents": 131,
+      "stage1_caught": 128,
+      "stage1_recall": 0.9770992366412213,
+      "stage2_survival_of_stage1_catches": 0.5703125
+    }
+  },
+  "requests": {
+    "batch_user_content_chars": {
+      "count": 20,
+      "max": 288235,
+      "mean": 263384.7,
+      "median": 271652.0,
+      "p95": 287453
+    },
+    "batch_user_content_chars_total": 5267694,
+    "candidate_count": 391,
+    "invocation_count": 20,
+    "supplied_event_json_chars_per_candidate": {
+      "count": 391,
+      "max": 24843,
+      "mean": 14966.35294117647,
+      "median": 14757,
+      "p95": 21870
+    },
+    "supplied_events_per_candidate": {
+      "count": 391,
+      "max": 10,
+      "mean": 9.67007672634271,
+      "median": 10,
+      "p95": 10
+    }
+  },
+  "runtime": {
+    "actual_model_usage": {
+      "claude-haiku-4-5-20251001": {
+        "cacheCreationInputTokens": 0.0,
+        "cacheReadInputTokens": 0.0,
+        "contextWindow": 4000000.0,
+        "costUSD": 1.8513569999999997,
+        "inputTokens": 1849677.0,
+        "maxOutputTokens": 640000.0,
+        "outputTokens": 336.0,
+        "webSearchRequests": 0.0
+      },
+      "claude-opus-4-8": {
+        "cacheCreationInputTokens": 2503839.0,
+        "cacheReadInputTokens": 1168735.0,
+        "contextWindow": 20000000.0,
+        "costUSD": 30.692497499999998,
+        "inputTokens": 58.0,
+        "maxOutputTokens": 1280000.0,
+        "outputTokens": 202778.0,
+        "webSearchRequests": 0.0
+      }
+    },
+    "input_tokens_total": 58,
+    "invocations": 20,
+    "modeled_equivalent_cost_usd_total": 32.5438545,
+    "output_tokens_total": 202778,
+    "wall_duration_ms_per_batch": {
+      "count": 20,
+      "max": 184389.0,
+      "mean": 130597.5,
+      "median": 128241.5,
+      "p95": 178089.0
+    },
+    "wall_duration_ms_sum": 2611950.0
+  },
+  "sampling": {
+    "method": "All stage-one positive hours plus deterministic SHA-256 samples of stage-one negative hours within repository and within-repository score quartile. Labels are used only for evaluation sampling and are never included in stage-two requests.",
+    "negative_alert_population": 1489,
+    "negative_alert_sample": 156,
+    "positive_alert_census": 235,
+    "sample_sha256": "b5c2db2854d648877fcf216b6400d16cb673bf13835a02f4523fb031fee723d2",
+    "stage1_alert_population": 1724,
+    "total_stage2_requests": 391
+  },
+  "schema_version": 1,
+  "scorecard_sha256": "fd1f49731874c08a721539952bfbe32103a7775e2d9850423c3ffdd731d97f2e",
+  "stage1": {
+    "alerts": 1724,
+    "candidate_hours": 5229,
+    "false_positive_hours": 1489,
+    "hour_recall": 0.8801498127340824,
+    "incident_recall": 0.8815331010452961,
+    "precision": 0.13631090487238978,
+    "true_positive_hours": 235
+  },
+  "study_id": "sentinel-rich-evidence-stage2-v6",
+  "v5_evidence_starved_baseline": {
+    "hour_recall": 0.7640449438202247,
+    "hour_recall_delta_v6": -0.2134831460674157,
+    "incident_recall": 0.7700348432055749,
+    "incident_recall_delta_v6": -0.20557491289198604,
+    "median_evidence_events": 1,
+    "precision": 0.166078697421981,
+    "precision_delta_v6": 0.030008452422394277,
+    "scorecard_sha256": "5c997bf587d82c801c70234f32a05516a965d2e8fa6260284d497b6235cadf80",
+    "true_positive_hours_killed": 31
+  }
+}
