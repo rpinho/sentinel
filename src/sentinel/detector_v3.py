@@ -43,6 +43,8 @@ BURST_FEATURES = (
 COHERENCE_FEATURES = (
     "bot_excluded_activity_count",
     "bot_excluded_fraction",
+    "bot_excluded_unique_participants",
+    "bot_excluded_active_threads",
     "bot_excluded_issue_rate",
     "bot_excluded_comment_rate",
     "bot_excluded_activity_phase_z",
@@ -54,16 +56,37 @@ COHERENCE_FEATURES = (
     "cross_thread_tfidf_mean",
     "cross_thread_shingle_max",
     "breakage_thread_share",
+    "breakage_issue_count",
+    "breakage_issue_share",
+    "new_issue_count",
+    "new_issue_share",
+    "max_thread_activity",
+    "top_thread_activity_share",
+    "top_actor_activity_share",
+    "repeated_payload_share",
+    "maintainer_comment_share",
+    "event_span_minutes",
+    "interarrival_cv",
+    "shared_version_thread_count",
+    "shared_version_thread_share",
+    "rolling_6h_breakage_issue_count",
+    "rolling_6h_active_threads",
+    "rolling_6h_cross_thread_tfidf_max",
+    "rolling_6h_shared_version_thread_count",
     "npm_release_nearby",
     "github_release_nearby",
     "release_source_count",
     "minutes_since_nearest_release",
+    "release_version_mentioned",
 )
 
 MODEL_FEATURES = BURST_FEATURES + COHERENCE_FEATURES
 
 _TOKEN = re.compile(r"[a-z0-9][a-z0-9_.:/-]{1,}")
 _SPACE = re.compile(r"\s+")
+_VERSION = re.compile(
+    r"(?<![a-z0-9])v?(\d+\.\d+(?:\.\d+)?)(?![a-z0-9])", re.IGNORECASE
+)
 _STOP_WORDS = frozenset(
     {
         "about",
@@ -409,10 +432,18 @@ def _build_repo_window(
             )
         )
         features.update(
+            _rolling_features(
+                events=events,
+                snapshot=snapshot,
+                config=config,
+            )
+        )
+        features.update(
             _release_features(
                 releases=releases,
                 snapshot=snapshot,
                 release_hours=release_hours,
+                activity_events=bucket_events,
             )
         )
         candidates.append(
@@ -528,6 +559,30 @@ def _base_features(
     excluded_participants = _actors(excluded)
     raw_threads = _threads(events)
     excluded_threads = _threads(excluded)
+    thread_counts = Counter(
+        number
+        for event in excluded
+        if (number := _issue_number(event)) is not None
+    )
+    actor_counts = Counter(
+        actor for event in excluded if (actor := _actor(event)) is not None
+    )
+    payload_counts = Counter(
+        signature
+        for event in excluded
+        if (signature := _payload_signature(event.text)) is not None
+    )
+    breakage_issues = [
+        event
+        for event in excluded_issues
+        if BREAKAGE_REPORT.search(event.text or "")
+    ]
+    maintainer_comments = [
+        event
+        for event in excluded_comments
+        if str(event.meta.get("author_association") or "").upper()
+        in MAINTAINER_ASSOCIATIONS
+    ]
     first_time_events = [
         event
         for event in excluded
@@ -539,6 +594,12 @@ def _base_features(
     text_features = _text_features(excluded)
     raw_count = len(events)
     excluded_count = len(excluded)
+    timestamps = sorted(event.ts for event in excluded)
+    gaps = [
+        (right - left).total_seconds()
+        for left, right in zip(timestamps, timestamps[1:])
+    ]
+    gap_mean = statistics.fmean(gaps) if gaps else 0.0
     return {
         "raw_activity_count": float(raw_count),
         "raw_issue_count": float(len(raw_issues)),
@@ -549,6 +610,8 @@ def _base_features(
         "bot_excluded_fraction": (
             excluded_count / raw_count if raw_count else 0.0
         ),
+        "bot_excluded_unique_participants": float(len(excluded_participants)),
+        "bot_excluded_active_threads": float(len(excluded_threads)),
         "bot_excluded_issue_rate": (
             len(excluded_issues) / len(excluded_participants)
             if excluded_participants
@@ -562,6 +625,47 @@ def _base_features(
         "first_time_participant_share": (
             len(first_time_events) / excluded_count if excluded_count else 0.0
         ),
+        "breakage_issue_count": float(len(breakage_issues)),
+        "breakage_issue_share": (
+            len(breakage_issues) / len(excluded_issues)
+            if excluded_issues
+            else 0.0
+        ),
+        "new_issue_count": float(len(excluded_issues)),
+        "new_issue_share": (
+            len(excluded_issues) / excluded_count if excluded_count else 0.0
+        ),
+        "max_thread_activity": float(max(thread_counts.values(), default=0)),
+        "top_thread_activity_share": (
+            max(thread_counts.values(), default=0) / excluded_count
+            if excluded_count
+            else 0.0
+        ),
+        "top_actor_activity_share": (
+            max(actor_counts.values(), default=0) / excluded_count
+            if excluded_count
+            else 0.0
+        ),
+        "repeated_payload_share": (
+            max(payload_counts.values(), default=0) / excluded_count
+            if excluded_count
+            else 0.0
+        ),
+        "maintainer_comment_share": (
+            len(maintainer_comments) / len(excluded_comments)
+            if excluded_comments
+            else 0.0
+        ),
+        "event_span_minutes": (
+            (timestamps[-1] - timestamps[0]).total_seconds() / 60
+            if len(timestamps) >= 2
+            else 0.0
+        ),
+        "interarrival_cv": (
+            statistics.pstdev(gaps) / gap_mean
+            if len(gaps) >= 2 and gap_mean
+            else 0.0
+        ),
         **text_features,
     }
 
@@ -570,11 +674,11 @@ def _phase_features(
     *, bucket: datetime, hourly: Mapping[datetime, Mapping[str, float]], history_days: int
 ) -> dict[str, float]:
     sources = {
-        "raw_activity_count": "raw_activity_phase_z",
-        "bot_excluded_activity_count": "bot_excluded_activity_phase_z",
-        "bot_excluded_issue_rate": "bot_excluded_issue_rate_phase_z",
-        "bot_excluded_comment_rate": "bot_excluded_comment_rate_phase_z",
-        "first_time_participant_share": "first_time_participant_phase_z",
+        "raw_activity_count": ("raw_activity_phase_z", 1.0),
+        "bot_excluded_activity_count": ("bot_excluded_activity_phase_z", 1.0),
+        "bot_excluded_issue_rate": ("bot_excluded_issue_rate_phase_z", 0.1),
+        "bot_excluded_comment_rate": ("bot_excluded_comment_rate_phase_z", 0.25),
+        "first_time_participant_share": ("first_time_participant_phase_z", 0.1),
     }
     oldest = bucket - timedelta(days=history_days)
     pool_hours = [
@@ -585,26 +689,70 @@ def _phase_features(
         and _day_class(hour) == _day_class(bucket)
     ]
     result: dict[str, float] = {}
-    for source, destination in sources.items():
+    for source, (destination, floor) in sources.items():
         values = [float(hourly[hour][source]) for hour in sorted(pool_hours)]
         current = float(hourly[bucket][source])
-        result[destination] = _robust_z(current, values)
+        result[destination] = _robust_z(current, values, floor=floor)
     return result
 
 
+def _rolling_features(
+    *, events: Sequence[Event], snapshot: datetime, config: DetectorConfig
+) -> dict[str, float]:
+    recent = tuple(
+        event
+        for event in events
+        if snapshot - timedelta(hours=6) <= event.ts < snapshot
+        and _is_activity(event)
+    )
+    automated = _automated_actors(recent, config)
+    excluded = tuple(
+        event for event in recent if (_actor(event) or "") not in automated
+    )
+    issues = [event for event in excluded if event.kind == "issue"]
+    text = _text_features(excluded)
+    return {
+        "rolling_6h_breakage_issue_count": float(
+            sum(BREAKAGE_REPORT.search(event.text or "") is not None for event in issues)
+        ),
+        "rolling_6h_active_threads": float(len(_threads(excluded))),
+        "rolling_6h_cross_thread_tfidf_max": text["cross_thread_tfidf_max"],
+        "rolling_6h_shared_version_thread_count": text[
+            "shared_version_thread_count"
+        ],
+    }
+
+
 def _release_features(
-    *, releases: Sequence[Event], snapshot: datetime, release_hours: int
+    *,
+    releases: Sequence[Event],
+    snapshot: datetime,
+    release_hours: int,
+    activity_events: Sequence[Event],
 ) -> dict[str, float]:
     oldest = snapshot - timedelta(hours=release_hours)
     nearby = [event for event in releases if oldest <= event.ts < snapshot]
     sources = {str(event.meta.get("source") or "unknown") for event in nearby}
     distances = [(snapshot - event.ts).total_seconds() / 60 for event in nearby]
+    release_versions = {
+        str(event.meta.get("version") or "").casefold().removeprefix("v")
+        for event in nearby
+        if event.meta.get("version")
+    }
+    mentioned_versions = {
+        match.group(1).casefold()
+        for event in activity_events
+        for match in _VERSION.finditer(event.text or "")
+    }
     return {
         "npm_release_nearby": float("npm_registry" in sources),
         "github_release_nearby": float("gharchive" in sources),
         "release_source_count": float(len(sources)),
         "minutes_since_nearest_release": (
             min(distances) if distances else float(release_hours * 60)
+        ),
+        "release_version_mentioned": float(
+            bool(release_versions & mentioned_versions)
         ),
     }
 
@@ -627,6 +775,14 @@ def _text_features(events: Sequence[Event]) -> dict[str, float]:
         any(BREAKAGE_REPORT.search(part) for part in parts)
         for parts in by_thread.values()
     )
+    versions_by_thread = [
+        {match.group(1).casefold() for match in _VERSION.finditer(document)}
+        for document in documents
+    ]
+    version_threads = Counter(
+        version for versions in versions_by_thread for version in versions
+    )
+    shared_version_threads = max(version_threads.values(), default=0)
     return {
         "cross_thread_tfidf_max": max(cosine, default=0.0),
         "cross_thread_tfidf_mean": (
@@ -635,6 +791,10 @@ def _text_features(events: Sequence[Event]) -> dict[str, float]:
         "cross_thread_shingle_max": max(shingles, default=0.0),
         "breakage_thread_share": (
             breakage_threads / len(by_thread) if by_thread else 0.0
+        ),
+        "shared_version_thread_count": float(shared_version_threads),
+        "shared_version_thread_share": (
+            shared_version_threads / len(by_thread) if by_thread else 0.0
         ),
     }
 
@@ -690,12 +850,19 @@ def _jaccard(left: set[str], right: set[str]) -> float:
     return len(left & right) / len(union) if union else 0.0
 
 
-def _robust_z(value: float, baseline: Sequence[float]) -> float:
+def _payload_signature(text: str | None) -> str | None:
+    normalized = " ".join((text or "")[:500].casefold().split())
+    return normalized or None
+
+
+def _robust_z(
+    value: float, baseline: Sequence[float], *, floor: float = 1.0
+) -> float:
     if len(baseline) < 2:
         return 0.0
     center = statistics.median(baseline)
     mad = statistics.median(abs(item - center) for item in baseline)
-    dispersion = max(1.0, abs(center) * 0.1, MAD_NORMAL_SCALE * mad)
+    dispersion = max(floor, abs(center) * 0.1, MAD_NORMAL_SCALE * mad)
     return (value - center) / dispersion
 
 
