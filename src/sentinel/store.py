@@ -113,6 +113,7 @@ class TriageRecord:
     replayed: bool
     input_max_ts: datetime | None
     response_id: str | None
+    provider: str | None = None
     created_at: datetime = field(default_factory=_utc_now)
 
     def __post_init__(self) -> None:
@@ -122,6 +123,8 @@ class TriageRecord:
             object.__setattr__(self, "input_max_ts", parse_timestamp(self.input_max_ts))
         if self.mode not in {"full", "no_agent", "no_feedback"}:
             raise ValueError(f"unsupported triage mode: {self.mode}")
+        if self.provider not in {None, "openai", "anthropic"}:
+            raise ValueError(f"unsupported triage provider: {self.provider}")
         if self.confidence is not None and not 0 <= self.confidence <= 1:
             raise ValueError("triage confidence must be between zero and one")
         if self.mode == "no_agent" and any(
@@ -268,6 +271,9 @@ class SentinelStore:
             CREATE INDEX IF NOT EXISTS ingestion_entity_window_idx
                 ON ingestion_windows(entity, window_start, window_end);
             """
+        )
+        self.connection.execute(
+            "ALTER TABLE triage_results ADD COLUMN IF NOT EXISTS provider VARCHAR"
         )
 
     def insert_events(self, events: Iterable[Event]) -> int:
@@ -432,8 +438,12 @@ class SentinelStore:
         ).fetchone()[0]
         self.connection.execute(
             """
-            INSERT INTO triage_results VALUES (
-                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+            INSERT INTO triage_results (
+                triage_id, firing_id, mode, real, cause, culprit_ref, confidence,
+                evidence_quotes, model, requested_model, prompt_hash, cache_hit,
+                replayed, input_max_ts, response_id, created_at, provider
+            ) VALUES (
+                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
             ) ON CONFLICT (triage_id) DO NOTHING
             """,
             [
@@ -453,6 +463,7 @@ class SentinelStore:
                 result.input_max_ts,
                 result.response_id,
                 result.created_at,
+                result.provider,
             ],
         )
         return before == 0
@@ -815,7 +826,7 @@ FROM feedback
 _TRIAGE_SELECT = """
 SELECT triage_id, firing_id, mode, real, cause, culprit_ref, confidence,
        evidence_quotes, model, requested_model, prompt_hash, cache_hit, replayed,
-       input_max_ts, response_id, created_at
+       input_max_ts, response_id, created_at, provider
 FROM triage_results
 """
 
@@ -898,6 +909,7 @@ def _row_to_triage(row: Sequence[Any]) -> TriageRecord:
         input_max_ts=row[13],
         response_id=row[14],
         created_at=row[15],
+        provider=row[16],
     )
 
 

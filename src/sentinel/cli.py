@@ -20,7 +20,9 @@ from sentinel.store import Firing, IngestionWindow, SentinelStore, TriageRecord
 from sentinel.triage import (
     DEFAULT_CACHE_DIR,
     DEFAULT_FIXTURE_DIR,
-    DEFAULT_MODEL,
+    DEFAULT_PROVIDER,
+    TriageProviderName,
+    default_model_for,
 )
 from sentinel.types import Event, format_timestamp, parse_timestamp
 
@@ -218,14 +220,20 @@ def detect(
     db: Path = typer.Option(Path("sentinel.duckdb"), help="DuckDB database path."),
     json_output: bool = typer.Option(False, "--json", help="Emit firing JSONL."),
     no_agent: bool = typer.Option(
-        False, "--no-agent", help="Detector-only ablation; do not call GPT triage."
+        False, "--no-agent", help="Detector-only ablation; do not call model triage."
     ),
     no_feedback: bool = typer.Option(
         False,
         "--no-feedback",
-        help="Run GPT triage without prior scorecard feedback.",
+        help="Run model triage without prior scorecard feedback.",
     ),
-    model: str = typer.Option(DEFAULT_MODEL, help="OpenAI model for causal triage."),
+    provider: str = typer.Option(
+        DEFAULT_PROVIDER,
+        help="Triage provider: anthropic or openai.",
+    ),
+    model: str | None = typer.Option(
+        None, help="Provider model; defaults to the current configured model."
+    ),
     triage_cache_dir: Path = typer.Option(
         DEFAULT_CACHE_DIR, "--triage-cache-dir", help="Exact-response cache directory."
     ),
@@ -238,6 +246,8 @@ def detect(
     """Run deterministic detection, then causal triage unless ablated."""
 
     _validate_ablation_flags(no_agent=no_agent, no_feedback=no_feedback)
+    provider_name = _validate_provider(provider)
+    resolved_model = model or default_model_for(provider_name)
     start_at = parse_timestamp(start) if start else None
     end_at = parse_timestamp(end) if end else None
     config = DetectorConfig.load(config_path)
@@ -269,7 +279,8 @@ def detect(
                 firing,
                 no_agent=no_agent,
                 no_feedback=no_feedback,
-                model=model,
+                provider=provider_name,
+                model=resolved_model,
                 cache_dir=triage_cache_dir,
                 fixture_dir=triage_fixture_dir,
             )
@@ -286,14 +297,20 @@ def triage_command(
     firing_id: str = typer.Argument(..., help="Persisted firing to triage."),
     db: Path = typer.Option(Path("sentinel.duckdb"), help="DuckDB database path."),
     no_agent: bool = typer.Option(
-        False, "--no-agent", help="Detector-only ablation; do not call GPT triage."
+        False, "--no-agent", help="Detector-only ablation; do not call model triage."
     ),
     no_feedback: bool = typer.Option(
         False,
         "--no-feedback",
-        help="Run GPT triage without prior scorecard feedback.",
+        help="Run model triage without prior scorecard feedback.",
     ),
-    model: str = typer.Option(DEFAULT_MODEL, help="OpenAI model for causal triage."),
+    provider: str = typer.Option(
+        DEFAULT_PROVIDER,
+        help="Triage provider: anthropic or openai.",
+    ),
+    model: str | None = typer.Option(
+        None, help="Provider model; defaults to the current configured model."
+    ),
     cache_dir: Path = typer.Option(
         DEFAULT_CACHE_DIR, help="Exact-response cache directory."
     ),
@@ -305,6 +322,8 @@ def triage_command(
     """Triage one persisted firing using strictly earlier same-entity events."""
 
     _validate_ablation_flags(no_agent=no_agent, no_feedback=no_feedback)
+    provider_name = _validate_provider(provider)
+    resolved_model = model or default_model_for(provider_name)
     with SentinelStore(db) as store:
         firing = store.get_firing(firing_id)
         if firing is None:
@@ -314,7 +333,8 @@ def triage_command(
             firing,
             no_agent=no_agent,
             no_feedback=no_feedback,
-            model=model,
+            provider=provider_name,
+            model=resolved_model,
             cache_dir=cache_dir,
             fixture_dir=fixture_dir,
         )
@@ -445,6 +465,12 @@ def _validate_ablation_flags(*, no_agent: bool, no_feedback: bool) -> None:
         )
 
 
+def _validate_provider(provider: str) -> TriageProviderName:
+    if provider not in {"openai", "anthropic"}:
+        raise typer.BadParameter("provider must be openai or anthropic")
+    return cast(TriageProviderName, provider)
+
+
 def _print_firing(
     firing: Firing,
     triage: TriageRecord,
@@ -494,7 +520,8 @@ def _print_triage(
         return
     typer.echo(
         f"TRIAGE firing={triage.firing_id} mode={triage.mode} "
-        f"model={triage.model or 'none'} cache_hit={str(triage.cache_hit).lower()} "
+        f"provider={triage.provider or 'none'} model={triage.model or 'none'} "
+        f"cache_hit={str(triage.cache_hit).lower()} "
         f"replayed={str(triage.replayed).lower()} "
         f"prompt_hash={triage.prompt_hash or 'none'} "
         f"persisted={str(inserted).lower()}"
@@ -531,6 +558,7 @@ def _triage_payload(
         "confidence": triage.confidence,
         "evidence_quotes": list(triage.evidence_quotes),
         "model": triage.model,
+        "provider": triage.provider,
         "requested_model": triage.requested_model,
         "prompt_hash": triage.prompt_hash,
         "cache_hit": triage.cache_hit,

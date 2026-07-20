@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -122,16 +123,20 @@ def verify(database: Path, config_path: Path, fixture_dir: Path) -> None:
         if FIRING_TS - timedelta(hours=24) <= event.ts < FIRING_TS
     ]
     triage_requests = {
-        "full": build_triage_request(
+        "full": _legacy_openai_request(build_triage_request(
             firing,
             pre_firing_events,
             feedback_context=feedback_context,
-        ),
-        "no_feedback": build_triage_request(
+            provider="openai",
+            model="gpt-5.6",
+        )),
+        "no_feedback": _legacy_openai_request(build_triage_request(
             firing,
             pre_firing_events,
             no_feedback=True,
-        ),
+            provider="openai",
+            model="gpt-5.6",
+        )),
     }
     triage_outputs = {
         mode: _verify_triage_fixture(
@@ -172,6 +177,17 @@ def verify(database: Path, config_path: Path, fixture_dir: Path) -> None:
     )
     print(
         f"PASS pre-ack lead: {(ACK_TS - firing.ts).total_seconds() / 60:.1f} minutes"
+    )
+
+
+def _legacy_openai_request(request: TriageRequest) -> TriageRequest:
+    """Address the published v1 fixture while provider-scoped v2 rolls out."""
+
+    assert request.legacy_prompt_hash is not None
+    return replace(
+        request,
+        prompt_hash=request.legacy_prompt_hash,
+        legacy_prompt_hash=None,
     )
 
 

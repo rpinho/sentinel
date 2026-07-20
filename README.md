@@ -4,8 +4,8 @@ An anomaly detection + triage agent for public event streams that **grades itsel
 
 The current core provides a source-neutral event contract, two deliberately different
 public-data adapters, deterministic trailing-baseline detection, DuckDB persistence,
-GPT-5.6 causal triage, exact-response replay fixtures, two real ablations, and an
-append-only feedback loop. The public scorecard UI is the next pass.
+provider-agnostic causal triage, exact-response replay fixtures, two real ablations,
+and an append-only feedback loop.
 
 ## Install and test
 
@@ -64,8 +64,9 @@ config, and each firing carries its SHA-256 version. Pass `--config
 src/sentinel/config/default.toml` for the frozen v1 replay or another committed TOML for
 a different detector.
 
-Detection runs GPT-5.6 triage for each firing by default. Use `--no-agent` for the
-detector-only ablation.
+Detection runs Claude triage for each firing by default. Provider-agnostic triage is a
+shipped feature: run it with whichever key you have, or select the published GPT-5.6
+path with `--provider openai`. Use `--no-agent` for the detector-only ablation.
 
 ## Triage, replay, and ablations
 
@@ -78,17 +79,23 @@ Run one persisted firing directly:
 
 ```bash
 uv run sentinel triage FIRING_ID --db sentinel.duckdb
+uv run sentinel triage FIRING_ID --provider openai --db sentinel.duckdb
 ```
 
-The live API key is loaded from the repository `.env` as `OPENAI_API_KEY`. Each request
-uses GPT-5.6 with
-[Responses structured output](https://developers.openai.com/api/docs/guides/structured-outputs)
-and is hashed from the exact effective API payload. GPT-5.6's Responses endpoint rejects
-non-default `temperature`, so Sentinel omits it. Sentinel attempts fixed `seed: 0` as a
-best-effort hint; if the endpoint explicitly rejects that field as unsupported, it retries
-without seed and persists the canonical no-seed request under its own exact hash. The
-webpack v2 publication run took that fallback. Deterministic replay comes from the exact
-cached response, not a sampling control. Live responses are written to both
+Live keys are loaded from the repository `.env` as `ANTHROPIC_API_KEY` or
+`OPENAI_API_KEY`. Claude Sonnet 5 is the default; `--provider openai` selects GPT-5.6.
+Both backends return the same strict triage contract. Provider, model, and exact effective
+request are part of the cache identity, so Claude and OpenAI fixtures cannot collide and
+published GPT fixtures remain valid.
+
+The GPT-5.6 path uses
+[Responses structured output](https://developers.openai.com/api/docs/guides/structured-outputs).
+Its Responses endpoint rejects non-default `temperature`, so Sentinel omits it. Sentinel
+attempts fixed `seed: 0` as a best-effort hint; if the endpoint explicitly rejects that
+field as unsupported, it retries without seed and persists the canonical no-seed request
+under its own exact hash. The webpack v2 publication run took that fallback. Deterministic
+replay comes from the exact cached response, not a sampling control. Live responses from
+either provider are written to both
 `.cache/triage/` and `tests/fixtures/triage/`. On a cache miss without a key, Sentinel
 fails instead of inventing a response.
 
@@ -100,8 +107,8 @@ limits honor bounded `Retry-After` retries.
 
 The modes are persisted side by side in `triage_results`:
 
-- Default/full: GPT triage with active feedback from `relevant_feedback()`.
-- `--no-feedback`: GPT triage without feedback; the changed request has a distinct hash.
+- Default/full: model triage with active feedback from `relevant_feedback()`.
+- `--no-feedback`: model triage without feedback; the changed request has a distinct hash.
 - `--no-agent`: detector only; the scorecard firing remains, with null cause and culprit.
 
 Full-mode feedback is rendered with IDs and provenance, delimited as untrusted historical

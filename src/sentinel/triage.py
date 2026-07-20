@@ -1,4 +1,4 @@
-"""GPT-5.6 causal triage with strict temporal isolation and replay caching."""
+"""Provider-agnostic causal triage with strict isolation and exact replay."""
 
 from __future__ import annotations
 
@@ -14,6 +14,7 @@ from typing import Any, Literal, Mapping, Protocol, Sequence, cast
 from urllib.parse import unquote
 from uuid import uuid4
 
+import httpx
 from dotenv import load_dotenv
 from openai import BadRequestError, OpenAI, RateLimitError
 
@@ -22,7 +23,12 @@ from sentinel.types import Event, format_timestamp
 
 load_dotenv()
 
-DEFAULT_MODEL = "gpt-5.6"
+TriageProviderName = Literal["openai", "anthropic"]
+DEFAULT_PROVIDER: TriageProviderName = "anthropic"
+DEFAULT_OPENAI_MODEL = "gpt-5.6"
+DEFAULT_ANTHROPIC_MODEL = "claude-sonnet-5"
+# Backward-compatible import for callers that intentionally replay GPT fixtures.
+DEFAULT_MODEL = DEFAULT_OPENAI_MODEL
 DEFAULT_CACHE_DIR = Path(".cache/triage")
 DEFAULT_FIXTURE_DIR = Path("tests/fixtures/triage")
 MAX_OUTPUT_TOKENS = 1_200
@@ -108,6 +114,180 @@ class OpenAIClient(Protocol):
     responses: ResponsesClient
 
 
+class AnthropicClient(Protocol):
+    def post(self, url: str, **kwargs: Any) -> httpx.Response: ...
+
+
+@dataclass(frozen=True, slots=True)
+class ProviderResponse:
+    output_text: str
+    model: str
+    response_id: str | None
+
+
+class ProviderBackend(Protocol):
+    name: TriageProviderName
+    api_key_env: str
+    default_model: str
+
+    def build_payload(
+        self, *, model: str, user_content: str
+    ) -> Mapping[str, Any]: ...
+
+    def create(
+        self,
+        api_payload: Mapping[str, Any],
+        *,
+        client: Any | None,
+        api_key: str,
+    ) -> ProviderResponse: ...
+
+
+class OpenAIBackend:
+    name: TriageProviderName = "openai"
+    api_key_env = "OPENAI_API_KEY"
+    default_model = DEFAULT_OPENAI_MODEL
+
+    def build_payload(self, *, model: str, user_content: str) -> Mapping[str, Any]:
+        return {
+            "model": model,
+            "max_output_tokens": MAX_OUTPUT_TOKENS,
+            "store": False,
+            "input": [
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": user_content},
+            ],
+            "text": {
+                "format": {
+                    "type": "json_schema",
+                    "name": "sentinel_triage",
+                    "description": "Causal triage of a deterministic anomaly firing.",
+                    "strict": True,
+                    "schema": TRIAGE_SCHEMA,
+                }
+            },
+        }
+
+    def create(
+        self,
+        api_payload: Mapping[str, Any],
+        *,
+        client: Any | None,
+        api_key: str,
+    ) -> ProviderResponse:
+        live_client = client or OpenAI(api_key=api_key)
+        response = _create_openai_response(
+            cast(OpenAIClient, live_client), api_payload
+        )
+        output_text = getattr(response, "output_text", None)
+        if not isinstance(output_text, str) or not output_text.strip():
+            raise TriageResponseError(
+                "OpenAI response did not contain structured output text"
+            )
+        return ProviderResponse(
+            output_text=output_text,
+            model=str(getattr(response, "model", api_payload["model"])),
+            response_id=cast(str | None, getattr(response, "id", None)),
+        )
+
+
+class AnthropicBackend:
+    name: TriageProviderName = "anthropic"
+    api_key_env = "ANTHROPIC_API_KEY"
+    default_model = DEFAULT_ANTHROPIC_MODEL
+    endpoint = "https://api.anthropic.com/v1/messages"
+
+    def build_payload(self, *, model: str, user_content: str) -> Mapping[str, Any]:
+        return {
+            "model": model,
+            "max_tokens": MAX_OUTPUT_TOKENS,
+            "system": SYSTEM_PROMPT,
+            "messages": [{"role": "user", "content": user_content}],
+            "output_config": {
+                "format": {
+                    "type": "json_schema",
+                    "schema": _anthropic_triage_schema(),
+                }
+            },
+        }
+
+    def create(
+        self,
+        api_payload: Mapping[str, Any],
+        *,
+        client: Any | None,
+        api_key: str,
+    ) -> ProviderResponse:
+        owns_client = client is None
+        live_client = client or httpx.Client(
+            timeout=httpx.Timeout(180.0, connect=20.0)
+        )
+        try:
+            response = _create_anthropic_response(
+                cast(AnthropicClient, live_client),
+                self.endpoint,
+                api_payload,
+                api_key,
+            )
+        finally:
+            if owns_client:
+                live_client.close()
+        document = response.json()
+        if document.get("stop_reason") in {"refusal", "max_tokens"}:
+            raise TriageResponseError(
+                f"Anthropic response stopped with {document['stop_reason']}"
+            )
+        content = document.get("content")
+        text_blocks = [
+            block.get("text")
+            for block in content or []
+            if isinstance(block, Mapping)
+            and block.get("type") == "text"
+            and isinstance(block.get("text"), str)
+        ]
+        if len(text_blocks) != 1 or not text_blocks[0].strip():
+            raise TriageResponseError(
+                "Anthropic response did not contain one structured text block"
+            )
+        return ProviderResponse(
+            output_text=text_blocks[0],
+            model=str(document.get("model") or api_payload["model"]),
+            response_id=(
+                str(document["id"]) if document.get("id") is not None else None
+            ),
+        )
+
+
+BACKENDS: Mapping[TriageProviderName, ProviderBackend] = {
+    "openai": OpenAIBackend(),
+    "anthropic": AnthropicBackend(),
+}
+
+
+def backend_for(provider: str) -> ProviderBackend:
+    try:
+        return BACKENDS[cast(TriageProviderName, provider)]
+    except KeyError as exc:
+        raise ValueError(
+            f"unsupported triage provider {provider!r}; use openai or anthropic"
+        ) from exc
+
+
+def default_model_for(provider: str) -> str:
+    return backend_for(provider).default_model
+
+
+def _anthropic_triage_schema() -> dict[str, Any]:
+    """Return Claude's supported schema; local validation retains numeric bounds."""
+
+    schema = json.loads(json.dumps(TRIAGE_SCHEMA))
+    confidence = schema["properties"]["confidence"]
+    confidence.pop("minimum", None)
+    confidence.pop("maximum", None)
+    confidence["description"] += " Must be between zero and one."
+    return schema
+
+
 @dataclass(frozen=True, slots=True)
 class TriageOutput:
     real: bool
@@ -165,10 +345,12 @@ class TriageOutput:
 
 @dataclass(frozen=True, slots=True)
 class TriageRequest:
+    provider: TriageProviderName
     model: str
     mode: TriageMode
     api_payload: Mapping[str, Any]
     prompt_hash: str
+    legacy_prompt_hash: str | None
     input_max_ts: datetime | None
     events: tuple[Event, ...]
 
@@ -185,6 +367,7 @@ class TriageRun:
     cache_source: Literal["live", "cache", "fixture"]
     input_max_ts: datetime | None
     response_id: str | None
+    provider: TriageProviderName = "openai"
 
 
 def build_triage_request(
@@ -193,7 +376,8 @@ def build_triage_request(
     *,
     feedback_context: str | None = None,
     no_feedback: bool = False,
-    model: str = DEFAULT_MODEL,
+    provider: TriageProviderName = DEFAULT_PROVIDER,
+    model: str | None = None,
 ) -> TriageRequest:
     """Build the exact request after enforcing the no-future-data invariant."""
 
@@ -255,30 +439,23 @@ def build_triage_request(
             },
         )
 
-    api_payload: dict[str, Any] = {
-        "model": model,
-        "max_output_tokens": MAX_OUTPUT_TOKENS,
-        "store": False,
-        "input": [
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": _render_user_payload(user_payload)},
-        ],
-        "text": {
-            "format": {
-                "type": "json_schema",
-                "name": "sentinel_triage",
-                "description": "Causal triage of a deterministic anomaly firing.",
-                "strict": True,
-                "schema": TRIAGE_SCHEMA,
-            }
-        },
-    }
-    prompt_hash = _hash_document(api_payload)
+    backend = backend_for(provider)
+    resolved_model = model or backend.default_model
+    api_payload = backend.build_payload(
+        model=resolved_model,
+        user_content=_render_user_payload(user_payload),
+    )
+    prompt_hash = _provider_request_hash(provider, resolved_model, api_payload)
+    legacy_prompt_hash = (
+        _hash_document(api_payload) if provider == "openai" else None
+    )
     return TriageRequest(
-        model=model,
+        provider=provider,
+        model=resolved_model,
         mode=mode,
         api_payload=api_payload,
         prompt_hash=prompt_hash,
+        legacy_prompt_hash=legacy_prompt_hash,
         input_max_ts=input_max_ts,
         events=ordered_events,
     )
@@ -395,11 +572,14 @@ def triage_firing(
     *,
     feedback_context: str | None = None,
     no_feedback: bool = False,
-    model: str = DEFAULT_MODEL,
+    provider: TriageProviderName = DEFAULT_PROVIDER,
+    model: str | None = None,
     cache_dir: Path | str = DEFAULT_CACHE_DIR,
     fixture_dir: Path | str = DEFAULT_FIXTURE_DIR,
-    client: OpenAIClient | None = None,
+    client: Any | None = None,
     api_key: str | None = None,
+    allow_legacy_replay: bool = True,
+    allow_live: bool = True,
 ) -> TriageRun:
     """Triage a firing live or replay the exact request from a committed fixture."""
 
@@ -408,6 +588,7 @@ def triage_firing(
         events,
         feedback_context=feedback_context,
         no_feedback=no_feedback,
+        provider=provider,
         model=model,
     )
     cache_path = Path(cache_dir) / f"{request.prompt_hash}.json"
@@ -421,31 +602,65 @@ def triage_firing(
         _write_record(cache_path, record)
         return _run_from_record(record, request, source="fixture")
 
-    # Preserve exact replay for fixtures created before the API's seed support
-    # was verified. Every new live seed includes the fixed seed in both the
-    # effective request and its cache identity.
-    unseeded_request = request
-    request = _with_live_seed(request)
-    cache_path = Path(cache_dir) / f"{request.prompt_hash}.json"
-    fixture_path = Path(fixture_dir) / f"{request.prompt_hash}.json"
-    if cache_path.exists():
-        record = _read_record(cache_path, request)
-        return _run_from_record(record, request, source="cache")
-    if fixture_path.exists():
-        record = _read_record(fixture_path, request)
-        _write_record(cache_path, record)
-        return _run_from_record(record, request, source="fixture")
-
-    resolved_key = api_key or os.getenv("OPENAI_API_KEY")
-    if client is None and not resolved_key:
-        raise TriageCacheMissError(
-            f"no cached triage response for {request.prompt_hash} and OPENAI_API_KEY is absent"
+    # Provider-scoped identities are v2. Preserve exact replay for published
+    # OpenAI fixtures created under the legacy payload-only identity.
+    if allow_legacy_replay and request.legacy_prompt_hash:
+        legacy_request = replace(
+            request,
+            prompt_hash=request.legacy_prompt_hash,
+            legacy_prompt_hash=None,
         )
-    live_client = client or cast(OpenAIClient, OpenAI(api_key=resolved_key))
+        legacy_cache = Path(cache_dir) / f"{legacy_request.prompt_hash}.json"
+        legacy_fixture = Path(fixture_dir) / f"{legacy_request.prompt_hash}.json"
+        if legacy_cache.exists():
+            record = _read_record(legacy_cache, legacy_request)
+            return _run_from_record(record, legacy_request, source="cache")
+        if legacy_fixture.exists():
+            record = _read_record(legacy_fixture, legacy_request)
+            _write_record(legacy_cache, record)
+            return _run_from_record(record, legacy_request, source="fixture")
+
+    # OpenAI seed remains an optional best-effort hint. Anthropic's exact
+    # request is already ready for lookup and dispatch.
+    unseeded_request = request
+    if request.provider == "openai":
+        request = _with_live_seed(request)
+        cache_path = Path(cache_dir) / f"{request.prompt_hash}.json"
+        fixture_path = Path(fixture_dir) / f"{request.prompt_hash}.json"
+        if cache_path.exists():
+            record = _read_record(cache_path, request)
+            return _run_from_record(record, request, source="cache")
+        if fixture_path.exists():
+            record = _read_record(fixture_path, request)
+            _write_record(cache_path, record)
+            return _run_from_record(record, request, source="fixture")
+
+    if not allow_live:
+        raise TriageCacheMissError(
+            f"offline replay has no cached {request.provider} triage response "
+            f"for {request.prompt_hash}"
+        )
+
+    backend = backend_for(request.provider)
+    # Injected clients are test seams and do not need a real credential. Avoid
+    # reading a developer's environment in that path so a failing fake cannot
+    # accidentally expose a live key in its captured call state or traceback.
+    resolved_key = api_key or (
+        os.getenv(backend.api_key_env) if client is None else "injected-client"
+    )
+    if not resolved_key:
+        raise TriageCacheMissError(
+            f"no cached {request.provider} triage response for "
+            f"{request.prompt_hash} and {backend.api_key_env} is absent"
+        )
     try:
-        response = _create_live_response(live_client, request.api_payload)
+        response = backend.create(
+            request.api_payload,
+            client=client,
+            api_key=resolved_key,
+        )
     except BadRequestError as exc:
-        if not _is_unsupported_seed_error(exc):
+        if request.provider != "openai" or not _is_unsupported_seed_error(exc):
             raise
         # Seed is an optional reproducibility hint, and Responses model support
         # can differ by deployment. If the endpoint explicitly rejects it,
@@ -454,34 +669,39 @@ def triage_firing(
         request = unseeded_request
         cache_path = Path(cache_dir) / f"{request.prompt_hash}.json"
         fixture_path = Path(fixture_dir) / f"{request.prompt_hash}.json"
-        response = _create_live_response(live_client, request.api_payload)
-    output_text = getattr(response, "output_text", None)
-    if not isinstance(output_text, str) or not output_text.strip():
-        raise TriageResponseError(
-            "OpenAI response did not contain structured output text"
+        response = backend.create(
+            request.api_payload,
+            client=client,
+            api_key=resolved_key,
         )
     try:
-        raw_output = json.loads(output_text)
+        raw_output = json.loads(response.output_text)
     except json.JSONDecodeError as exc:
         raise TriageResponseError(
-            "OpenAI structured output was not valid JSON"
+            f"{request.provider} structured output was not valid JSON"
         ) from exc
     if not isinstance(raw_output, dict):
-        raise TriageResponseError("OpenAI structured output was not a JSON object")
+        raise TriageResponseError(
+            f"{request.provider} structured output was not a JSON object"
+        )
     model_output = TriageOutput.from_mapping(raw_output)
     output, grounding = _ground_evidence_quotes(model_output, request.events)
     _validate_evidence(output, request.events)
 
     record = {
-        "cache_version": 1,
+        "cache_version": 2,
+        "provider": request.provider,
         "request_hash": request.prompt_hash,
+        "request_identity": _provider_request_identity(
+            request.provider, request.model, request.api_payload
+        ),
         "request": dict(request.api_payload),
         "response": output.to_dict(),
         "raw_response": model_output.to_dict() if grounding else None,
         "evidence_grounding": grounding,
         "requested_model": request.model,
-        "returned_model": str(getattr(response, "model", request.model)),
-        "response_id": getattr(response, "id", None),
+        "returned_model": response.model,
+        "response_id": response.response_id,
         "created_at": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
     }
     _write_record(cache_path, record)
@@ -497,6 +717,7 @@ def triage_firing(
         cache_source="live",
         input_max_ts=request.input_max_ts,
         response_id=cast(str | None, record["response_id"]),
+        provider=request.provider,
     )
 
 
@@ -505,7 +726,10 @@ def _with_live_seed(request: TriageRequest) -> TriageRequest:
     return replace(
         request,
         api_payload=api_payload,
-        prompt_hash=_hash_document(api_payload),
+        prompt_hash=_provider_request_hash(
+            request.provider, request.model, api_payload
+        ),
+        legacy_prompt_hash=None,
     )
 
 
@@ -535,10 +759,11 @@ def _run_from_record(
             if record.get("response_id") is not None
             else None
         ),
+        provider=request.provider,
     )
 
 
-def _create_live_response(
+def _create_openai_response(
     client: OpenAIClient, api_payload: Mapping[str, Any]
 ) -> Any:
     """Call Responses with bounded TPM retry handling."""
@@ -556,6 +781,31 @@ def _create_live_response(
                 raise
             time.sleep(_rate_limit_delay(exc))
     raise TriageError("unreachable live response retry state")
+
+
+def _create_anthropic_response(
+    client: AnthropicClient,
+    endpoint: str,
+    api_payload: Mapping[str, Any],
+    api_key: str,
+) -> httpx.Response:
+    for attempt in range(MAX_RATE_LIMIT_RETRIES + 1):
+        response = client.post(
+            endpoint,
+            headers={
+                "x-api-key": api_key,
+                "anthropic-version": "2023-06-01",
+                "content-type": "application/json",
+            },
+            json=dict(api_payload),
+        )
+        if response.status_code != 429:
+            response.raise_for_status()
+            return response
+        if attempt >= MAX_RATE_LIMIT_RETRIES:
+            response.raise_for_status()
+        time.sleep(_http_retry_delay(response))
+    raise TriageError("unreachable Anthropic retry state")
 
 
 def _is_unsupported_seed_error(exc: BadRequestError) -> bool:
@@ -582,6 +832,15 @@ def _rate_limit_delay(exc: RateLimitError) -> float:
     return min(MAX_RATE_LIMIT_DELAY_SECONDS, max(1.0, delay + 0.5))
 
 
+def _http_retry_delay(response: httpx.Response) -> float:
+    raw = response.headers.get("retry-after")
+    try:
+        delay = float(raw) if raw is not None else 5.0
+    except (TypeError, ValueError):
+        delay = 5.0
+    return min(MAX_RATE_LIMIT_DELAY_SECONDS, max(1.0, delay + 0.5))
+
+
 def _read_record(path: Path, request: TriageRequest) -> dict[str, Any]:
     try:
         record = json.loads(path.read_text(encoding="utf-8"))
@@ -591,16 +850,34 @@ def _read_record(path: Path, request: TriageRequest) -> dict[str, Any]:
         ) from exc
     if not isinstance(record, dict):
         raise TriageResponseError(f"triage cache record {path} is not an object")
-    if record.get("cache_version") != 1:
+    cache_version = record.get("cache_version")
+    if cache_version not in {1, 2}:
         raise TriageResponseError(f"unsupported triage cache version in {path}")
     if record.get("request_hash") != request.prompt_hash:
         raise TriageResponseError(f"triage cache hash mismatch in {path}")
     cached_request = record.get("request")
-    if (
-        not isinstance(cached_request, dict)
-        or _hash_document(cached_request) != request.prompt_hash
-    ):
+    if not isinstance(cached_request, dict):
         raise TriageResponseError(f"triage cache request payload mismatch in {path}")
+    if cache_version == 1:
+        if request.provider != "openai" or _hash_document(
+            cached_request
+        ) != request.prompt_hash:
+            raise TriageResponseError(
+                f"legacy triage cache request payload mismatch in {path}"
+            )
+    else:
+        identity = record.get("request_identity")
+        expected_identity = _provider_request_identity(
+            request.provider, request.model, cached_request
+        )
+        if (
+            record.get("provider") != request.provider
+            or identity != expected_identity
+            or _hash_document(expected_identity) != request.prompt_hash
+        ):
+            raise TriageResponseError(
+                f"provider-scoped triage cache request mismatch in {path}"
+            )
     return record
 
 
@@ -719,3 +996,23 @@ def _hash_document(document: Mapping[str, Any]) -> str:
         document, ensure_ascii=False, sort_keys=True, separators=(",", ":")
     )
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def _provider_request_identity(
+    provider: TriageProviderName,
+    model: str,
+    api_payload: Mapping[str, Any],
+) -> dict[str, Any]:
+    return {
+        "provider": provider,
+        "model": model,
+        "request": dict(api_payload),
+    }
+
+
+def _provider_request_hash(
+    provider: TriageProviderName,
+    model: str,
+    api_payload: Mapping[str, Any],
+) -> str:
+    return _hash_document(_provider_request_identity(provider, model, api_payload))

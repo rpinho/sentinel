@@ -52,6 +52,24 @@ def _issue(ts: datetime | None = None, *, entity: str = "webpack/webpack") -> Ev
     )
 
 
+def _openai_request(*args: Any, **kwargs: Any):
+    return build_triage_request(
+        *args,
+        provider="openai",
+        model="gpt-5.6",
+        **kwargs,
+    )
+
+
+def _openai_triage(*args: Any, **kwargs: Any):
+    return triage_firing(
+        *args,
+        provider="openai",
+        model="gpt-5.6",
+        **kwargs,
+    )
+
+
 class FakeResponses:
     def __init__(self, output: dict[str, Any]) -> None:
         self.output = output
@@ -69,6 +87,30 @@ class FakeResponses:
 class FakeClient:
     def __init__(self, output: dict[str, Any]) -> None:
         self.responses = FakeResponses(output)
+
+
+class FakeAnthropicClient:
+    def __init__(self, output: dict[str, Any]) -> None:
+        self.output = output
+        self.calls: list[dict[str, Any]] = []
+
+    def post(self, url: str, **kwargs: Any) -> httpx.Response:
+        self.calls.append({"url": url, **kwargs})
+        request = httpx.Request("POST", url)
+        return httpx.Response(
+            200,
+            request=request,
+            json={
+                "id": "msg_test",
+                "type": "message",
+                "role": "assistant",
+                "model": "claude-sonnet-5",
+                "content": [
+                    {"type": "text", "text": json.dumps(self.output)}
+                ],
+                "stop_reason": "end_turn",
+            },
+        )
 
 
 class RateLimitedResponses(FakeResponses):
@@ -128,7 +170,7 @@ def test_post_firing_event_is_rejected_before_client_call(tmp_path: Path) -> Non
     client = FakeClient(_live_output())
 
     with pytest.raises(TriageInputError, match="not strictly before"):
-        triage_firing(
+        _openai_triage(
             _firing(),
             [_issue(FIRING_TS)],
             client=client,
@@ -143,7 +185,7 @@ def test_wrong_entity_is_rejected_before_client_call(tmp_path: Path) -> None:
     client = FakeClient(_live_output())
 
     with pytest.raises(TriageInputError, match="does not match firing"):
-        triage_firing(
+        _openai_triage(
             _firing(),
             [_issue(entity="other/repo")],
             client=client,
@@ -162,7 +204,7 @@ def test_live_response_is_cached_as_fixture_and_replays_without_key(
     client = FakeClient(_live_output())
     event = _issue()
 
-    live = triage_firing(
+    live = _openai_triage(
         _firing(),
         [event],
         feedback_context="No prior feedback.",
@@ -177,7 +219,7 @@ def test_live_response_is_cached_as_fixture_and_replays_without_key(
     assert "temperature" not in live_record["request"]
     (cache_dir / f"{live.prompt_hash}.json").unlink()
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
-    replay = triage_firing(
+    replay = _openai_triage(
         _firing(),
         [event],
         feedback_context="No prior feedback.",
@@ -204,7 +246,7 @@ def test_live_rate_limit_retries_with_server_delay(
     sleeps: list[float] = []
     monkeypatch.setattr("sentinel.triage.time.sleep", sleeps.append)
 
-    run = triage_firing(
+    run = _openai_triage(
         _firing(),
         [_issue()],
         client=client,
@@ -224,9 +266,9 @@ def test_live_seed_rejection_falls_back_to_exact_unseeded_request(
 ) -> None:
     responses = SeedRejectedResponses(_live_output())
     client = SimpleNamespace(responses=responses)
-    unseeded = build_triage_request(_firing(), [_issue()])
+    unseeded = _openai_request(_firing(), [_issue()])
 
-    run = triage_firing(
+    run = _openai_triage(
         _firing(),
         [_issue()],
         client=client,
@@ -246,10 +288,10 @@ def test_live_seed_rejection_falls_back_to_exact_unseeded_request(
 
 
 def test_no_feedback_changes_exact_prompt_hash() -> None:
-    full = build_triage_request(
+    full = _openai_request(
         _firing(), [_issue()], feedback_context="No prior feedback."
     )
-    ablated = build_triage_request(_firing(), [_issue()], no_feedback=True)
+    ablated = _openai_request(_firing(), [_issue()], no_feedback=True)
 
     assert full.mode == "full"
     assert ablated.mode == "no_feedback"
@@ -257,6 +299,85 @@ def test_no_feedback_changes_exact_prompt_hash() -> None:
     assert "temperature" not in full.api_payload
     assert "seed" not in full.api_payload
     assert '"enabled":false' in ablated.api_payload["input"][1]["content"]
+
+
+def test_provider_and_model_scope_exact_request_identity() -> None:
+    default_request = build_triage_request(_firing(), [_issue()])
+    openai_request = _openai_request(_firing(), [_issue()])
+    alternate_model = build_triage_request(
+        _firing(),
+        [_issue()],
+        provider="anthropic",
+        model="claude-fable-5",
+    )
+
+    assert default_request.provider == "anthropic"
+    assert default_request.model == "claude-sonnet-5"
+    assert default_request.prompt_hash != openai_request.prompt_hash
+    assert default_request.prompt_hash != alternate_model.prompt_hash
+    assert "output_config" in default_request.api_payload
+    assert "text" not in default_request.api_payload
+    assert "temperature" not in default_request.api_payload
+
+
+def test_anthropic_live_response_is_provider_scoped_and_replays(
+    tmp_path: Path,
+) -> None:
+    cache_dir = tmp_path / "cache"
+    fixture_dir = tmp_path / "fixtures"
+    client = FakeAnthropicClient(_live_output())
+
+    live = triage_firing(
+        _firing(),
+        [_issue()],
+        client=client,
+        api_key="test-anthropic-key",
+        cache_dir=cache_dir,
+        fixture_dir=fixture_dir,
+    )
+    record_path = fixture_dir / f"{live.prompt_hash}.json"
+    record = json.loads(record_path.read_text(encoding="utf-8"))
+    (cache_dir / record_path.name).unlink()
+    replay = triage_firing(
+        _firing(),
+        [_issue()],
+        cache_dir=cache_dir,
+        fixture_dir=fixture_dir,
+        allow_live=False,
+    )
+
+    assert live.provider == "anthropic"
+    assert live.cache_source == "live"
+    assert replay.cache_source == "fixture"
+    assert replay.output == live.output
+    assert record["cache_version"] == 2
+    assert record["provider"] == "anthropic"
+    assert record["request_identity"]["provider"] == "anthropic"
+    assert record["request_identity"]["model"] == "claude-sonnet-5"
+    assert record["request_identity"]["request"] == record["request"]
+    assert client.calls[0]["headers"]["x-api-key"] == "test-anthropic-key"
+    assert client.calls[0]["json"]["output_config"]["format"]["type"] == (
+        "json_schema"
+    )
+
+
+def test_offline_mode_never_falls_through_to_live_provider(
+    tmp_path: Path,
+) -> None:
+    client = FakeAnthropicClient(_live_output())
+
+    with pytest.raises(TriageCacheMissError, match="offline replay"):
+        triage_firing(
+            _firing(),
+            [_issue()],
+            client=client,
+            api_key="test-anthropic-key",
+            cache_dir=tmp_path / "cache",
+            fixture_dir=tmp_path / "fixtures",
+            allow_live=False,
+        )
+
+    assert client.calls == []
 
 
 def test_oversized_context_is_compacted_deterministically() -> None:
@@ -273,8 +394,8 @@ def test_oversized_context_is_compacted_deterministically() -> None:
     ]
     events = [issue, *bot_events]
 
-    first = build_triage_request(_firing(), events)
-    second = build_triage_request(_firing(), list(reversed(events)))
+    first = _openai_request(_firing(), events)
+    second = _openai_request(_firing(), list(reversed(events)))
     content = first.api_payload["input"][1]["content"]
     payload = json.loads(content)
 
@@ -314,7 +435,7 @@ def test_text_free_events_degrade_without_error(tmp_path: Path) -> None:
         meta={"version": "5.99.0"},
     )
 
-    run = triage_firing(
+    run = _openai_triage(
         _firing(),
         [event],
         client=client,
@@ -351,7 +472,7 @@ def test_markdown_visible_quote_is_grounded_to_exact_source(tmp_path: Path) -> N
         meta={"action": "created"},
     )
 
-    run = triage_firing(
+    run = _openai_triage(
         _firing(),
         [event],
         client=client,
@@ -405,7 +526,7 @@ def test_percent_decoded_link_quote_is_grounded_to_exact_source(
         meta={"action": "created"},
     )
 
-    run = triage_firing(
+    run = _openai_triage(
         _firing(),
         [event],
         client=client,
@@ -432,7 +553,7 @@ def test_offline_cache_miss_fails_loudly(
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
 
     with pytest.raises(TriageCacheMissError, match="OPENAI_API_KEY is absent"):
-        triage_firing(
+        _openai_triage(
             _firing(),
             [_issue()],
             cache_dir=tmp_path / "cache",

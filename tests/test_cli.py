@@ -166,6 +166,7 @@ def test_triage_modes_are_real_isolated_and_persisted(
             cache_source="cache" if no_feedback else "live",
             input_max_ts=max(event.ts for event in events),
             response_id="resp_cli",
+            provider=kwargs["provider"],
         )
 
     monkeypatch.setattr("sentinel.pipeline.triage_firing", fake_triage)
@@ -212,11 +213,14 @@ def test_triage_modes_are_real_isolated_and_persisted(
     assert all(event.ts < FIRING_TS for event in calls[0]["events"])
     assert "reviewer feedback sentinel" in calls[0]["feedback_context"]
     assert calls[0]["no_feedback"] is False
+    assert calls[0]["provider"] == "anthropic"
+    assert calls[0]["model"] == "claude-sonnet-5"
     assert calls[1]["feedback_context"] is None
     assert calls[1]["no_feedback"] is True
     assert len(calls) == before_no_agent_calls
 
     assert full_json["mode"] == "full"
+    assert full_json["provider"] == "anthropic"
     assert full_json["prompt_hash"] == "full-hash"
     assert full_json["input_max_ts"] == "2025-04-07T18:17:36Z"
     assert full_json["strict_pre_firing"] is True

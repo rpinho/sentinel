@@ -9,7 +9,12 @@ from pathlib import Path
 
 from sentinel.feedback import render_feedback_context
 from sentinel.store import Firing, SentinelStore, TriageRecord
-from sentinel.triage import triage_firing
+from sentinel.triage import (
+    DEFAULT_PROVIDER,
+    TriageProviderName,
+    default_model_for,
+    triage_firing,
+)
 
 TRIAGE_LOOKBACK = timedelta(hours=24)
 
@@ -20,7 +25,8 @@ def execute_triage(
     *,
     no_agent: bool,
     no_feedback: bool,
-    model: str,
+    provider: TriageProviderName = DEFAULT_PROVIDER,
+    model: str | None = None,
     cache_dir: Path,
     fixture_dir: Path,
 ) -> tuple[TriageRecord, bool]:
@@ -43,6 +49,7 @@ def execute_triage(
             replayed=False,
             input_max_ts=None,
             response_id=None,
+            provider=None,
         )
         return record, store.insert_triage_result(record)
 
@@ -61,7 +68,8 @@ def execute_triage(
         events,
         feedback_context=feedback_context,
         no_feedback=no_feedback,
-        model=model,
+        provider=provider,
+        model=model or default_model_for(provider),
         cache_dir=cache_dir,
         fixture_dir=fixture_dir,
     )
@@ -81,6 +89,7 @@ def execute_triage(
         replayed=run.replayed,
         input_max_ts=run.input_max_ts,
         response_id=run.response_id,
+        provider=run.provider,
     )
     return record, store.insert_triage_result(record)
 
