@@ -75,3 +75,10 @@ def test_default_config_is_versioned() -> None:
 
     assert config.metric_id == "issue_activity_per_hour"
     assert config.version.startswith("sha256:")
+
+
+def test_packaged_default_is_detector_v2() -> None:
+    config = DetectorConfig.load()
+
+    assert config.algorithm == "robust_rate_v2"
+    assert config.metric_id == "sentinel_repository_health_v2"

@@ -209,7 +209,9 @@ class DetectorConfig:
     @classmethod
     def load(cls, path: Path | str | None = None) -> DetectorConfig:
         if path is None:
-            raw_bytes = files("sentinel.config").joinpath("default.toml").read_bytes()
+            raw_bytes = (
+                files("sentinel.config").joinpath("detector-v2.toml").read_bytes()
+            )
         else:
             raw_bytes = Path(path).read_bytes()
         document = tomllib.loads(raw_bytes.decode("utf-8"))

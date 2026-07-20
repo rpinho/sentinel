@@ -1,0 +1,89 @@
+# Candidate values are accepted only when docs/detector-v2-calibration.md reproduces
+# both the webpack incident and disclosed healthy contrasts from raw GH Archive data.
+[detector]
+algorithm = "robust_rate_v2"
+metric_id = "sentinel_repository_health_v2"
+kinds = ["issue", "comment"]
+bucket_minutes = 60
+cooldown_buckets = 2
+
+# Two weeks is the shortest window that yields four weekend phase samples while
+# retaining ten weekday phase samples for every hour-of-day.
+phase_history_days = 14
+minimum_phase_samples = 4
+mild_z_threshold = 2.0
+persistence_buckets = 2
+# The independently corroborated v5.99.0 release precedes the incident bucket
+# by 4h47m; five hours is the smallest whole-hour window that admits it.
+recent_release_hours = 5
+
+# An actor is excluded only when at least two independent signals agree. The
+# frozen classifier arms the raw-reproduced account-type + name-pattern pair;
+# timing, concentration, and payload support remains observe-only in code.
+bot_min_signals = 2
+bot_enabled_signals = ["name_pattern", "account_type"]
+bot_name_patterns = ["\\[bot\\]$", "-bot$", "^dependabot$", "^github-actions$"]
+
+# Webpack reproduces a 0.50 attention score and defines the digest boundary.
+# No independent raw interrupt-class reproduction is available yet, so the
+# interrupt route remains explicitly unarmed rather than guessed.
+severity_digest_threshold = 0.50
+severity_interrupt_threshold = 1.00
+severity_interrupt_enabled = false
+severity_depth_saturation_multiplier = 2.0
+severity_lower_confidence_cap = 0.50
+
+[detector.meta_in]
+action = ["opened", "created"]
+
+[[detector.metrics]]
+metric_id = "issues_opened_per_active_participant"
+source = "issues_opened_per_active_participant"
+direction = "spike"
+alert_enabled = true
+minimum_exposure = 2.0
+absolute_rate_floor = 0.5
+minimum_absolute_change = 0.25
+robust_z_threshold = 3.0
+dispersion_floor_absolute = 0.10
+dispersion_floor_fraction = 0.10
+
+[[detector.metrics]]
+metric_id = "comments_per_active_issue_thread"
+source = "comments_per_active_issue_thread"
+direction = "spike"
+alert_enabled = true
+minimum_exposure = 1.0
+absolute_rate_floor = 2.0
+minimum_absolute_change = 1.0
+robust_z_threshold = 3.0
+dispersion_floor_absolute = 0.25
+dispersion_floor_fraction = 0.10
+
+[[detector.metrics]]
+metric_id = "first_time_participant_event_share"
+source = "first_time_participant_event_share"
+direction = "spike"
+# Computed and published, but not allowed to fire until a real positive
+# first-observed-participant reproduction exists.
+alert_enabled = false
+minimum_exposure = 2.0
+absolute_rate_floor = 0.50
+minimum_absolute_change = 0.25
+robust_z_threshold = 3.0
+dispersion_floor_absolute = 0.10
+dispersion_floor_fraction = 0.10
+
+[[detector.metrics]]
+metric_id = "issue_activity_volume"
+source = "issue_activity_volume"
+direction = "drop"
+# Computed and published, but not allowed to fire until a real repository
+# activity-collapse reproduction exists.
+alert_enabled = false
+minimum_exposure = 5.0
+absolute_rate_floor = 5.0
+minimum_absolute_change = 4.0
+robust_z_threshold = 3.0
+dispersion_floor_absolute = 1.0
+dispersion_floor_fraction = 0.20

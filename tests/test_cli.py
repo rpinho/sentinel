@@ -253,7 +253,16 @@ def test_detect_no_agent_never_calls_triage(
 
     monkeypatch.setattr("sentinel.pipeline.triage_firing", unexpected_triage)
     result = runner.invoke(
-        app, ["detect", "--db", str(db), "--no-agent", "--json"]
+        app,
+        [
+            "detect",
+            "--db",
+            str(db),
+            "--config",
+            "src/sentinel/config/default.toml",
+            "--no-agent",
+            "--json",
+        ],
     )
 
     assert result.exit_code == 0, result.output

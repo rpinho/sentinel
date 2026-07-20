@@ -56,9 +56,13 @@ uv run sentinel detect \
   --end 2025-04-07T23:00:00Z
 ```
 
-Thresholds, baseline length, source event kinds, and the volume floor live in the
-packaged TOML config. Each firing carries the config's SHA-256 version. Pass
-`--config path/to/config.toml` to use a different committed configuration.
+The packaged default is detector v2: phase-matched robust rates with explicit warmup,
+exposure, automation-divergence, and observe-only verdicts. It requires the configured
+14 days of continuous history; missing phase pools remain `immature` rather than being
+zero-filled as fake evidence. Thresholds and metric contracts live in the packaged TOML
+config, and each firing carries its SHA-256 version. Pass `--config
+src/sentinel/config/default.toml` for the frozen v1 replay or another committed TOML for
+a different detector.
 
 Detection runs GPT-5.6 triage for each firing by default. Use `--no-agent` for the
 detector-only ablation.
@@ -153,6 +157,12 @@ precision, 1 FP/week), while full and no-feedback triage each rejected both (1 m
 acknowledged detector misses are published. The frozen feedback snapshot had no rows for
 the holdout repositories, so no feedback benefit is claimed. See `HOLDOUT.md` for every
 firing and the documented correction of two initial auto-label leakage bugs.
+
+Holdout execution is cost-safe by default. `scripts/run_holdout_v2.sh` blanks the API key
+and can only replay exact committed fixtures; it fails on a cache miss. The separately
+named `scripts/publish_holdout_v2.sh` opts into live, potentially billable GPT fixture
+seeding and is reserved for the final publication run. Detector calibration and previews
+use no OpenAI API calls.
 
 ## Reproduce the webpack acceptance run
 
