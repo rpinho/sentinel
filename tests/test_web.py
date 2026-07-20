@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 
 from sentinel.web.app import (
     PACKAGE_DIR,
+    SCORECARD_BUNDLE_PATH,
     V1_SCORECARD_PATH,
     V2_SCORECARD_PATH,
     V3_SCORECARD_PATH,
@@ -17,6 +18,7 @@ from sentinel.web.app import (
     app,
     build_replay_view,
     build_scorecard_view,
+    build_scorecard_view_from_sources,
     ingest_live_hour,
 )
 from sentinel.types import Event
@@ -97,6 +99,8 @@ def test_packaged_scorecards_are_exact_holdout_copies() -> None:
     assert (PACKAGE_DIR / "data" / "triage" / fixture_name).read_bytes() == (
         Path("tests/fixtures/triage") / fixture_name
     ).read_bytes()
+    assert SCORECARD_BUNDLE_PATH.exists()
+    assert build_scorecard_view() == build_scorecard_view_from_sources()
 
 
 def test_live_is_idle_until_post_and_surfaces_injected_run(monkeypatch: Any) -> None:

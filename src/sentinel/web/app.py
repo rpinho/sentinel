@@ -50,6 +50,7 @@ TRIAGE_FIXTURE_DIR = (
 TRIAGE_CACHE_DIR = STATE_DIR / "web-triage"
 V1_SCORECARD_PATH = PACKAGE_DIR / "data" / "holdout-v1-scorecard.json"
 V2_SCORECARD_PATH = PACKAGE_DIR / "data" / "holdout-v2-scorecard.json"
+SCORECARD_BUNDLE_PATH = PACKAGE_DIR / "data" / "holdout-v6-web.json.gz"
 V3_SCORECARD_PATH = PROJECT_ROOT / "holdout" / "v3" / "scorecard.json"
 V4_SCORECARD_PATH = PROJECT_ROOT / "holdout" / "v4" / "scorecard.json"
 V4_MODEL_PATH = PROJECT_ROOT / "holdout" / "v4" / "model.json"
@@ -301,6 +302,17 @@ def build_replay_view() -> dict[str, Any]:
 
 @lru_cache(maxsize=1)
 def build_scorecard_view() -> dict[str, Any]:
+    bundle = _read_gzip_json(SCORECARD_BUNDLE_PATH)
+    if bundle.get("schema_version") != 1 or not isinstance(bundle.get("view"), dict):
+        raise RuntimeError("unsupported packaged scorecard bundle")
+    if bundle.get("view_sha256") != _canonical_sha256(bundle["view"]):
+        raise RuntimeError("packaged scorecard bundle hash mismatch")
+    return bundle["view"]
+
+
+def build_scorecard_view_from_sources() -> dict[str, Any]:
+    """Build the compact web view from the committed frozen study artifacts."""
+
     v1 = json.loads(V1_SCORECARD_PATH.read_text(encoding="utf-8"))
     v2 = json.loads(V2_SCORECARD_PATH.read_text(encoding="utf-8"))
     v3 = _read_json(V3_SCORECARD_PATH)
@@ -723,6 +735,13 @@ def _read_gzip_json(path: Path) -> dict[str, Any]:
     if not isinstance(document, dict):
         raise RuntimeError(f"expected object in {path}")
     return document
+
+
+def _canonical_sha256(value: Any) -> str:
+    payload = json.dumps(
+        value, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+    ).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
 
 
 def _sha256(path: Path) -> str:
