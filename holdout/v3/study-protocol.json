@@ -1,0 +1,96 @@
+{
+  "schema_version": 1,
+  "study_id": "sentinel-coherence-v3",
+  "frozen_before_new_repo_inspection": true,
+  "selection_policy": "Sixteen predeclared popular JavaScript and infrastructure repositories with public GH Archive activity. The whole-repository test split intentionally contains the previously published webpack hero and v1/v2 holdout repositories; it was fixed before inspecting the other repositories.",
+  "repositories": {
+    "train": [
+      "denoland/deno",
+      "elastic/kibana",
+      "electron/electron",
+      "facebook/react",
+      "hashicorp/terraform",
+      "moby/moby",
+      "nodejs/node",
+      "npm/cli",
+      "pnpm/pnpm",
+      "prometheus/prometheus",
+      "vitejs/vite"
+    ],
+    "test": [
+      "grafana/grafana",
+      "kubernetes/kubernetes",
+      "microsoft/vscode",
+      "vercel/next.js",
+      "webpack/webpack"
+    ]
+  },
+  "windows": [
+    {
+      "window_id": "2025-03-28",
+      "archive_start": "2025-03-21T00:00:00Z",
+      "detection_start": "2025-03-28T00:00:00Z",
+      "detection_end": "2025-04-08T00:00:00Z",
+      "acknowledgment_end": "2025-04-11T00:00:00Z"
+    },
+    {
+      "window_id": "2025-05-05",
+      "archive_start": "2025-04-28T00:00:00Z",
+      "detection_start": "2025-05-05T00:00:00Z",
+      "detection_end": "2025-05-17T00:00:00Z",
+      "acknowledgment_end": "2025-05-20T00:00:00Z"
+    }
+  ],
+  "label_rule": {
+    "version": "maintainer-substantive-v3",
+    "unit": "repository UTC hour with an activity spike",
+    "activity_spike": "At least five raw, non-pull-request issue-opened or issue-comment-created events in the hour. This permissive candidate rule is independent of detector v1/v2 firings and deliberately retains automation floods.",
+    "candidate_timestamp": "One microsecond after the final qualifying source event in the candidate hour. Features may use only events strictly before this timestamp.",
+    "positive": "The earliest candidate hour for an issue visible in that hour at or before the candidate timestamp, with pre-candidate breakage/regression text and a later non-bot OWNER/MEMBER/COLLABORATOR issue comment classified TRUE by the committed phrase rule within 72 hours.",
+    "negative": "Every candidate spike hour not assigned a canonical positive incident is negative; deterministic incident cooldown is evaluated separately from the model.",
+    "negative_acknowledgment": "Comments classified FALSE by the committed phrase rule never create a positive.",
+    "acknowledgment_lookahead_hours": 72,
+    "minimum_raw_activity": 5,
+    "maintainer_associations": [
+      "COLLABORATOR",
+      "MEMBER",
+      "OWNER"
+    ],
+    "pull_requests_excluded": true,
+    "bots_excluded_from_acknowledgments": true
+  },
+  "feature_policy": {
+    "history_days": 7,
+    "phase": "same UTC hour and weekday/weekend class",
+    "text": "cross-thread token and character-shingle similarity from strictly pre-candidate issue activity",
+    "release_window_hours": 6,
+    "npm_packages": {
+      "denoland/deno": "deno",
+      "electron/electron": "electron",
+      "facebook/react": "react",
+      "nodejs/node": "node",
+      "npm/cli": "npm",
+      "pnpm/pnpm": "pnpm",
+      "vercel/next.js": "next",
+      "vitejs/vite": "vite",
+      "webpack/webpack": "webpack"
+    }
+  },
+  "model_policy": {
+    "selection_metric": "train repository-grouped out-of-fold F1",
+    "headline_test_metrics": [
+      "precision",
+      "recall",
+      "roc_auc",
+      "median_lead_minutes"
+    ],
+    "burst_only_ablation": true,
+    "coherence_ablation": true,
+    "test_repositories_never_used_for_model_or_threshold_selection": true
+  },
+  "stop_conditions": {
+    "minimum_positive_incidents_total": 20,
+    "minimum_positive_incidents_per_split": 5,
+    "maximum_obvious_label_noise_rate": 0.2
+  }
+}
