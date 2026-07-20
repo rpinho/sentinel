@@ -204,6 +204,27 @@ FP/week is zero, and no feedback benefit can be measured. The result is not pres
 a recall improvement. See the v1/v2 comparison in `HOLDOUT.md` and the unedited v2 report
 in `holdout/v2/HOLDOUT-v2.md`.
 
+Detector v4 is the first powered test of the coherence hypothesis. It replaces v3's
+spike-only population and five training positives with every active repository-hour,
+60 training repositories, 15 whole-repository holdouts, and three source-attributed
+future confirmation rules. The model and threshold were frozen at commit
+`a90f276e0cc6b886999506aa7e3b174afc3775aa` before test extraction. The committed
+holdout contains 425 training and 287 test incidents. On test, coherence scored ROC AUC
+0.841 (whole-repository bootstrap 95% interval 0.807–0.882), 13.6% precision, 88.0%
+recall, and 806.9 minutes median lead; burst-only scored AUC 0.794. However, the
+maintainer-comment audit had 30% obvious noise against the frozen 20% ceiling because
+`llvmbot` automated mirrors evaded the name-based bot rule. The numbers are therefore
+published as descriptive, not confirmatory. See `holdout/v4/SCORECARD-v4.md` and
+`docs/detector-v4-study.md` for the protocol, hashes, audit, and reproduction commands.
+
+Reproduce the committed v4 models and scorecard without network or model API calls:
+
+```bash
+uv run python scripts/train_detector_v4.py
+uv run python scripts/evaluate_detector_v4.py \
+  --model-commit a90f276e0cc6b886999506aa7e3b174afc3775aa
+```
+
 Holdout execution is cost-safe by default. `scripts/run_holdout_v2.sh` blanks the API key
 and can only replay exact committed fixtures; it fails on a cache miss. The separately
 named `scripts/publish_holdout_v2.sh` opts into live, potentially billable GPT fixture

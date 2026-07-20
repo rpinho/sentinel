@@ -1,0 +1,393 @@
+{
+  "format": "deterministic gzip-compressed canonical JSON",
+  "manifest_sha256": "1b8e4e6e70047bb6ff3c75d04fcf96d3322ff358cea281ec1ad1f31449937886",
+  "schema_version": 1,
+  "splits": {
+    "test": {
+      "class_balance": {
+        "by_repository": {
+          "apache/superset": {
+            "candidate_hours": 216,
+            "positive_hours": 4,
+            "positive_incidents": 4
+          },
+          "dotnet/runtime": {
+            "candidate_hours": 479,
+            "positive_hours": 28,
+            "positive_incidents": 30
+          },
+          "facebook/react-native": {
+            "candidate_hours": 326,
+            "positive_hours": 0,
+            "positive_incidents": 0
+          },
+          "flutter/flutter": {
+            "candidate_hours": 511,
+            "positive_hours": 13,
+            "positive_incidents": 13
+          },
+          "golang/go": {
+            "candidate_hours": 479,
+            "positive_hours": 6,
+            "positive_incidents": 6
+          },
+          "home-assistant/core": {
+            "candidate_hours": 545,
+            "positive_hours": 48,
+            "positive_incidents": 48
+          },
+          "llvm/llvm-project": {
+            "candidate_hours": 527,
+            "positive_hours": 59,
+            "positive_incidents": 68
+          },
+          "microsoft/PowerToys": {
+            "candidate_hours": 414,
+            "positive_hours": 32,
+            "positive_incidents": 34
+          },
+          "python/cpython": {
+            "candidate_hours": 484,
+            "positive_hours": 35,
+            "positive_incidents": 39
+          },
+          "pytorch/pytorch": {
+            "candidate_hours": 482,
+            "positive_hours": 14,
+            "positive_incidents": 14
+          },
+          "rails/rails": {
+            "candidate_hours": 117,
+            "positive_hours": 2,
+            "positive_incidents": 2
+          },
+          "rust-lang/rust": {
+            "candidate_hours": 456,
+            "positive_hours": 23,
+            "positive_incidents": 26
+          },
+          "tensorflow/tensorflow": {
+            "candidate_hours": 193,
+            "positive_hours": 3,
+            "positive_incidents": 3
+          }
+        },
+        "candidate_hours": 5229,
+        "negative_hours": 4962,
+        "positive_hour_rate": 0.051061388410786,
+        "positive_hours": 267,
+        "positive_incidents": 287
+      },
+      "dataset_content_sha256": "895395b1b41a733996ceecd7c1c33913e01ffe9482db68a6f8f2ce85c7c0732d",
+      "path": "holdout/v4/dataset-test.json.gz",
+      "positive_incidents_sha256": "7aaf0715fd4010ea650d9ccacf4ae42f7cecb3b2009fd5175722484de1f3e100",
+      "rows_sha256": "9ea35cdacdf50f967363f9571cda09f39f5d398b2d4990966a590a20af3ffab5"
+    },
+    "train": {
+      "class_balance": {
+        "by_repository": {
+          "angular/angular": {
+            "candidate_hours": 246,
+            "positive_hours": 3,
+            "positive_incidents": 3
+          },
+          "ansible/ansible": {
+            "candidate_hours": 94,
+            "positive_hours": 11,
+            "positive_incidents": 11
+          },
+          "apache/airflow": {
+            "candidate_hours": 406,
+            "positive_hours": 32,
+            "positive_incidents": 33
+          },
+          "apache/arrow": {
+            "candidate_hours": 242,
+            "positive_hours": 19,
+            "positive_incidents": 19
+          },
+          "bitcoin/bitcoin": {
+            "candidate_hours": 114,
+            "positive_hours": 2,
+            "positive_incidents": 2
+          },
+          "containerd/containerd": {
+            "candidate_hours": 79,
+            "positive_hours": 0,
+            "positive_incidents": 0
+          },
+          "dart-lang/sdk": {
+            "candidate_hours": 280,
+            "positive_hours": 2,
+            "positive_incidents": 2
+          },
+          "denoland/deno": {
+            "candidate_hours": 272,
+            "positive_hours": 13,
+            "positive_incidents": 14
+          },
+          "docker/compose": {
+            "candidate_hours": 103,
+            "positive_hours": 9,
+            "positive_incidents": 9
+          },
+          "dotnet/aspnetcore": {
+            "candidate_hours": 297,
+            "positive_hours": 2,
+            "positive_incidents": 2
+          },
+          "dotnet/efcore": {
+            "candidate_hours": 169,
+            "positive_hours": 2,
+            "positive_incidents": 2
+          },
+          "dotnet/maui": {
+            "candidate_hours": 334,
+            "positive_hours": 4,
+            "positive_incidents": 4
+          },
+          "elastic/elasticsearch": {
+            "candidate_hours": 272,
+            "positive_hours": 20,
+            "positive_incidents": 30
+          },
+          "elastic/kibana": {
+            "candidate_hours": 386,
+            "positive_hours": 12,
+            "positive_incidents": 12
+          },
+          "electron/electron": {
+            "candidate_hours": 257,
+            "positive_hours": 9,
+            "positive_incidents": 9
+          },
+          "eslint/eslint": {
+            "candidate_hours": 91,
+            "positive_hours": 3,
+            "positive_incidents": 3
+          },
+          "facebook/react": {
+            "candidate_hours": 132,
+            "positive_hours": 1,
+            "positive_incidents": 1
+          },
+          "fastapi/fastapi": {
+            "candidate_hours": 11,
+            "positive_hours": 0,
+            "positive_incidents": 0
+          },
+          "godotengine/godot": {
+            "candidate_hours": 497,
+            "positive_hours": 37,
+            "positive_incidents": 38
+          },
+          "gradle/gradle": {
+            "candidate_hours": 200,
+            "positive_hours": 4,
+            "positive_incidents": 4
+          },
+          "grafana/grafana": {
+            "candidate_hours": 320,
+            "positive_hours": 7,
+            "positive_incidents": 7
+          },
+          "hashicorp/terraform": {
+            "candidate_hours": 114,
+            "positive_hours": 3,
+            "positive_incidents": 3
+          },
+          "helm/helm": {
+            "candidate_hours": 96,
+            "positive_hours": 0,
+            "positive_incidents": 0
+          },
+          "huggingface/transformers": {
+            "candidate_hours": 337,
+            "positive_hours": 18,
+            "positive_incidents": 18
+          },
+          "istio/istio": {
+            "candidate_hours": 212,
+            "positive_hours": 2,
+            "positive_incidents": 2
+          },
+          "jupyterlab/jupyterlab": {
+            "candidate_hours": 57,
+            "positive_hours": 1,
+            "positive_incidents": 1
+          },
+          "kubernetes/kubernetes": {
+            "candidate_hours": 369,
+            "positive_hours": 7,
+            "positive_incidents": 7
+          },
+          "laravel/framework": {
+            "candidate_hours": 126,
+            "positive_hours": 4,
+            "positive_incidents": 4
+          },
+          "microsoft/TypeScript": {
+            "candidate_hours": 243,
+            "positive_hours": 1,
+            "positive_incidents": 1
+          },
+          "microsoft/playwright": {
+            "candidate_hours": 258,
+            "positive_hours": 4,
+            "positive_incidents": 4
+          },
+          "microsoft/terminal": {
+            "candidate_hours": 175,
+            "positive_hours": 1,
+            "positive_incidents": 1
+          },
+          "microsoft/vscode": {
+            "candidate_hours": 536,
+            "positive_hours": 41,
+            "positive_incidents": 45
+          },
+          "moby/moby": {
+            "candidate_hours": 156,
+            "positive_hours": 3,
+            "positive_incidents": 3
+          },
+          "mui/material-ui": {
+            "candidate_hours": 184,
+            "positive_hours": 2,
+            "positive_incidents": 2
+          },
+          "neovim/neovim": {
+            "candidate_hours": 298,
+            "positive_hours": 29,
+            "positive_incidents": 30
+          },
+          "nextcloud/server": {
+            "candidate_hours": 246,
+            "positive_hours": 8,
+            "positive_incidents": 8
+          },
+          "nodejs/node": {
+            "candidate_hours": 255,
+            "positive_hours": 6,
+            "positive_incidents": 6
+          },
+          "npm/cli": {
+            "candidate_hours": 97,
+            "positive_hours": 3,
+            "positive_incidents": 3
+          },
+          "numpy/numpy": {
+            "candidate_hours": 155,
+            "positive_hours": 8,
+            "positive_incidents": 8
+          },
+          "nuxt/nuxt": {
+            "candidate_hours": 273,
+            "positive_hours": 13,
+            "positive_incidents": 13
+          },
+          "open-telemetry/opentelemetry-collector": {
+            "candidate_hours": 69,
+            "positive_hours": 1,
+            "positive_incidents": 1
+          },
+          "opencv/opencv": {
+            "candidate_hours": 110,
+            "positive_hours": 2,
+            "positive_incidents": 2
+          },
+          "pallets/flask": {
+            "candidate_hours": 8,
+            "positive_hours": 0,
+            "positive_incidents": 0
+          },
+          "pandas-dev/pandas": {
+            "candidate_hours": 176,
+            "positive_hours": 14,
+            "positive_incidents": 14
+          },
+          "pnpm/pnpm": {
+            "candidate_hours": 151,
+            "positive_hours": 6,
+            "positive_incidents": 6
+          },
+          "prometheus/prometheus": {
+            "candidate_hours": 103,
+            "positive_hours": 1,
+            "positive_incidents": 1
+          },
+          "pytest-dev/pytest": {
+            "candidate_hours": 61,
+            "positive_hours": 2,
+            "positive_incidents": 2
+          },
+          "redis/redis": {
+            "candidate_hours": 79,
+            "positive_hours": 1,
+            "positive_incidents": 1
+          },
+          "scikit-learn/scikit-learn": {
+            "candidate_hours": 139,
+            "positive_hours": 2,
+            "positive_incidents": 2
+          },
+          "spring-projects/spring-boot": {
+            "candidate_hours": 229,
+            "positive_hours": 3,
+            "positive_incidents": 3
+          },
+          "storybookjs/storybook": {
+            "candidate_hours": 168,
+            "positive_hours": 8,
+            "positive_incidents": 8
+          },
+          "sveltejs/svelte": {
+            "candidate_hours": 159,
+            "positive_hours": 7,
+            "positive_incidents": 7
+          },
+          "tauri-apps/tauri": {
+            "candidate_hours": 208,
+            "positive_hours": 7,
+            "positive_incidents": 7
+          },
+          "tokio-rs/tokio": {
+            "candidate_hours": 37,
+            "positive_hours": 0,
+            "positive_incidents": 0
+          },
+          "vercel/next.js": {
+            "candidate_hours": 333,
+            "positive_hours": 2,
+            "positive_incidents": 2
+          },
+          "vitejs/vite": {
+            "candidate_hours": 83,
+            "positive_hours": 2,
+            "positive_incidents": 2
+          },
+          "vuejs/core": {
+            "candidate_hours": 75,
+            "positive_hours": 1,
+            "positive_incidents": 1
+          },
+          "webpack/webpack": {
+            "candidate_hours": 103,
+            "positive_hours": 2,
+            "positive_incidents": 2
+          }
+        },
+        "candidate_hours": 11280,
+        "negative_hours": 10873,
+        "positive_hour_rate": 0.03608156028368794,
+        "positive_hours": 407,
+        "positive_incidents": 425
+      },
+      "dataset_content_sha256": "5d94c941eedba3f90de12aa135220da3609bf48c11330739cb3e895867951881",
+      "path": "holdout/v4/dataset-train.json.gz",
+      "positive_incidents_sha256": "b085b268af44718bd1d21eba1cf3704996f12f90dfe0611909d0c668ba87c63e",
+      "rows_sha256": "d5e13bcede26ea5d29318411a391108b81c8fb2ebe35c3b98e57299b300b44be"
+    }
+  },
+  "study_id": "sentinel-coherence-v4"
+}

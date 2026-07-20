@@ -600,7 +600,7 @@ def render_markdown(scorecard: Mapping[str, Any]) -> str:
     caught = cast(Sequence[Mapping[str, Any]], test["caught_incidents"])
     for incident in caught[:20]:
         lines.append(
-            f"| [{incident['candidate_ts']}]({incident['candidate_url']}) | {incident['entity']} #{incident['issue_number']} | `{incident['label_source']}` | [{incident['confirmation_ts']}]({incident['confirmation_url']}) | {_minutes(incident['lead_minutes'])} | {incident['probability']:.3f} |"
+            f"| [{incident['candidate_ts']}]({incident['report_url']}) | {incident['entity']} #{incident['issue_number']} | `{incident['label_source']}` | [{incident['confirmation_ts']}]({incident['confirmation_url']}) | {_minutes(incident['lead_minutes'])} | {incident['probability']:.3f} |"
         )
     if not caught:
         lines.append("| none | — | — | — | — | — |")
