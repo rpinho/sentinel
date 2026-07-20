@@ -316,3 +316,18 @@ def test_first_time_share_counts_events_not_people() -> None:
     assert run.evaluations[0].raw["numerator"] == 3
     assert run.evaluations[0].raw["denominator"] == 4
     assert run.evaluations[0].raw["value"] == 0.75
+
+
+def test_uncalibrated_metric_is_scored_but_cannot_fire() -> None:
+    metric = replace(_metric(), alert_enabled=False)
+    run = evaluate_detection(
+        [*_healthy_history(hours=(12,)), *_burst(12)],
+        replace(_config(), metrics=(metric,)),
+        start=START,
+        end=START + timedelta(hours=1),
+    )
+
+    assert run.firings == ()
+    assert run.evaluations[0].verdict == "observe_only"
+    assert run.evaluations[0].raw["flagged"] is True
+    assert run.evaluations[0].bot_excluded["flagged"] is True

@@ -37,6 +37,7 @@ class RateMetricConfig:
     robust_z_threshold: float
     dispersion_floor_absolute: float
     dispersion_floor_fraction: float
+    alert_enabled: bool = True
 
     def __post_init__(self) -> None:
         if not self.metric_id.strip():
@@ -68,6 +69,7 @@ class MetricEvaluation:
         "automation_suppressed",
         "firing",
         "cooldown",
+        "observe_only",
     ]
     raw: Mapping[str, Any]
     bot_excluded: Mapping[str, Any]
@@ -210,6 +212,7 @@ class DetectorConfig:
                 robust_z_threshold=float(item["robust_z_threshold"]),
                 dispersion_floor_absolute=float(item["dispersion_floor_absolute"]),
                 dispersion_floor_fraction=float(item["dispersion_floor_fraction"]),
+                alert_enabled=bool(item.get("alert_enabled", True)),
             )
             for item in raw_metrics
         )

@@ -193,6 +193,8 @@ def evaluate_v2(
                 raw = scores[(entity, metric.metric_id, "raw", bucket)]
                 excluded = scores[(entity, metric.metric_id, "bot_excluded", bucket)]
                 verdict = _combined_verdict(raw, excluded)
+                if verdict == "candidate" and not metric.alert_enabled:
+                    verdict = "observe_only"
                 if verdict == "candidate":
                     candidates[(entity, bucket)].append(metric.metric_id)
                 evaluation_index[(entity, bucket, metric.metric_id)] = len(evaluations)
