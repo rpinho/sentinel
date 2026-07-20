@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Any, Iterable, Mapping, Sequence, cast
 
 from sentinel.adapters.gharchive import GHArchiveAdapter
-from sentinel.detect import DetectorConfig, detect_bursts
+from sentinel.detect import DetectorConfig, evaluate_detection
 from sentinel.pipeline import execute_triage
 from sentinel.store import (
     Feedback,
@@ -89,6 +89,11 @@ def freeze_holdout(
     repositories: Sequence[str],
     ack_lookahead_hours: int,
     selection_policy: str,
+    detector_config_path: str = "src/sentinel/config/default.toml",
+    holdout_id: str = "gharchive-2025-05-12-three-repos-v1",
+    database_path: str = ".cache/holdout.duckdb",
+    scorecard_path: str = "holdout/scorecard.json",
+    markdown_path: str = "HOLDOUT.md",
 ) -> dict[str, Any]:
     """Freeze code/config/feedback before any holdout archive is inspected."""
 
@@ -105,7 +110,7 @@ def freeze_holdout(
     if len(set(repositories)) != len(repositories) or not repositories:
         raise ValueError("holdout repositories must be unique and non-empty")
 
-    config_path = repo_root / "src/sentinel/config/default.toml"
+    config_path = repo_root / detector_config_path
     config_bytes = config_path.read_bytes()
     config_sha256 = hashlib.sha256(config_bytes).hexdigest()
     config = DetectorConfig.load(config_path)
@@ -133,10 +138,10 @@ def freeze_holdout(
     snapshot_hash = canonical_sha256(snapshot)
     manifest = {
         "schema_version": HOLDOUT_SCHEMA_VERSION,
-        "holdout_id": "gharchive-2025-05-12-three-repos-v1",
+        "holdout_id": holdout_id,
         "frozen_at": snapshot["frozen_at"],
         "frozen_git_commit": frozen_commit,
-        "detector_config_path": "src/sentinel/config/default.toml",
+        "detector_config_path": detector_config_path,
         "detector_config_sha256": config_sha256,
         "detector_version": config.version,
         "feedback_snapshot_path": "holdout/feedback-snapshot.json",
@@ -145,12 +150,17 @@ def freeze_holdout(
         "repositories": list(repositories),
         "detection_start": format_timestamp(start),
         "detection_end": format_timestamp(end),
+        "baseline_start": format_timestamp(
+            start - timedelta(days=config.phase_history_days)
+            if config.algorithm == "robust_rate_v2"
+            else start
+        ),
         "ack_lookahead_hours": ack_lookahead_hours,
         "raw_cache_dir": ".cache/gharchive",
-        "database_path": ".cache/holdout.duckdb",
+        "database_path": database_path,
         "fixture_dir": "tests/fixtures/triage",
-        "scorecard_path": "holdout/scorecard.json",
-        "markdown_path": "HOLDOUT.md",
+        "scorecard_path": scorecard_path,
+        "markdown_path": markdown_path,
         "auto_label_rule_version": AUTO_LABEL_RULE_VERSION,
     }
     _write_json(snapshot_path, snapshot)
@@ -164,6 +174,9 @@ def run_holdout(*, repo_root: Path, manifest_path: Path) -> dict[str, Any]:
     )
     start = parse_timestamp(cast(str, manifest["detection_start"]))
     end = parse_timestamp(cast(str, manifest["detection_end"]))
+    baseline_start = parse_timestamp(
+        cast(str, manifest.get("baseline_start") or manifest["detection_start"])
+    )
     ack_end = end + timedelta(hours=int(manifest["ack_lookahead_hours"]))
     repositories = tuple(cast(list[str], manifest["repositories"]))
     database_path = repo_root / cast(str, manifest["database_path"])
@@ -182,12 +195,13 @@ def run_holdout(*, repo_root: Path, manifest_path: Path) -> dict[str, Any]:
         ingest_archives(
             store=store,
             repositories=repositories,
-            start=start,
+            start=baseline_start,
             end=ack_end,
             cache_dir=raw_cache_dir,
         )
-        events = store.list_events(start=start, end=end)
-        firings = detect_bursts(events, config, start=start, end=end)
+        events = store.list_events(start=baseline_start, end=end)
+        detection = evaluate_detection(events, config, start=start, end=end)
+        firings = list(detection.firings)
         inserted = store.insert_firings(firings)
         print(
             f"DETECT events={len(events)} firings={len(firings)} inserted={inserted}"
@@ -215,6 +229,7 @@ def run_holdout(*, repo_root: Path, manifest_path: Path) -> dict[str, Any]:
             end=end,
             ack_end=ack_end,
         )
+        scorecard["detector_diagnostics"] = detection.verdict_counts
         scorecard["execution_git_commit"] = subprocess.check_output(
             ["git", "rev-parse", "HEAD"], cwd=repo_root, text=True
         ).strip()

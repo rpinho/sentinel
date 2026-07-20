@@ -28,6 +28,15 @@ def main() -> None:
         "--feedback-db", type=Path, default=Path(".cache/claude-validation.duckdb")
     )
     freeze.add_argument("--output-dir", type=Path, default=Path("holdout"))
+    freeze.add_argument(
+        "--config", type=Path, default=Path("src/sentinel/config/default.toml")
+    )
+    freeze.add_argument(
+        "--holdout-id", default="gharchive-2025-05-12-three-repos-v1"
+    )
+    freeze.add_argument("--database", default=".cache/holdout.duckdb")
+    freeze.add_argument("--scorecard", default="holdout/scorecard.json")
+    freeze.add_argument("--markdown", default="HOLDOUT.md")
 
     run = subparsers.add_parser("run", help="Run and publish the frozen holdout.")
     run.add_argument("--manifest", type=Path, default=Path("holdout/manifest.json"))
@@ -44,6 +53,11 @@ def main() -> None:
             repositories=REPOSITORIES,
             ack_lookahead_hours=ACK_LOOKAHEAD_HOURS,
             selection_policy=SELECTION_POLICY,
+            detector_config_path=str(args.config),
+            holdout_id=args.holdout_id,
+            database_path=args.database,
+            scorecard_path=args.scorecard,
+            markdown_path=args.markdown,
         )
         print(f"FROZEN commit={manifest['frozen_git_commit']}")
         print(f"CONFIG sha256={manifest['detector_config_sha256']}")

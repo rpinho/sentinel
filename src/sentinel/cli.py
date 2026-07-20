@@ -13,7 +13,7 @@ import typer
 from sentinel.adapters.gharchive import GHArchiveAdapter
 from sentinel.adapters.npm import NpmAdapter
 from sentinel.corroborate import corroborate_release
-from sentinel.detect import DetectorConfig, detect_bursts
+from sentinel.detect import DetectorConfig, detect_bursts, evaluate_detection
 from sentinel.feedback import render_feedback_context
 from sentinel.pipeline import execute_triage
 from sentinel.store import Firing, IngestionWindow, SentinelStore, TriageRecord
@@ -211,14 +211,26 @@ def detect(
     end_at = parse_timestamp(end) if end else None
     config = DetectorConfig.load(config_path)
     with SentinelStore(db) as store:
-        events = store.list_events(entity=entity, start=start_at, end=end_at)
-        firings = detect_bursts(events, config, start=start_at, end=end_at)
+        history_start = (
+            start_at - timedelta(days=config.phase_history_days)
+            if start_at and config.algorithm == "robust_rate_v2"
+            else start_at
+        )
+        events = store.list_events(entity=entity, start=history_start, end=end_at)
+        if config.algorithm == "robust_rate_v2":
+            run = evaluate_detection(events, config, start=start_at, end=end_at)
+            firings = list(run.firings)
+            diagnostics = run.verdict_counts
+        else:
+            firings = detect_bursts(events, config, start=start_at, end=end_at)
+            diagnostics = {}
         inserted = store.insert_firings(firings)
         if entity and start_at and end_at:
             _print_gharchive_coverage(store, entity, start_at, end_at)
         typer.echo(
             f"DETECTOR config={config.version} events={len(events)} "
-            f"firings={len(firings)} inserted={inserted}"
+            f"firings={len(firings)} inserted={inserted} "
+            f"diagnostics={json.dumps(diagnostics, sort_keys=True)}"
         )
         for firing in firings:
             triage, triage_inserted = execute_triage(
