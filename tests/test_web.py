@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -47,6 +48,16 @@ def test_replay_recomputes_offline_from_source_and_fixture(monkeypatch: Any) -> 
     assert view["triage"]["prompt_hash"] == (
         "42978ab2a88d53b077361e8749d54c3c5f63f3c54f9672be390c4308a10f3b4c"
     )
+    fixture = json.loads(
+        (
+            PACKAGE_DIR
+            / "data/triage/42978ab2a88d53b077361e8749d54c3c5f63f3c54f9672be390c4308a10f3b4c.json"
+        ).read_text(encoding="utf-8")
+    )
+    assert fixture["requested_model"] == "gpt-5.6"
+    assert fixture["returned_model"] == "gpt-5.6-sol"
+    assert "temperature" not in fixture["request"]
+    assert "seed" not in fixture["request"]
     assert view["firing"]["detector_version"] == "sha256:3b11a572823b"
     legacy = client.get("/replay/webpack-v5.99.0", follow_redirects=False)
     assert legacy.status_code == 308
