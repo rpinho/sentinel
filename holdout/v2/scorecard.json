@@ -1,0 +1,184 @@
+{
+  "auto_label": {
+    "description": "First later same-issue human maintainer comment on an issue thread matching disclosed substantive positive or negative phrases. Candidate issues must be visible no later than the firing; otherwise UNRESOLVED.",
+    "maintainer_associations": [
+      "COLLABORATOR",
+      "MEMBER",
+      "OWNER"
+    ],
+    "rule_version": "maintainer-substantive-v3"
+  },
+  "coverage": {
+    "archive_hours": 168,
+    "complete_repo_hours": 504,
+    "expected_repo_hours": 504,
+    "ratio": 1.0
+  },
+  "detection_window": {
+    "ack_lookahead_end": "2025-05-20T00:00:00Z",
+    "duration_weeks": 1.0,
+    "end": "2025-05-19T00:00:00Z",
+    "start": "2025-05-12T00:00:00Z"
+  },
+  "detector_diagnostics": {
+    "automation_suppressed": 7,
+    "candidate": 23,
+    "immature": 684,
+    "insufficient_exposure": 594,
+    "observe_only": 6,
+    "quiet": 702
+  },
+  "detector_misses": [
+    {
+      "ack_excerpt": "I'm guessing this is a duplicate of https://github.com/microsoft/vscode-copilot-release/issues/9336#issuecomment-2875088578 ... can you please try the workaround steps there and let us know?",
+      "ack_ts": "2025-05-13T05:36:41Z",
+      "ack_url": "https://github.com/microsoft/vscode/issues/248732#issuecomment-2875102699",
+      "entity": "microsoft/vscode",
+      "issue_number": 248732,
+      "reason": "acknowledged breakage report had no covering detector firing",
+      "report_excerpt": "Sign In to GitHub.com Chat not working I tried to sign in to GitHub.com through Chat, but the button isn't working or responding.",
+      "report_url": "https://github.com/microsoft/vscode/issues/248732",
+      "reported_at": "2025-05-12T14:24:21Z"
+    },
+    {
+      "ack_excerpt": "Sorry for causing this, I missed this case in the refactoring. I fixed this here already: https://github.com/microsoft/vscode/commit/27f9b6e2b0e24ddf4cc0913b11ac8d6a6aea25ea > What's the recommended fix for this pattern? I have some ideas,…",
+      "ack_ts": "2025-05-15T09:28:23Z",
+      "ack_url": "https://github.com/microsoft/vscode/issues/248784#issuecomment-2883165802",
+      "entity": "microsoft/vscode",
+      "issue_number": 248784,
+      "reason": "acknowledged breakage report had no covering detector firing",
+      "report_excerpt": "ERR The reader object cannot be used outside its compute function! ``` ERR The reader object cannot be used outside its compute function!: Error: The reader object cannot be used outside its compute function! at Derived._ensureNoRunning (v…",
+      "report_url": "https://github.com/microsoft/vscode/issues/248784",
+      "reported_at": "2025-05-13T07:00:45Z"
+    },
+    {
+      "ack_excerpt": "Fixed in Insiders already",
+      "ack_ts": "2025-05-16T16:05:21Z",
+      "ack_url": "https://github.com/microsoft/vscode/issues/249108#issuecomment-2887134540",
+      "entity": "microsoft/vscode",
+      "issue_number": 249108,
+      "reason": "acknowledged breakage report had no covering detector firing",
+      "report_excerpt": "Debug toolbar can be moved under macOS window controls where they can't be removed Type: <b>Bug</b> 1. Enter debug mode with a breakpoint set so the debug toolbar shows up 2. Move the debug toolbar to the top left corner where the macOS wi…",
+      "report_url": "https://github.com/microsoft/vscode/issues/249108",
+      "reported_at": "2025-05-16T15:10:06Z"
+    },
+    {
+      "ack_excerpt": "/duplicate https://github.com/microsoft/vscode-copilot-release/issues/9336#issuecomment-2875088578 there's a workaround in this comment.",
+      "ack_ts": "2025-05-17T21:37:35Z",
+      "ack_url": "https://github.com/microsoft/vscode/issues/249187#issuecomment-2888594719",
+      "entity": "microsoft/vscode",
+      "issue_number": 249187,
+      "reason": "acknowledged breakage report had no covering detector firing",
+      "report_excerpt": "Can t login into Github copilot Type: <b>Bug</b> 2025-05-17 23:46:52.134 [error] [default] github.copilot.signIn: TokenResultError [CopilotAuthError]: Timed out waiting for authentication provider to register at getSessionHelper (c:\\Users\\…",
+      "report_url": "https://github.com/microsoft/vscode/issues/249187",
+      "reported_at": "2025-05-17T20:47:19Z"
+    }
+  ],
+  "execution_git_commit": "fa96bee27a9e639ccf9bfcf19fa8363aaaf1d470",
+  "feedback_precision_delta": null,
+  "firings": [],
+  "generated_at": "2026-07-20T11:44:24.504084Z",
+  "holdout": {
+    "ack_lookahead_hours": 24,
+    "auto_label_rule_version": "maintainer-substantive-v3",
+    "baseline_start": "2025-04-28T00:00:00Z",
+    "database_path": ".cache/holdout-v2.duckdb",
+    "detection_end": "2025-05-19T00:00:00Z",
+    "detection_start": "2025-05-12T00:00:00Z",
+    "detector_config_path": "src/sentinel/config/detector-v2.toml",
+    "detector_config_sha256": "3b11a572823b54f9ea5a0801df2becef809d5e092962ded5bac556b2d1845106",
+    "detector_version": "sha256:3b11a572823b",
+    "feedback_snapshot_path": "holdout/v2/feedback-snapshot.json",
+    "feedback_snapshot_sha256": "c00c486998a8bc82d0bd08780d209f766bfb7528a8d07cf8399ec151d33a0736",
+    "fixture_dir": "tests/fixtures/triage",
+    "frozen_at": "2026-07-20T11:43:41.492001Z",
+    "frozen_git_commit": "e2ee6717c6ab9a43126452f9cc1c5a796be8454a",
+    "holdout_id": "gharchive-2025-05-12-three-repos-v2",
+    "markdown_path": "holdout/v2/HOLDOUT-v2.md",
+    "raw_cache_dir": ".cache/gharchive",
+    "repositories": [
+      "facebook/react",
+      "vercel/next.js",
+      "microsoft/vscode"
+    ],
+    "schema_version": 1,
+    "scorecard_path": "holdout/v2/scorecard.json",
+    "selection_policy": "First full Monday five weeks after the webpack demo; three predeclared high-traffic JavaScript repositories, selected before archive inspection."
+  },
+  "methodology_amendments": [
+    {
+      "from_rule": "maintainer-substantive-v1",
+      "observed_v1_metrics": {
+        "detector_misses": 3,
+        "full": {
+          "misses": 9,
+          "unresolved": 11
+        },
+        "no_agent": {
+          "true_positives": 9,
+          "unresolved": 11
+        },
+        "no_feedback": {
+          "misses": 9,
+          "unresolved": 11
+        }
+      },
+      "observed_v2_metrics": {
+        "detector_misses": 3,
+        "full": {
+          "misses": 7,
+          "unresolved": 13
+        },
+        "no_agent": {
+          "true_positives": 7,
+          "unresolved": 13
+        },
+        "no_feedback": {
+          "misses": 7,
+          "unresolved": 13
+        }
+      },
+      "reason": "The first raw runs exposed label leakage: generated PR statistics matched acknowledgment phrases (including CI posted through a human maintainer account), issue activity later in the firing hour could label an earlier firing, and an explicit downstream-distributor closure was read as a fix. V3 grades only issue acknowledgments, excludes bots, restricts candidate issue activity to timestamps at or before the firing, and recognizes the disclosed downstream-build negative phrase. Detector outputs and agent fixtures were unchanged.",
+      "to_rule": "maintainer-substantive-v3"
+    }
+  ],
+  "metrics": {
+    "full": {
+      "false_positives": 0,
+      "false_positives_per_week": 0.0,
+      "firings": 0,
+      "median_lead_minutes": null,
+      "misses": 0,
+      "precision": null,
+      "resolved_alerts": 0,
+      "true_negatives": 0,
+      "true_positives": 0,
+      "unresolved": 0
+    },
+    "no_agent": {
+      "false_positives": 0,
+      "false_positives_per_week": 0.0,
+      "firings": 0,
+      "median_lead_minutes": null,
+      "misses": 0,
+      "precision": null,
+      "resolved_alerts": 0,
+      "true_negatives": 0,
+      "true_positives": 0,
+      "unresolved": 0
+    },
+    "no_feedback": {
+      "false_positives": 0,
+      "false_positives_per_week": 0.0,
+      "firings": 0,
+      "median_lead_minutes": null,
+      "misses": 0,
+      "precision": null,
+      "resolved_alerts": 0,
+      "true_negatives": 0,
+      "true_positives": 0,
+      "unresolved": 0
+    }
+  },
+  "schema_version": 1
+}
