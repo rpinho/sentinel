@@ -514,9 +514,11 @@ def _automated_actors(
     for actor, actor_events in by_actor.items():
         signals: list[str] = []
         actor_folded = actor.casefold()
-        if any(re.search(pattern, actor_folded) for pattern in config.bot_name_patterns):
+        if "name_pattern" in config.bot_enabled_signals and any(
+            re.search(pattern, actor_folded) for pattern in config.bot_name_patterns
+        ):
             signals.append("name_pattern")
-        if any(
+        if "account_type" in config.bot_enabled_signals and any(
             str(
                 event.meta.get("actor_type")
                 or event.meta.get("author_type")
@@ -526,7 +528,7 @@ def _automated_actors(
             for event in actor_events
         ):
             signals.append("account_type")
-        if (
+        if "single_actor_concentration" in config.bot_enabled_signals and (
             len(actor_events) >= config.bot_concentration_min_events
             and total
             and len(actor_events) / total >= config.bot_concentration_share
@@ -537,12 +539,15 @@ def _automated_actors(
             for event in actor_events
             if (signature := _payload_signature(event.text)) is not None
         )
-        if (
+        if "repeated_payload" in config.bot_enabled_signals and (
             signatures
             and max(signatures.values()) >= config.bot_repeated_payload_min_events
         ):
             signals.append("repeated_payload")
-        if _regular_timing(actor_events, config):
+        if (
+            "hyper_regular_timing" in config.bot_enabled_signals
+            and _regular_timing(actor_events, config)
+        ):
             signals.append("hyper_regular_timing")
         if len(signals) >= config.bot_min_signals:
             automated[actor] = tuple(signals)

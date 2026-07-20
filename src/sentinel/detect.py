@@ -110,6 +110,13 @@ class DetectorConfig:
     persistence_buckets: int = 1
     recent_release_hours: int = 0
     bot_min_signals: int = 2
+    bot_enabled_signals: tuple[str, ...] = (
+        "name_pattern",
+        "account_type",
+        "single_actor_concentration",
+        "repeated_payload",
+        "hyper_regular_timing",
+    )
     bot_name_patterns: tuple[str, ...] = ()
     bot_concentration_share: float = 1.0
     bot_concentration_min_events: int = 0
@@ -150,6 +157,17 @@ class DetectorConfig:
                 raise ValueError("v2 persistence_buckets must be at least two")
             if self.bot_min_signals < 2:
                 raise ValueError("v2 bot classification requires multiple signals")
+            known_bot_signals = {
+                "name_pattern",
+                "account_type",
+                "single_actor_concentration",
+                "repeated_payload",
+                "hyper_regular_timing",
+            }
+            if not self.bot_enabled_signals or not set(
+                self.bot_enabled_signals
+            ) <= known_bot_signals:
+                raise ValueError("v2 bot enabled signals are empty or unknown")
             if not self.metrics:
                 raise ValueError("v2 requires registered metrics")
             if len({metric.metric_id for metric in self.metrics}) != len(self.metrics):
@@ -179,6 +197,9 @@ class DetectorConfig:
             {key: tuple(values) for key, values in self.meta_in.items()},
         )
         object.__setattr__(self, "bot_name_patterns", tuple(self.bot_name_patterns))
+        object.__setattr__(
+            self, "bot_enabled_signals", tuple(self.bot_enabled_signals)
+        )
         object.__setattr__(self, "metrics", tuple(self.metrics))
 
     @property
@@ -239,6 +260,16 @@ class DetectorConfig:
             persistence_buckets=int(raw.get("persistence_buckets", 1)),
             recent_release_hours=int(raw.get("recent_release_hours", 0)),
             bot_min_signals=int(raw.get("bot_min_signals", 2)),
+            bot_enabled_signals=tuple(
+                raw.get("bot_enabled_signals")
+                or (
+                    "name_pattern",
+                    "account_type",
+                    "single_actor_concentration",
+                    "repeated_payload",
+                    "hyper_regular_timing",
+                )
+            ),
             bot_name_patterns=tuple(raw.get("bot_name_patterns") or ()),
             bot_concentration_share=float(raw.get("bot_concentration_share", 1.0)),
             bot_concentration_min_events=int(
