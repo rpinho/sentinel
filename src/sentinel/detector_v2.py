@@ -232,7 +232,9 @@ def evaluate_v2(
                 releases.get(entity, ()), bucket, config
             )
             multi_metric = len(candidate_ids) >= 2
-            independently_corroborated = bool(recent_release) or multi_metric
+            # Multiple ratios derived from the same GH Archive events add
+            # breadth, but they are not an independent instrumentation path.
+            independently_corroborated = bool(recent_release)
             admitted = bool(candidate_ids) and (
                 bool(persistent) or independently_corroborated
             )

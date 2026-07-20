@@ -157,6 +157,22 @@ def test_v2_release_corroboration_admits_one_interval_but_caps_severity() -> Non
     assert firing.meta["severity"]["severity"] != "interrupt"
 
 
+def test_v2_same_source_metric_breadth_does_not_bypass_persistence() -> None:
+    second_metric = replace(_metric(), metric_id="comment_rate_echo")
+    config = replace(_config(), metrics=(_metric(), second_metric))
+    events = [*_healthy_history(hours=(12,)), *_burst(12)]
+
+    run = evaluate_detection(
+        events,
+        config,
+        start=START,
+        end=START + timedelta(hours=1),
+    )
+
+    assert run.firings == ()
+    assert run.verdict_counts == {"candidate": 2}
+
+
 def test_v2_suppresses_raw_move_when_concordant_bot_signals_flatten_exclusion() -> None:
     bot_burst = [
         _comment(
