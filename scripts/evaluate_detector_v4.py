@@ -99,6 +99,16 @@ def main() -> None:
     test_power_met = int(test_balance["positive_incidents"]) >= int(
         targets["minimum_test_positive_incidents"]
     )
+    maximum_noise = float(targets["maximum_obvious_label_noise_rate_per_source"])
+    test_audit_sources = cast(
+        Mapping[str, Mapping[str, Any]], test_audit["by_source"]
+    )
+    failed_audit_sources = [
+        source
+        for source, result in sorted(test_audit_sources.items())
+        if float(result["obvious_label_noise_rate"]) > maximum_noise
+    ]
+    label_quality_met = not failed_audit_sources
     scorecard: dict[str, Any] = {
         "schema_version": 1,
         "study_id": protocol["study_id"],
@@ -158,6 +168,9 @@ def main() -> None:
             ],
         },
         "label_audit": {
+            "maximum_obvious_label_noise_rate_per_source": maximum_noise,
+            "test_target_met": label_quality_met,
+            "test_failed_sources": failed_audit_sources,
             "train": {
                 "counts": train_audit["counts"],
                 "by_source": train_audit["by_source"],
@@ -173,7 +186,13 @@ def main() -> None:
         },
         "test": primary,
         "burst_ablation": burst,
-        "finding": _finding(primary, burst, test_power_met=test_power_met),
+        "finding": _finding(
+            primary,
+            burst,
+            test_power_met=test_power_met,
+            label_quality_met=label_quality_met,
+            failed_audit_sources=failed_audit_sources,
+        ),
         "methodology": {
             "unit": "repository UTC active hour",
             "split": "whole repositories",
@@ -349,11 +368,20 @@ def _finding(
     burst: Mapping[str, Any],
     *,
     test_power_met: bool,
+    label_quality_met: bool,
+    failed_audit_sources: Sequence[str],
 ) -> dict[str, Any]:
     primary_auc = float(cast(Mapping[str, Any], primary["metrics"])["roc_auc"])
     burst_auc = float(cast(Mapping[str, Any], burst["metrics"])["roc_auc"])
     interval = cast(Mapping[str, Sequence[float]], cast(Mapping[str, Any], primary["metrics"])["repository_bootstrap_95"])["roc_auc"]
-    if not test_power_met:
+    if not label_quality_met:
+        conclusion = (
+            "The frozen test metrics are descriptive, not confirmatory: "
+            "the predeclared label-noise ceiling was exceeded by "
+            + ", ".join(failed_audit_sources)
+            + "."
+        )
+    elif not test_power_met:
         conclusion = "The frozen test split missed its declared power target."
     elif interval[0] > 0.5:
         conclusion = "Coherence signals generalized above chance on the powered whole-repository test split."
@@ -493,7 +521,8 @@ def render_markdown(scorecard: Mapping[str, Any]) -> str:
     burst_metrics = cast(Mapping[str, Any], burst["metrics"])
     finding = cast(Mapping[str, Any], scorecard["finding"])
     population = cast(Mapping[str, Any], scorecard["population"])
-    test_audit = cast(Mapping[str, Any], cast(Mapping[str, Any], scorecard["label_audit"])["test"])
+    label_audit = cast(Mapping[str, Any], scorecard["label_audit"])
+    test_audit = cast(Mapping[str, Any], label_audit["test"])
     ci = cast(Mapping[str, Sequence[float]], metrics["repository_bootstrap_95"])
     lines = [
         "# Sentinel detector v4 — powered frozen test scorecard",
@@ -540,6 +569,12 @@ def render_markdown(scorecard: Mapping[str, Any]) -> str:
         lines.append(
             f"| `{source}` | {source_counts[source]} | {audit['reviewed']} | {audit['rejected']} | {audit['obvious_label_noise_rate']:.1%} |"
         )
+    lines.extend(
+        [
+            "",
+            f"Predeclared per-source noise ceiling: {label_audit['maximum_obvious_label_noise_rate_per_source']:.1%}. Held-out label-quality target met: **{_yes(label_audit['test_target_met'])}**.",
+        ]
+    )
     lines.extend(
         [
             "",

@@ -54,6 +54,55 @@
           "reason": "The maintainer cannot reproduce the headline failure but identifies an input-schema mismatch consistent with it."
         }
       }
+    },
+    "test": {
+      "candidate_sample_sha256": "a34302beeccab7e3ed3cae8d0f38915a31258903d7482b8514d2bef7b82b3fd2",
+      "overrides": {
+        "v4incident:84327c9afc37256f9bc2": {
+          "status": "rejected",
+          "reason": "The report is an incoherent, content-free TensorFlow submission ('tnsor', 'sss'); closure does not make it credible incident evidence."
+        },
+        "v4incident:b5f391b3f3ccf72f2195": {
+          "status": "rejected",
+          "reason": "The merged pull request documents the intentional inability to set attributes on unions; it does not fix or confirm the reported behavior as a defect."
+        },
+        "v4incident:a0774a6aa946256bb70b": {
+          "status": "ambiguous",
+          "reason": "The maintainer suggests a related issue that is fixed on trunk but asks for a new reproducer, so the sampled report is not yet confirmed."
+        },
+        "v4incident:62fcba38f693816d1166": {
+          "status": "ambiguous",
+          "reason": "The selected comment identifies a benchmarking warm-up problem and only tentatively allows a runtime regression; the reporter later found no meaningful regression."
+        },
+        "v4incident:8812fb4253de8599d8d9": {
+          "status": "rejected",
+          "reason": "The selected llvmbot comment automatically mirrors the issue body and is neither a non-bot maintainer response nor a substantive confirmation."
+        },
+        "v4incident:e27861784f3982538071": {
+          "status": "rejected",
+          "reason": "The selected llvmbot comment automatically mirrors the issue body and is neither a non-bot maintainer response nor a substantive confirmation."
+        },
+        "v4incident:235d2ffdd6cb423229e2": {
+          "status": "rejected",
+          "reason": "The selected llvmbot comment is generic good-first-issue instructions; despite earlier human diagnosis in the thread, this credited evidence is automated and non-substantive."
+        },
+        "v4incident:60e64a6219128ee286e9": {
+          "status": "rejected",
+          "reason": "The maintainer says the prior issue is fixed and requests current reproduction details; the comment does not confirm that this new report is a defect."
+        },
+        "v4incident:bccee0983715f27341ac": {
+          "status": "ambiguous",
+          "reason": "The maintainer reproduces the version-dependent behavior and attributes its resolution to newer GDB, leaving whether rust itself regressed unresolved."
+        },
+        "v4incident:db1299a1d3e21262b9a5": {
+          "status": "rejected",
+          "reason": "The selected llvmbot comment automatically mirrors the issue body and is neither a non-bot maintainer response nor a substantive confirmation."
+        },
+        "v4incident:d82506b70ee55fffa23e": {
+          "status": "rejected",
+          "reason": "The selected llvmbot comment automatically mirrors the issue body and is neither a non-bot maintainer response nor a substantive confirmation."
+        }
+      }
     }
   }
 }

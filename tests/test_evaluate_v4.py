@@ -52,6 +52,27 @@ def test_evaluate_v4_scores_frozen_model_and_future_confirmations(
     assert not result["misses"]
 
 
+def test_evaluate_v4_label_quality_gate_prevents_confirmatory_claim() -> None:
+    primary = {
+        "metrics": {
+            "roc_auc": 0.8,
+            "repository_bootstrap_95": {"roc_auc": [0.7, 0.9]},
+        }
+    }
+    burst = {"metrics": {"roc_auc": 0.6}}
+
+    finding = evaluate_detector_v4._finding(
+        primary,
+        burst,
+        test_power_met=True,
+        label_quality_met=False,
+        failed_audit_sources=["substantive_maintainer_comment"],
+    )
+
+    assert "descriptive, not confirmatory" in finding["conclusion"]
+    assert "substantive_maintainer_comment" in finding["conclusion"]
+
+
 def _row(row_id: str, entity: str, label: int, signal: float) -> dict:
     return {
         "row_id": row_id,
