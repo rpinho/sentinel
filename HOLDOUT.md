@@ -1,4 +1,29 @@
-# Sentinel frozen holdout
+# Sentinel frozen holdout: detector v1 versus v2
+
+Both detectors were frozen before their outputs were inspected and run over the same
+one-week window and three repositories. The v2 config and feedback snapshot are published
+in [`holdout/v2/`](holdout/v2/).
+
+## Outcome comparison
+
+| Detector | Firings | Resolved TP | Resolved FP | Unresolved | Published detector misses | Precision | FP/week |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| v1 no-agent (`sha256:3fca62ea12ec`) | 20 | 1 | 1 | 18 | 3 | 50.0% | 1.00 |
+| v2 no-agent (`sha256:3b11a572823b`) | 0 | 0 | 0 | 0 | 4 | N/A | 0.00 |
+
+V2 removed all 20 v1 firings, including the 18 unresolved alerts that GPT mostly
+attributed to routine or automated activity. Seven raw/bot-excluded divergences were
+explicitly suppressed, while 23 isolated candidate intervals failed persistence or
+independent-corroboration requirements. This is not a clean win: v2 emitted no true
+alerts, precision is therefore undefined, and the acknowledged detector-miss list grew
+from three to four. It did not improve recall on the three incidents v1 already missed.
+
+Full and no-feedback v2 modes had nothing to triage, so the v2 holdout made zero model
+calls and cannot claim a feedback benefit. The complete unedited v2 report, including all
+four misses and 504/504 repo-hours of coverage, is
+[`holdout/v2/HOLDOUT-v2.md`](holdout/v2/HOLDOUT-v2.md).
+
+## Detector v1 generated report
 
 > Generated directly by `scripts/run_holdout.py`; results are unedited.
 

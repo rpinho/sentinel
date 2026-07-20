@@ -107,5 +107,8 @@ code does not pretend that an invented interrupt threshold was calibrated.
 6. Only Dependabot is excluded in the hero window.
 7. Issue #19394 is visible before the firing.
 
-GPT attribution is a separate, final fixture-seeding acceptance. Detector calibration,
-the holdout preview, and ordinary replays make no OpenAI API calls.
+The final GPT attribution fixtures are now committed and checked by the same verifier:
+full and no-feedback modes both name `v5.99.0` at 0.99 confidence from inputs ending at
+`18:52:11Z`, strictly before the `18:55:02Z` firing. Detector calibration, the holdout,
+and ordinary replays make no OpenAI API calls; only these two final successful completions
+were seeded live.

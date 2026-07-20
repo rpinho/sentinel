@@ -40,12 +40,13 @@ maintainer acknowledgment.
 Sentinel uses the
 [OpenAI Responses API structured-output contract](https://developers.openai.com/api/docs/guides/structured-outputs)
 with GPT-5.6 and strict `text.format` JSON schema.
-The live endpoint rejects `temperature: 0`, so temperature is omitted entirely. A later
-live check confirmed that the endpoint accepts `seed`; new live cache seeds therefore send
-fixed `seed: 0` as a best-effort aid and include it in the request hash. Historical no-seed
-fixtures remain replayable under their original exact hashes. The source of truth for
-reproducibility is still the SHA-256 of the exact effective request plus its committed
-response fixture, not sampling controls.
+The live endpoint rejects `temperature: 0`, so temperature is omitted entirely. Sentinel
+attempts fixed `seed: 0` as a best-effort reproducibility hint. During the final webpack v2
+fixture run, the Responses endpoint returned HTTP 400 `Unknown parameter: 'seed'`.
+Sentinel now retries only that explicit unsupported-parameter failure without seed and
+persists the successful canonical request under its no-seed hash. The source of truth for
+reproducibility is the SHA-256 of the exact effective request plus its committed response
+fixture, not temperature or seed.
 
 The event lookup is bounded to 24 hours. If the rendered input exceeds 500,000 characters,
 `signal-first-v1` deterministically retains issue/release signals and recent context before
@@ -79,19 +80,19 @@ submitted after triage captures the latest full-mode hypothesis and confidence.
 
 ## Verified webpack acceptance
 
-Database: `.cache/claude-validation.duckdb`
+Database: `.cache/webpack-v2.duckdb`
 
-Firing: `firing:9f151a8243fe964d47d56400`
+Firing: `firing:07cb50298e4a5badf1114403`
 
 ```bash
-uv run sentinel triage firing:9f151a8243fe964d47d56400 \
-  --db .cache/claude-validation.duckdb --no-agent --json
+uv run sentinel triage firing:07cb50298e4a5badf1114403 \
+  --db .cache/webpack-v2.duckdb --no-agent --json
 
-uv run sentinel triage firing:9f151a8243fe964d47d56400 \
-  --db .cache/claude-validation.duckdb --no-feedback --json
+uv run sentinel triage firing:07cb50298e4a5badf1114403 \
+  --db .cache/webpack-v2.duckdb --no-feedback --json
 
-uv run sentinel triage firing:9f151a8243fe964d47d56400 \
-  --db .cache/claude-validation.duckdb --json
+uv run sentinel triage firing:07cb50298e4a5badf1114403 \
+  --db .cache/webpack-v2.duckdb --json
 ```
 
 Observed results:
@@ -99,15 +100,16 @@ Observed results:
 | Mode | Prompt hash | Culprit | Confidence | Max input timestamp |
 | --- | --- | --- | --- | --- |
 | `no_agent` | none | none | none | none |
-| `no_feedback` | `4a1a32397966ece3416134eec926a485afa869c0d57d17c61e3c2f00386837f6` | `v5.99.0` | 0.98 | `2025-04-07T18:27:04Z` |
-| `full` | `d70b11c9db7e918b945460220942cbccfc86657a8df830710f1953ab5df247f6` | `v5.99.0` | 0.98 | `2025-04-07T18:27:04Z` |
+| `no_feedback` | `96686e532f18a193de07145eae97cc25cb4b78dc485fd64940c9663a3146e4fd` | `v5.99.0` | 0.99 | `2025-04-07T18:52:11Z` |
+| `full` | `8a8e84a669ab09ef0f5b271a481a33cb9cbdda8bec5e9a7295613b534d6caf25` | `v5.99.0` | 0.99 | `2025-04-07T18:52:11Z` |
 
-The firing occurred at `2025-04-07T18:27:36Z`. The substantive maintainer acknowledgment
-at `20:14:04Z`, including PR `#19398`, is absent from both exact requests. Both GPT modes
-used four quotes copied from real pre-firing issue text.
+The v2 firing occurred at `2025-04-07T18:55:02Z`. The substantive maintainer
+acknowledgment at `20:14:04Z`, including PR `#19398`, is absent from both exact requests.
+Both GPT modes used five quotes copied from real pre-firing issue text. There was no active
+feedback for this v2 metric, so the two results do not demonstrate a learning benefit.
 
 ## Deliberately next
 
-The web scorecard/replay UI and the frozen-holdout precision run remain for the next build
-slice. The holdout must freeze both the detector config hash and a feedback-store snapshot,
-then run once in full mode and once with `--no-feedback`, publishing both outcomes.
+The web surfaces remain for the next build slice. Detector v2 and its feedback snapshot
+have been frozen, and the same holdout has been published beside v1. V2 emitted no
+firings, so neither agent mode ran and no feedback improvement can be claimed.

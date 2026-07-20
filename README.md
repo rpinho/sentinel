@@ -84,10 +84,11 @@ The live API key is loaded from the repository `.env` as `OPENAI_API_KEY`. Each 
 uses GPT-5.6 with
 [Responses structured output](https://developers.openai.com/api/docs/guides/structured-outputs)
 and is hashed from the exact effective API payload. GPT-5.6's Responses endpoint rejects
-non-default `temperature`, so Sentinel omits it. New live cache seeds include a fixed
-`seed: 0` as best-effort sampling stability, and that seed is part of the request hash;
-deterministic replay still comes from the exact cached response, not the seed. Historical
-no-seed fixtures remain exact-replay compatible. Live responses are written to both
+non-default `temperature`, so Sentinel omits it. Sentinel attempts fixed `seed: 0` as a
+best-effort hint; if the endpoint explicitly rejects that field as unsupported, it retries
+without seed and persists the canonical no-seed request under its own exact hash. The
+webpack v2 publication run took that fallback. Deterministic replay comes from the exact
+cached response, not a sampling control. Live responses are written to both
 `.cache/triage/` and `tests/fixtures/triage/`. On a cache miss without a key, Sentinel
 fails instead of inventing a response.
 
@@ -143,8 +144,8 @@ thresholds, tiers, or routing.
 
 ## Frozen holdout
 
-Run the committed one-week, three-repository holdout and verify all 40 GPT fixtures
-offline:
+Run the committed one-week, three-repository detector v1 holdout and verify all 40 GPT
+fixtures offline:
 
 ```bash
 scripts/run_holdout.sh
@@ -158,11 +159,19 @@ acknowledged detector misses are published. The frozen feedback snapshot had no 
 the holdout repositories, so no feedback benefit is claimed. See `HOLDOUT.md` for every
 firing and the documented correction of two initial auto-label leakage bugs.
 
+Detector v2 was frozen independently and then run on the exact same archive. It emitted
+zero firings: all 20 v1 alerts disappeared, including 18 unresolved alerts, but the
+published acknowledged-miss list increased from three to four. Precision is undefined,
+FP/week is zero, and no feedback benefit can be measured. The result is not presented as
+a recall improvement. See the v1/v2 comparison in `HOLDOUT.md` and the unedited v2 report
+in `holdout/v2/HOLDOUT-v2.md`.
+
 Holdout execution is cost-safe by default. `scripts/run_holdout_v2.sh` blanks the API key
 and can only replay exact committed fixtures; it fails on a cache miss. The separately
 named `scripts/publish_holdout_v2.sh` opts into live, potentially billable GPT fixture
-seeding and is reserved for the final publication run. Detector calibration and previews
-use no OpenAI API calls.
+seeding and is reserved for a final publication run. This frozen v2 result had no firings,
+so its publication used zero GPT calls. Detector calibration and previews use no OpenAI
+API calls.
 
 ## Reproduce the webpack acceptance run
 
@@ -174,7 +183,7 @@ public issue, maintainer acknowledgment, releases, patch, and download counts:
 scripts/run_webpack_acceptance.sh
 ```
 
-Current verified result:
+Frozen v1 regression result:
 
 - GH Archive coverage: 11/11 requested hours.
 - Issue `#19394` observed at `2025-04-07T18:04:49Z`.
@@ -190,6 +199,27 @@ Current verified result:
 - Exact prompt hashes: full `d70b11c9...47f6`; no-feedback `4a1a3239...37f6`.
 - Fixture replay succeeds without `OPENAI_API_KEY` and reports `cache_hit=true` and
   `replayed=true`.
+
+The packaged v2 acceptance uses two weeks of continuous history and independently
+corroborated GitHub/npm release data:
+
+```bash
+uv run python scripts/verify_detector_v2_acceptance.py \
+  --db .cache/webpack-v2.duckdb \
+  --config src/sentinel/config/detector-v2.toml
+```
+
+- Healthy contrast: zero firings.
+- V2 fires at `18:55:02Z` on comments per active issue thread: `5.50` versus a
+  phase-matched median of `1.00`, robust z `18.0`.
+- The single-interval path is admitted only because GitHub and npm independently report
+  v5.99.0 within 63 seconds.
+- The firing is 79 minutes before the `20:14:04Z` substantive acknowledgment.
+- GPT-5.6 full and no-feedback triage both name `v5.99.0` at 0.99 confidence from
+  28 strictly pre-firing events; the newest input is `18:52:11Z`.
+- Exact prompt hashes: full `8a8e84a6...af25`; no-feedback `96686e53...e4fd`.
+- Both committed fixtures replay offline, omit temperature and unsupported seed, and
+  exclude the later acknowledgment and PR `#19398`.
 
 See `HANDOFF.md` for the product brief, `TRIAGE.md` for the implemented agent contract,
 and `FEEDBACK_LOOP.md` for the learning-loop rationale.
