@@ -4,13 +4,13 @@
     <div class="eyebrow"><span>LIVE SOURCE</span><span>ON DEMAND</span></div>
     <p class="kicker">No daemon. No staged result.</p>
     <h1>Pull one real archive hour.</h1>
-    <p class="lede">Choose a repository. Sentinel downloads the newest published GH Archive hour, normalizes its public events, and runs the frozen detector.</p>
+    <p class="lede">Choose a repository. Sentinel downloads the newest published GH Archive hour, updates its persisted history, and runs the frozen learned stage one. If a Claude subscription is available, all candidates go to stage two in one batch.</p>
     <div class="live-actions" aria-label="Run a live archive check">
       <form method="post" action="/live?repo=webpack%2Fwebpack"><button type="submit">Run webpack/webpack <span>→</span></button></form>
       <form method="post" action="/live?repo=facebook%2Freact"><button type="submit" class="secondary">Run facebook/react <span>→</span></button></form>
       <form method="post" action="/live?repo=vercel%2Fnext.js"><button type="submit" class="secondary">Run vercel/next.js <span>→</span></button></form>
     </div>
-    <p class="cost-note">This fetches one public compressed archive hour—often hundreds of megabytes. It makes no model call.</p>
+    <p class="cost-note">One public archive gzip can be hundreds of megabytes. Stage two uses Claude subscription auth only, strips API credentials, and can take a couple of minutes when candidates exist.</p>
   </section>
 
   {% if error %}
@@ -18,22 +18,57 @@
       <p class="kicker">SOURCE CHECK FAILED</p>
       <h2>The archive did not return a usable hour.</h2>
       <p>{{ error }}</p>
-      <p>No event or healthy-state claim was fabricated.</p>
+      <p>No event, candidate, or healthy-state claim was fabricated.</p>
     </section>
   {% elif live %}
     <section class="live-result" aria-live="polite">
       <div class="live-status">
         <span class="pulse" aria-hidden="true"></span>
-        <div><p class="kicker">LATEST COMPLETED RUN</p><h2>{% if live.firings %}{{ live.firings }} firing{% if live.firings != 1 %}s{% endif %}{% else %}No anomaly fired{% endif %}</h2></div>
+        <div>
+          <p class="kicker">LATEST COMPLETED INGESTION</p>
+          <h2>{% if not live.history_ready %}Stage one is waiting for history{% elif live.firings %}{{ live.firings }} stage-one candidate{% if live.firings != 1 %}s{% endif %}{% else %}No stage-one candidate{% endif %}</h2>
+        </div>
       </div>
       <div class="live-grid">
         <div><span>REPOSITORY</span><b>{{ live.repo }}</b></div>
         <div><span>ARCHIVE HOUR</span><a href="{{ live.archive_url }}" rel="noreferrer">{{ live.hour|timestamp }}</a></div>
         <div><span>NORMALIZED</span><b>{{ live.event_count }} events</b></div>
-        <div><span>HISTORY</span><b>{{ live.covered_hours }} / 336 hours</b></div>
+        <div><span>HISTORY</span><b>{{ live.covered_hours }} / {{ live.history_hours_required }} hours</b></div>
       </div>
       {% if not live.history_ready %}
-        <p class="truth-note"><b>Baseline state: immature.</b> The detector did not synthesize missing history. Repeat on future hours or preload 14 continuous days before treating “no firing” as a healthy verdict.</p>
+        <p class="truth-note"><b>Baseline state: immature.</b> The learned ranker requires seven complete days of repository history. Sentinel persisted this hour but did not zero-fill the missing archive or call stage two.</p>
+      {% else %}
+        <div class="live-pipeline">
+          <article>
+            <span>STAGE 1 · {{ live.stage1.model }}</span>
+            <strong>{{ live.stage1.candidates|length }}</strong>
+            <p>candidate hours above the frozen {{ live.stage1.threshold }} threshold</p>
+          </article>
+          <article class="{% if live.stage2.status == 'complete' %}selected{% endif %}">
+            <span>STAGE 2 · {{ live.stage2.status|upper }}</span>
+            <strong>{{ live.stage2.verdicts|length }}</strong>
+            <p>{{ live.stage2.detail }}</p>
+          </article>
+        </div>
+        {% for candidate in live.stage1.candidates %}
+          <article class="live-candidate">
+            <div>
+              <span class="status-pill">STAGE 1 CANDIDATE</span>
+              <a class="timestamp" href="{{ candidate.url }}" rel="noreferrer">{{ candidate.ts|timestamp }}</a>
+            </div>
+            <h3>{{ candidate.entity }}</h3>
+            <p>{{ candidate.probability|confidence }} probability · frozen threshold {{ live.stage1.threshold }}</p>
+          </article>
+        {% endfor %}
+        {% for verdict in live.stage2.verdicts %}
+          <article class="triage-card live-verdict">
+            <div class="triage-topline">
+              <div><span class="status-pill">STAGE 2 · {% if verdict.response.real %}SURVIVES{% else %}REJECTED{% endif %}</span><h3>{{ verdict.response.culprit_ref or verdict.entity }}</h3></div>
+              <div class="confidence"><b>{{ verdict.response.confidence|confidence }}</b><span>confidence</span></div>
+            </div>
+            <p class="cause">{{ verdict.response.cause }}</p>
+          </article>
+        {% endfor %}
       {% endif %}
       {% if live.events %}
         <div class="live-events">
@@ -56,13 +91,14 @@
 
   <section class="section-shell live-method">
     <div class="section-heading">
-      <div><p class="kicker">WHAT RUNS</p><h2>The same source boundary, in public.</h2></div>
+      <div><p class="kicker">WHAT RUNS</p><h2>The study boundary survives contact with now.</h2></div>
+      <p>A one-hour button press cannot impersonate a seven-day baseline. Every incomplete state remains visible.</p>
     </div>
     <ol class="method-steps">
       <li><b>01</b><span>Download one published GH Archive gzip.</span></li>
-      <li><b>02</b><span>Normalize supported events into the shared contract.</span></li>
-      <li><b>03</b><span>Persist coverage and run detector v2 without model triage.</span></li>
-      <li><b>04</b><span>Publish source failures or immature history honestly.</span></li>
+      <li><b>02</b><span>Normalize events and persist exact coverage.</span></li>
+      <li><b>03</b><span>Run the frozen v4 ranker only with complete history.</span></li>
+      <li><b>04</b><span>Judge all candidates once, or publish candidates only.</span></li>
     </ol>
   </section>
 {% endblock %}

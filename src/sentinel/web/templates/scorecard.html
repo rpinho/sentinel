@@ -1,56 +1,87 @@
 {% extends "base.html" %}
 {% block content %}
-  <section class="hero scorecard-hero">
-    <div class="eyebrow"><span>FROZEN HOLDOUT</span><span>UNEDITED RESULTS</span></div>
-    <p class="kicker">504 / 504 repository-hours covered</p>
-    <h1>The empty alert column<br> is a result.</h1>
-    <p class="lede">Detector v2 removed all 20 v1 alerts—including one lucky marginal true positive—and published the four acknowledged incidents it missed.</p>
+  <section class="hero scorecard-hero scorecard-v6-hero">
+    <div class="eyebrow"><span>V1 → V6</span><span>FROZEN RESULTS</span></div>
+    <p class="kicker">The product is the scorecard</p>
+    <h1>More evidence did not<br>solve precision.</h1>
+    <p class="lede">The rich-evidence judge removed an estimated 56.5% of stage-one alerts. Precision rose only three points over the starved v5 judge, while end-to-end incident recall fell to 56.4%.</p>
   </section>
 
-  <section class="metric-row" aria-label="V1 detector headline metrics">
-    <div><span>RESOLVED PRECISION</span><strong>{{ scorecard.v1_metrics.no_agent.precision|confidence }}</strong><small>v1 · detector only</small></div>
-    <div><span>MEDIAN LEAD</span><strong>{{ "%.0f"|format(scorecard.v1_metrics.no_agent.median_lead_minutes) }}m</strong><small>one resolved TP</small></div>
-    <div><span>FALSE POSITIVES</span><strong>{{ "%.1f"|format(scorecard.v1_metrics.no_agent.false_positives_per_week) }}</strong><small>per week</small></div>
-    <div><span>ARCHIVE COVERAGE</span><strong>{{ scorecard.coverage.ratio|confidence }}</strong><small>{{ scorecard.coverage.complete_repo_hours }} repo-hours</small></div>
+  <section class="metric-row" aria-label="V6 end-to-end headline metrics">
+    <div><span>EST. PRECISION</span><strong>{{ scorecard.end_to_end.precision|percentage }}</strong><small>full noisy label set</small></div>
+    <div><span>INCIDENT RECALL</span><strong>{{ scorecard.end_to_end.incident_recall|percentage }}</strong><small>162 / 287 incidents</small></div>
+    <div><span>EST. ALERTS</span><strong>{{ "%.0f"|format(scorecard.end_to_end.estimated_alerts) }}</strong><small>from 1,724 stage-one alerts</small></div>
+    <div><span>MEDIAN LEAD</span><strong>{{ "%.1f"|format(scorecard.end_to_end.lead_time.median_hours) }}h</strong><small>among surviving incidents</small></div>
   </section>
 
   <section class="section-shell comparison-section">
     <div class="section-heading">
-      <div><p class="kicker">V1 → V2</p><h2>Noise collapsed. Recall cost rose.</h2></div>
-      <p>No holdout tuning followed this result. Undefined metrics remain undefined.</p>
+      <div><p class="kicker">TWO-STAGE RESULT</p><h2>Noise fell. So did recall.</h2></div>
+      <p>Stage one is the frozen learned ranker. V5 and v6 apply precision judges to the same sampled candidate set with inverse-probability weighting.</p>
     </div>
-    <div class="comparison-grid">
-      <article class="version-card">
-        <span class="version-tag">DETECTOR V1</span>
-        <strong>20</strong><p>firings</p>
-        <ul><li>18 unresolved</li><li>1 false positive</li><li>1 marginal true positive</li><li>3 published misses</li></ul>
-      </article>
-      <div class="comparison-arrow" aria-hidden="true">→</div>
-      <article class="version-card selected">
-        <span class="version-tag">DETECTOR V2 · FROZEN</span>
-        <strong>0</strong><p>firings</p>
-        <ul><li>20 alerts removed</li><li>0 false positives / week</li><li>precision undefined</li><li>4 published misses</li></ul>
-      </article>
+    <div class="stage-comparison" role="table" aria-label="Stage one versus stage two outcomes">
+      <div class="stage-row stage-header" role="row"><span>System</span><span>Alerts</span><span>Precision</span><span>Incident recall</span><span>True alert-hours killed</span></div>
+      <div class="stage-row" role="row"><b>Stage 1 / v4</b><span>{{ scorecard.stage1.alerts }}</span><span>{{ scorecard.stage1.precision|percentage }}</span><span>{{ scorecard.stage1.incident_recall|percentage }}</span><span>—</span></div>
+      <div class="stage-row" role="row"><b>V5 / one-event evidence</b><span>1,228 est.</span><span>16.6%</span><span>77.0%</span><span>31</span></div>
+      <div class="stage-row selected" role="row"><b>V6 / rich evidence</b><span>{{ "%.0f"|format(scorecard.end_to_end.estimated_alerts) }} est.</span><span>{{ scorecard.end_to_end.precision|percentage }}</span><span>{{ scorecard.end_to_end.incident_recall|percentage }}</span><span>{{ scorecard.end_to_end.true_positive_hours_killed }}</span></div>
     </div>
-    <p class="truth-note"><b>What this says:</b> mature repositories with small breakage bursts are outside this detector’s demonstrated recall envelope. The webpack issue storm remains its positive reproduction.</p>
+    <p class="truth-note"><b>Frozen finding:</b> {{ scorecard.v6_finding.conclusion }} This is a negative architecture result, not a tuned success story.</p>
   </section>
 
-  <section class="section-shell table-section">
+  <section class="section-shell evidence-section">
     <div class="section-heading">
-      <div><p class="kicker">ALL V1 FIRINGS</p><h2>Nothing hidden below the fold.</h2></div>
-      <p>Full triage mode shown. Routing stays deterministic even where contextual triage rejected the burst.</p>
+      <div><p class="kicker">WHAT CHANGED IN V6</p><h2>The judge was finally fed.</h2></div>
+      <p>Every evidence window stayed strictly pre-cutoff and was hashed in full. Scheduled-run-size batches replaced the single 391-candidate prompt.</p>
+    </div>
+    <div class="evidence-stats">
+      <article><span>EVENTS / CANDIDATE</span><strong>{{ scorecard.v6_requests.supplied_events_per_candidate.median|int }}</strong><p>median, up from one</p></article>
+      <article><span>EVIDENCE / CANDIDATE</span><strong>{{ "%.1f"|format(scorecard.v6_requests.supplied_event_json_chars_per_candidate.median / 1000) }}k</strong><p>median JSON characters</p></article>
+      <article><span>SCHEDULED BATCHES</span><strong>{{ scorecard.v6_requests.invocation_count }}</strong><p>11–20 candidates each</p></article>
+      <article><span>WALL TIME / BATCH</span><strong>{{ "%.0f"|format(scorecard.v6_runtime.wall_duration_ms_per_batch.median / 1000) }}s</strong><p>median, two workers</p></article>
+    </div>
+  </section>
+
+  <section class="section-shell cut-section">
+    <div class="section-heading">
+      <div><p class="kicker">HONEST CUTS</p><h2>The cleaner labels look worse.</h2></div>
+      <p>The full label set is descriptive: the maintainer-comment source failed its frozen noise audit. The clean cut retains only completed bug closures and merged fixing PRs.</p>
+    </div>
+    <div class="cut-grid">
+      <article>
+        <span>FULL LABEL SET</span>
+        <strong>{{ scorecard.end_to_end.precision|percentage }}</strong>
+        <p>precision · {{ scorecard.end_to_end.incident_recall|percentage }} incident recall</p>
+      </article>
+      <article class="selected">
+        <span>CLEAN-SOURCE CUT</span>
+        <strong>{{ scorecard.clean_source.precision|percentage }}</strong>
+        <p>precision · {{ scorecard.clean_source.incident_recall|percentage }} incident recall</p>
+      </article>
+      <article>
+        <span>AUTOMATION SUSPECTS</span>
+        <strong>{{ scorecard.automation.rejection_rate|percentage }}</strong>
+        <p>{{ scorecard.automation.stage2_rejected }} / {{ scorecard.automation.candidates }} rejected by stage two</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="section-shell table-section progression-section">
+    <div class="section-heading">
+      <div><p class="kicker">ITERATION TRAIL</p><h2>Six frozen versions. No erased failures.</h2></div>
+      <p>V1–v2 and v3–v6 use different studies, so their absolute metrics are not treated as a single leaderboard.</p>
     </div>
     <div class="table-wrap">
-      <table>
-        <thead><tr><th>Timestamp</th><th>Entity / hypothesis</th><th>Confidence</th><th>Verdict</th><th>Mode / route</th></tr></thead>
+      <table class="progression-table">
+        <thead><tr><th>Version / architecture</th><th>Alerts</th><th>Precision</th><th>Incident recall</th><th>Misses</th><th>Frozen identity</th></tr></thead>
         <tbody>
-          {% for row in scorecard.v1_firings %}
-            <tr>
-              <td><a class="timestamp" href="{{ row.url }}" rel="noreferrer">{{ row.ts|timestamp }}</a></td>
-              <td><b>{{ row.entity }}</b><span class="cell-detail">{{ row.hypothesis }}</span></td>
-              <td>{{ row.confidence|confidence }}</td>
-              <td><span class="verdict verdict-{{ row.verdict|lower }}">{{ row.verdict }}</span></td>
-              <td><b>{{ row.mode }}</b><span class="cell-detail">{{ row.severity }} → {{ row.audience }}</span></td>
+          {% for row in scorecard.progression %}
+            <tr {% if row.version == 'v6' %}class="current-row"{% endif %}>
+              <td><b>{{ row.version|upper }} · {{ row.architecture }}</b><span class="cell-detail">{{ row.note }}</span></td>
+              <td>{{ row.alerts }}</td>
+              <td>{{ row.precision|percentage }}</td>
+              <td>{{ row.incident_recall|percentage }}</td>
+              <td><span class="miss-badge">{{ row.misses }} MISS{% if row.misses != 1 %}ES{% endif %}</span></td>
+              <td><code class="hash-code">{{ row.hash }}</code></td>
             </tr>
           {% endfor %}
         </tbody>
@@ -60,42 +91,59 @@
 
   <section class="section-shell misses-section">
     <div class="section-heading">
-      <div><p class="kicker">PUBLISHED MISSES</p><h2>The incidents the detector did not catch.</h2></div>
-      <p>These are acknowledged breakage reports with no covering firing. They are part of the scorecard, not a footnote.</p>
+      <div><p class="kicker">V6 MISS LEDGER</p><h2>All 125 labeled misses are here.</h2></div>
+      <p>{{ scorecard.v6_stage1_miss_count }} never passed stage one; {{ scorecard.v6_stage2_miss_count }} passed stage one and were rejected by the rich-evidence judge. Some maintainer-comment labels are known noisy.</p>
     </div>
-    <div class="miss-columns">
-      <div>
-        <h3>V1 · {{ scorecard.v1_misses|length }} misses</h3>
-        {% for miss in scorecard.v1_misses %}
-          <article class="miss-card">
-            <div><span class="miss-badge">MISS</span><b>{{ miss.entity }} #{{ miss.issue_number }}</b></div>
-            <a class="timestamp" href="{{ miss.report_url }}" rel="noreferrer">reported {{ miss.reported_at|timestamp }}</a>
-            <p>{{ miss.report_excerpt }}</p>
-            <a class="timestamp ack-link" href="{{ miss.ack_url }}" rel="noreferrer">acknowledged {{ miss.ack_ts|timestamp }}</a>
-          </article>
-        {% endfor %}
+    <details class="miss-ledger">
+      <summary>Open the complete miss ledger <span>{{ scorecard.v6_misses|length }} rows</span></summary>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Candidate timestamp</th><th>Entity / report</th><th>Lost at</th><th>Stage-one probability</th><th>Later confirmation</th></tr></thead>
+          <tbody>
+            {% for miss in scorecard.v6_misses %}
+              <tr>
+                <td><a class="timestamp" href="{{ miss.url }}" rel="noreferrer">{{ miss.ts|timestamp }}</a></td>
+                <td><b>{{ miss.entity }} #{{ miss.issue_number }}</b><span class="cell-detail">{{ miss.excerpt }}</span></td>
+                <td><span class="miss-badge">MISS · {{ miss.stage|upper }}</span><span class="cell-detail">{{ miss.label_source or 'source-attributed incident' }}</span></td>
+                <td>{{ miss.probability|percentage }}</td>
+                <td>{% if miss.confirmation_url %}<a class="timestamp" href="{{ miss.confirmation_url }}" rel="noreferrer">{{ miss.confirmation_ts|timestamp }}</a>{% else %}<span class="cell-detail">published in frozen label record</span>{% endif %}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
       </div>
-      <div>
-        <h3>V2 · {{ scorecard.v2_misses|length }} misses</h3>
-        {% for miss in scorecard.v2_misses %}
-          <article class="miss-card {% if loop.first %}new-miss{% endif %}">
-            <div><span class="miss-badge">MISS</span><b>{{ miss.entity }} #{{ miss.issue_number }}</b></div>
-            <a class="timestamp" href="{{ miss.report_url }}" rel="noreferrer">reported {{ miss.reported_at|timestamp }}</a>
-            <p>{{ miss.report_excerpt }}</p>
-            <a class="timestamp ack-link" href="{{ miss.ack_url }}" rel="noreferrer">acknowledged {{ miss.ack_ts|timestamp }}</a>
-          </article>
-        {% endfor %}
+    </details>
+  </section>
+
+  <section class="section-shell legacy-ledger">
+    <details>
+      <summary>Open the original v1 firing ledger <span>{{ scorecard.v1_firings|length }} rows · unresolved included</span></summary>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Timestamp</th><th>Entity / hypothesis</th><th>Confidence</th><th>Verdict</th><th>Mode / route</th></tr></thead>
+          <tbody>
+            {% for row in scorecard.v1_firings %}
+              <tr>
+                <td><a class="timestamp" href="{{ row.url }}" rel="noreferrer">{{ row.ts|timestamp }}</a></td>
+                <td><b>{{ row.entity }}</b><span class="cell-detail">{{ row.hypothesis }}</span></td>
+                <td>{{ row.confidence|confidence }}</td>
+                <td><span class="verdict verdict-{{ row.verdict|lower }}">{{ row.verdict }}</span></td>
+                <td><b>{{ row.mode }}</b><span class="cell-detail">{{ row.severity }} → {{ row.audience }}</span></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
       </div>
-    </div>
+    </details>
   </section>
 
   <section class="integrity-strip">
-    <p class="kicker">FROZEN IDENTITIES</p>
+    <p class="kicker">V6 FROZEN IDENTITIES</p>
     <div class="integrity-grid two-up">
-      <div><span>v2 detector config sha256</span><code>{{ scorecard.v2.config_hash }}</code></div>
-      <div><span>v2 feedback snapshot sha256</span><code>{{ scorecard.v2.feedback_hash }}</code></div>
-      <div><span>v1 detector config sha256</span><code>{{ scorecard.v1.config_hash }}</code></div>
-      <div><span>v1 feedback snapshot sha256</span><code>{{ scorecard.v1.feedback_hash }}</code></div>
+      <div><span>protocol sha256</span><code>{{ scorecard.v6_identities.protocol_sha256 }}</code></div>
+      <div><span>request bundle sha256</span><code>{{ scorecard.v6_identities.request_bundle_sha256 }}</code></div>
+      <div><span>verdict bundle sha256</span><code>{{ scorecard.v6_identities.verdict_bundle_sha256 }}</code></div>
+      <div><span>scorecard sha256</span><code>{{ scorecard.progression[-1].hash }}</code></div>
     </div>
   </section>
 {% endblock %}

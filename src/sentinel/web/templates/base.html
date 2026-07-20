@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#0b0c0d">
     <meta name="description" content="Sentinel detects public breakage, explains it, and publishes its misses.">
     <meta property="og:title" content="Sentinel · An anomaly detector that grades itself in public">
-    <meta property="og:description" content="Replay the webpack v5.99.0 incident, inspect the frozen holdout, or run a live archive hour.">
+    <meta property="og:description" content="Replay the webpack v5.99.0 incident, inspect six frozen detector studies, or run a live archive hour.">
     <meta property="og:image" content="{{ request.base_url }}static/og.png">
     <title>{{ title }}</title>
     <link rel="icon" href="{{ url_for('static', path='/favicon.svg') }}" type="image/svg+xml">
@@ -15,12 +15,12 @@
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
     <header class="site-header">
-      <a class="wordmark" href="/replay/webpack-v5.99.0" aria-label="Sentinel replay">
+      <a class="wordmark" href="/replay/webpack" aria-label="Sentinel replay">
         <span class="wordmark-mark" aria-hidden="true"></span>
         SENTINEL
       </a>
       <nav aria-label="Primary navigation">
-        <a href="/replay/webpack-v5.99.0" {% if active == 'replay' %}aria-current="page"{% endif %}>Replay</a>
+        <a href="/replay/webpack" {% if active == 'replay' %}aria-current="page"{% endif %}>Replay</a>
         <a href="/scorecard" {% if active == 'scorecard' %}aria-current="page"{% endif %}>Scorecard</a>
         <a href="/live" {% if active == 'live' %}aria-current="page"{% endif %}>Live</a>
       </nav>

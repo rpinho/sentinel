@@ -214,7 +214,7 @@ def test_triage_modes_are_real_isolated_and_persisted(
     assert "reviewer feedback sentinel" in calls[0]["feedback_context"]
     assert calls[0]["no_feedback"] is False
     assert calls[0]["provider"] == "anthropic"
-    assert calls[0]["model"] == "claude-sonnet-5"
+    assert calls[0]["model"] == "claude-opus-4-8"
     assert calls[1]["feedback_context"] is None
     assert calls[1]["no_feedback"] is True
     assert len(calls) == before_no_agent_calls

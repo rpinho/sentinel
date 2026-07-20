@@ -26,7 +26,7 @@ load_dotenv()
 TriageProviderName = Literal["openai", "anthropic"]
 DEFAULT_PROVIDER: TriageProviderName = "anthropic"
 DEFAULT_OPENAI_MODEL = "gpt-5.6"
-DEFAULT_ANTHROPIC_MODEL = "claude-sonnet-5"
+DEFAULT_ANTHROPIC_MODEL = "claude-opus-4-8"
 # Backward-compatible import for callers that intentionally replay GPT fixtures.
 DEFAULT_MODEL = DEFAULT_OPENAI_MODEL
 DEFAULT_CACHE_DIR = Path(".cache/triage")

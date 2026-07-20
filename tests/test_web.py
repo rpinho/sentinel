@@ -10,6 +10,10 @@ from sentinel.web.app import (
     PACKAGE_DIR,
     V1_SCORECARD_PATH,
     V2_SCORECARD_PATH,
+    V3_SCORECARD_PATH,
+    V4_SCORECARD_PATH,
+    V5_SCORECARD_PATH,
+    V6_SCORECARD_PATH,
     app,
     build_replay_view,
     build_scorecard_view,
@@ -25,7 +29,7 @@ def test_replay_recomputes_offline_from_source_and_fixture(monkeypatch: Any) -> 
         raise AssertionError("offline web replay attempted a live provider call")
 
     monkeypatch.setattr("sentinel.triage.OpenAIBackend.create", unexpected_live_call)
-    response = client.get("/replay/webpack-v5.99.0")
+    response = client.get("/replay/webpack")
     view = build_replay_view()
 
     assert response.status_code == 200
@@ -42,24 +46,40 @@ def test_replay_recomputes_offline_from_source_and_fixture(monkeypatch: Any) -> 
         "42978ab2a88d53b077361e8749d54c3c5f63f3c54f9672be390c4308a10f3b4c"
     )
     assert view["firing"]["detector_version"] == "sha256:3b11a572823b"
+    legacy = client.get("/replay/webpack-v5.99.0", follow_redirects=False)
+    assert legacy.status_code == 308
+    assert legacy.headers["location"] == "/replay/webpack"
 
 
-def test_scorecard_publishes_every_firing_and_both_miss_sets() -> None:
+def test_scorecard_publishes_v1_to_v6_and_complete_v6_miss_ledger() -> None:
     response = client.get("/scorecard")
     view = build_scorecard_view()
 
     assert response.status_code == 200
-    assert "20 alerts removed" in response.text
-    assert "4 published misses" in response.text
-    assert "precision undefined" in response.text
+    assert "More evidence did not" in response.text
+    assert "All 125 labeled misses are here" in response.text
+    assert "This is a negative architecture result" in response.text
+    assert [row["version"] for row in view["progression"]] == [
+        "v1",
+        "v2",
+        "v3",
+        "v4",
+        "v5",
+        "v6",
+    ]
     assert len(view["v1_firings"]) == 20
     assert len(view["v1_misses"]) == 3
     assert len(view["v2_misses"]) == 4
-    assert response.text.count('<span class="miss-badge">MISS</span>') == 7
+    assert len(view["v6_misses"]) == 125
+    assert view["v6_stage1_miss_count"] == 34
+    assert view["v6_stage2_miss_count"] == 91
+    assert response.text.count("MISS · STAGE") == 125
     for firing in view["v1_firings"]:
         assert firing["url"] in response.text
-    assert view["v2"]["config_hash"] in response.text
-    assert view["v2"]["feedback_hash"] in response.text
+    for miss in view["v6_misses"]:
+        assert miss["url"] in response.text
+    for key in ("protocol_sha256", "request_bundle_sha256", "verdict_bundle_sha256"):
+        assert view["v6_identities"][key] in response.text
 
 
 def test_packaged_scorecards_are_exact_holdout_copies() -> None:
@@ -67,6 +87,10 @@ def test_packaged_scorecards_are_exact_holdout_copies() -> None:
     assert (
         V2_SCORECARD_PATH.read_bytes() == Path("holdout/v2/scorecard.json").read_bytes()
     )
+    assert V3_SCORECARD_PATH == Path.cwd() / "holdout/v3/scorecard.json"
+    assert V4_SCORECARD_PATH == Path.cwd() / "holdout/v4/scorecard.json"
+    assert V5_SCORECARD_PATH == Path.cwd() / "holdout/v5/scorecard.json"
+    assert V6_SCORECARD_PATH == Path.cwd() / "holdout/v6/scorecard.json"
     fixture_name = (
         "42978ab2a88d53b077361e8749d54c3c5f63f3c54f9672be390c4308a10f3b4c.json"
     )
@@ -90,6 +114,18 @@ def test_live_is_idle_until_post_and_surfaces_injected_run(monkeypatch: Any) -> 
             "diagnostics": {"immature": 4},
             "covered_hours": 1,
             "history_ready": False,
+            "history_hours_required": 169,
+            "stage1": {
+                "status": "immature",
+                "model": "sha256:57021d95ec13",
+                "threshold": 0.62,
+                "candidates": [],
+            },
+            "stage2": {
+                "status": "blocked_by_history",
+                "detail": "Stage 2 waits for stage one.",
+                "verdicts": [],
+            },
             "events": [
                 {
                     "ts": datetime(2026, 7, 20, 11, 4, tzinfo=UTC),
@@ -108,7 +144,7 @@ def test_live_is_idle_until_post_and_surfaces_injected_run(monkeypatch: Any) -> 
     assert "Waiting for an explicit run" in idle.text
     assert calls == ["webpack/webpack"]
     assert run.status_code == 200
-    assert "No anomaly fired" in run.text
+    assert "Stage one is waiting for history" in run.text
     assert "Baseline state: immature" in run.text
     assert "2026-07-20 11:04:00 UTC" in run.text
 
@@ -150,6 +186,8 @@ def test_live_hour_uses_recent_archive_without_model_call(tmp_path: Path) -> Non
     assert result["firings"] == 0
     assert result["history_ready"] is False
     assert result["covered_hours"] == 1
+    assert result["stage1"]["status"] == "immature"
+    assert result["stage2"]["status"] == "blocked_by_history"
 
 
 def test_unknown_replay_and_invalid_live_repo_fail_closed() -> None:

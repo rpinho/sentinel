@@ -4,7 +4,7 @@
     <div class="eyebrow"><span>OFFLINE REPLAY</span><span>RECOMPUTED NOW</span></div>
     <p class="kicker">webpack / v5.99.0</p>
     <h1>Sentinel named the release<br> before maintainers did.</h1>
-    <p class="lede">One public incident. Two independently observed release events. No future data in the model context.</p>
+    <p class="lede">One public incident. Stage one fires from public activity; stage two names the release from 28 strictly pre-firing events. No future data enters the model context.</p>
     <div class="hero-proof" aria-label="Lead time">
       <strong>{{ replay.lead_minutes }}<small>MIN</small></strong>
       <span>before maintainer<br>confirmation</span>
@@ -13,8 +13,8 @@
 
   <section class="provenance" aria-label="Replay provenance">
     <div><span>INPUT</span><b>{{ replay.source.event_count }} normalized source events</b></div>
-    <div><span>DETECTOR</span><b>{{ replay.firing.detector_version }}</b></div>
-    <div><span>TRIAGE</span><b>{{ replay.triage.model }} · fixture {{ replay.triage.cache_source }}</b></div>
+    <div><span>STAGE 1</span><b>{{ replay.firing.detector_version }}</b></div>
+    <div><span>STAGE 2</span><b>{{ replay.triage.model }} · exact fixture</b></div>
     <div><span>NETWORK</span><b>disabled for replay</b></div>
   </section>
 
@@ -59,11 +59,11 @@
         <div class="timeline-marker">03</div>
         <div class="timeline-copy wide">
           <a class="timestamp" href="{{ replay.firing.url }}" rel="noreferrer">{{ replay.firing.ts|timestamp }}</a>
-          <p class="timeline-label">Sentinel fires</p>
+          <p class="timeline-label">Stage 1 fires · Stage 2 judges</p>
           <div class="triage-card">
             <div class="triage-topline">
               <div>
-                <span class="status-pill">REAL BREAKAGE</span>
+                <span class="status-pill">STAGE 2 · REAL BREAKAGE</span>
                 <h3>{{ replay.triage.culprit_ref }}</h3>
               </div>
               <div class="confidence"><b>{{ replay.triage.confidence|confidence }}</b><span>confidence</span></div>

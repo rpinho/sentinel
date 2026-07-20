@@ -104,7 +104,7 @@ class FakeAnthropicClient:
                 "id": "msg_test",
                 "type": "message",
                 "role": "assistant",
-                "model": "claude-sonnet-5",
+                "model": "claude-opus-4-8",
                 "content": [{"type": "text", "text": json.dumps(self.output)}],
                 "stop_reason": "end_turn",
             },
@@ -306,7 +306,7 @@ def test_provider_and_model_scope_exact_request_identity() -> None:
     )
 
     assert default_request.provider == "anthropic"
-    assert default_request.model == "claude-sonnet-5"
+    assert default_request.model == "claude-opus-4-8"
     assert default_request.prompt_hash != openai_request.prompt_hash
     assert default_request.prompt_hash != alternate_model.prompt_hash
     assert "output_config" in default_request.api_payload
@@ -347,7 +347,7 @@ def test_anthropic_live_response_is_provider_scoped_and_replays(
     assert record["cache_version"] == 2
     assert record["provider"] == "anthropic"
     assert record["request_identity"]["provider"] == "anthropic"
-    assert record["request_identity"]["model"] == "claude-sonnet-5"
+    assert record["request_identity"]["model"] == "claude-opus-4-8"
     assert record["request_identity"]["request"] == record["request"]
     assert client.calls[0]["headers"]["x-api-key"] == "test-anthropic-key"
     assert client.calls[0]["json"]["output_config"]["format"]["type"] == ("json_schema")

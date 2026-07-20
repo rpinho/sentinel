@@ -2,10 +2,25 @@
 
 An anomaly detection + triage agent for public event streams that **grades itself in public**.
 
-The current core provides a source-neutral event contract, two deliberately different
-public-data adapters, deterministic trailing-baseline detection, DuckDB persistence,
-provider-agnostic causal triage, exact-response replay fixtures, two real ablations,
-and an append-only feedback loop.
+Sentinel is a two-stage system:
+
+1. A recall-optimized learned ranker scores every active repository-hour from public
+   activity, release proximity, participant structure, cross-thread coherence, and
+   automation-aware features.
+2. A precision-optimized LLM judge receives the complete scheduled-run candidate batch
+   with rich, strictly pre-cutoff evidence. It returns one structured verdict per
+   candidate; only `real=true` survives.
+
+Everything around the judge is deterministic: source normalization, feature definitions,
+the frozen threshold, batching, evidence selection, routing, hashes, exact-response cache,
+and the append-only scorecard feedback loop. The judge is provider-agnostic. The published
+v6 study used Claude Opus 4.8 through Claude subscription authentication; the offline hero
+uses a committed GPT-5.6 exact-response fixture.
+
+The latest result is intentionally not marketed as a win. Rich evidence raised estimated
+precision from 16.6% to 19.6% versus v5, while end-to-end incident recall fell from 77.0%
+to 56.4%. The frozen conclusion is that hourly GitHub triage remains the limiting
+architecture. The complete miss ledger is visible at `/scorecard`.
 
 ## Install and test
 
@@ -23,12 +38,15 @@ uv run sentinel serve
 
 Open `http://127.0.0.1:8000`. The server exposes:
 
-- `/replay/webpack-v5.99.0`: reruns detector v2 from 245 committed normalized
-  source events, then resolves the exact GPT-5.6 fixture with live calls disabled.
-- `/scorecard`: publishes all 20 frozen v1 firings, the v1-to-v2 `20 → 0`
-  comparison, and all three v1/four v2 acknowledged misses.
-- `/live`: fetches one recent completed GH Archive hour only after a visible button
-  press, persists coverage, and runs detector v2 without model triage.
+- `/replay/webpack`: recomputes the webpack v5.99.0 stage-one firing from 245 committed
+  source events, resolves the exact GPT-5.6 stage-two fixture with network calls disabled,
+  and links every timeline timestamp to GitHub. The legacy incident URL redirects here.
+- `/scorecard`: publishes the v1→v6 iteration trail, frozen identities, stage-one and
+  end-to-end metrics, the clean-source cut, automation slice, and all 125 v6 labeled misses.
+- `/live`: fetches one recent completed GH Archive hour only after a visible button press,
+  persists exact coverage, and runs the frozen v4 learned ranker once its seven-day history
+  is complete. If Claude subscription auth is available, all candidates are judged in one
+  scheduled batch; otherwise the page degrades explicitly to candidates only.
 
 The replay input is source data rather than a stored detector result or screenshot.
 Regenerate it from the validated DuckDB cache with:
@@ -95,9 +113,11 @@ config, and each firing carries its SHA-256 version. Pass `--config
 src/sentinel/config/default.toml` for the frozen v1 replay or another committed TOML for
 a different detector.
 
-Detection runs Claude triage for each firing by default. Provider-agnostic triage is a
-shipped feature: run it with whichever key you have, or select the published GPT-5.6
-path with `--provider openai`. Use `--no-agent` for the detector-only ablation.
+The legacy single-firing command runs Claude Opus 4.8 triage by default.
+Provider-agnostic triage is a shipped feature: run it with whichever provider you have,
+or select the published GPT-5.6 path with `--provider openai`. Production-style scheduled
+evaluation uses the v6 batch contract rather than making one model call per candidate.
+Use `--no-agent` for the detector-only ablation.
 
 ## Triage, replay, and ablations
 
@@ -114,7 +134,7 @@ uv run sentinel triage FIRING_ID --provider openai --db sentinel.duckdb
 ```
 
 Live keys are loaded from the repository `.env` as `ANTHROPIC_API_KEY` or
-`OPENAI_API_KEY`. Claude Sonnet 5 is the default; `--provider openai` selects GPT-5.6.
+`OPENAI_API_KEY`. Claude Opus 4.8 is the current default; `--provider openai` selects GPT-5.6.
 Both backends return the same strict triage contract. Provider, model, and exact effective
 request are part of the cache identity, so Claude and OpenAI fixtures cannot collide and
 published GPT fixtures remain valid.
@@ -225,6 +245,26 @@ uv run python scripts/evaluate_detector_v4.py \
   --model-commit a90f276e0cc6b886999506aa7e3b174afc3775aa
 ```
 
+V5 and v6 evaluate the precision-judge stage on the same frozen v4 test. V5 sent all
+391 sampled candidates in one subscription invocation but starved each candidate to a
+median of one event. V6 uses 20 scheduled-size batches, a median of ten events and 14.8k
+evidence characters per candidate, exact quote grounding, and explicit automation-flood
+instructions. The full v6 run used Claude subscription auth with all API credentials
+removed, cost $32.54 in modeled-equivalent usage, and made zero OpenAI calls.
+
+V6 reduced estimated alerts from 1,724 to 750, but its 19.6% precision was only three
+points above v5 and it rejected 91 label-positive incidents. The clean-source cut was
+11.1% precision and 57.1% incident recall. Automation filtering did work directionally:
+60 of 88 automation-suspect candidates were rejected. See
+`holdout/v6/SCORECARD-v6.md`; rebuild both committed scorecards offline with:
+
+```bash
+uv run python scripts/run_stage2_v5.py
+uv run python scripts/evaluate_stage2_v5.py
+uv run python scripts/run_stage2_v6.py
+uv run python scripts/evaluate_stage2_v6.py
+```
+
 Holdout execution is cost-safe by default. `scripts/run_holdout_v2.sh` blanks the API key
 and can only replay exact committed fixtures; it fails on a cache miss. The separately
 named `scripts/publish_holdout_v2.sh` opts into live, potentially billable GPT fixture
@@ -294,7 +334,14 @@ layouts. It also preserved negative results instead of tuning them away: the fro
 holdout still shows zero firings and four misses. Human product judgment set the claim,
 the frozen-data protocol, and the rule that a result that cannot be reproduced does not ship.
 
-## Deliberately deferred
+## Honest limitations and deliberately deferred work
+
+The v6 full-label metrics remain descriptive because the frozen v4 audit found 30%
+obvious noise in `substantive_maintainer_comment` labels. V5/v6 reuse the published v4
+test and are not fresh holdouts. Inverse-probability weighting estimates totals from a
+frozen negative sample. The live page cannot claim a healthy state until the complete
+seven-day repository history exists. The current evidence says rich LLM triage at hourly
+GitHub granularity is not yet a high-precision paging system.
 
 Slack escalation is represented as deterministic severity and routing in each firing
 card instead of an untestable notification. Authentication, multi-tenancy, and a
