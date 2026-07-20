@@ -6,14 +6,14 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
-from typing import Any, Mapping, cast
+from typing import Any, Mapping, Sequence, cast
 
 from sentinel.detector_v3 import canonical_sha256
 from sentinel.stage2_v5 import (
     DEFAULT_CLI_VERSION,
     DEFAULT_EVENT_BUDGET_CHARS,
     DEFAULT_EFFORT,
-    DEFAULT_MAX_BUDGET_USD_PER_CALL,
+    DEFAULT_MAX_BUDGET_USD_PER_RUN,
     DEFAULT_MAX_EVENT_TEXT_CHARS,
     DEFAULT_MAX_EVIDENCE_EVENTS,
     DEFAULT_MODEL,
@@ -26,10 +26,10 @@ from sentinel.stage2_v5 import (
     STAGE2_SYSTEM_PROMPT,
     STAGE2_TASK,
     TRANSPORT_VERSION,
+    build_batch_schema,
     build_sample,
     read_gzip_json,
 )
-from sentinel.triage import TRIAGE_SCHEMA
 
 DEFAULT_DATASET = Path("holdout/v4/dataset-test.json.gz")
 DEFAULT_SCORECARD = Path("holdout/v4/scorecard.json")
@@ -116,6 +116,10 @@ def main() -> None:
                 "Claude Code claude.ai Max subscription; ANTHROPIC_API_KEY, "
                 "ANTHROPIC_AUTH_TOKEN, and OPENAI_API_KEY removed from every subprocess."
             ),
+            "invocation_mode": "one_compact_batch_per_scheduled_detector_run",
+            "production_cadence": "one agent invocation every 15 to 60 minutes",
+            "evaluation_batch_count": 1,
+            "target_batch_wall_seconds": 300,
             "verdict_rule": "Stage-two alert survives exactly when structured real=true.",
             "evidence_grounding_rule": (
                 "Markdown-equivalent quotes are restored to exact source substrings; "
@@ -124,10 +128,19 @@ def main() -> None:
             ),
             "system_prompt": STAGE2_SYSTEM_PROMPT,
             "task": STAGE2_TASK,
-            "structured_schema_sha256": canonical_sha256(TRIAGE_SCHEMA),
+            "structured_schema_sha256": canonical_sha256(
+                build_batch_schema(
+                    sorted(
+                        str(row["row_id"])
+                        for row in cast(
+                            Sequence[Mapping[str, Any]], sample["rows"]
+                        )
+                    )
+                )
+            ),
             "stage1_threshold": test["threshold"],
             "stage1_detector_version": test["detector_version"],
-            "max_budget_usd_per_call": DEFAULT_MAX_BUDGET_USD_PER_CALL,
+            "max_budget_usd_per_run": DEFAULT_MAX_BUDGET_USD_PER_RUN,
         },
         "evidence_policy": {
             "version": EVIDENCE_POLICY_VERSION,

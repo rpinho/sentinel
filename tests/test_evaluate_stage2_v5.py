@@ -22,7 +22,7 @@ def test_evaluate_two_stage_weighted_system_and_clean_cut() -> None:
             "provider": "anthropic",
             "model": "claude-opus-4-8",
             "transport": "subscription",
-            "effort": "medium",
+            "effort": "low",
         },
         "sampling": {
             "method": "test census",
@@ -82,6 +82,9 @@ def test_evaluate_two_stage_weighted_system_and_clean_cut() -> None:
     }
     requests_base = {
         "protocol_sha256": canonical_sha256(protocol),
+        "invocation_count": 1,
+        "batch_user_content_chars": 400,
+        "batch_request": {"batch_request_hash": "batch-hash"},
         "requests": [
             {
                 "row_id": row_id,
@@ -104,9 +107,32 @@ def test_evaluate_two_stage_weighted_system_and_clean_cut() -> None:
         _record("b-positive", False),
         _record("b-negative", False),
     ]
+    batch_base = {
+        "schema_version": 1,
+        "batch_request_hash": "batch-hash",
+        "batch_request_identity_sha256": "batch-identity",
+        "provider": "anthropic",
+        "requested_model": "claude-opus-4-8",
+        "transport": "subscription",
+        "candidate_count": 4,
+        "records": records,
+        "runtime": {
+            "wall_duration_ms": 1_000,
+            "total_cost_usd_equivalent": 0.1,
+            "input_tokens": 1_000,
+            "output_tokens": 100,
+            "model_usage": {"claude-opus-4-8": {}},
+        },
+        "response_metadata": {},
+        "created_at": "2026-07-20T00:00:00Z",
+    }
+    batch_record = {**batch_base, "record_sha256": canonical_sha256(batch_base)}
+    batch_summary = {key: value for key, value in batch_record.items() if key != "records"}
     verdict_base = {
         "protocol_sha256": canonical_sha256(protocol),
         "request_bundle_sha256": requests["request_bundle_sha256"],
+        "invocation_count": 1,
+        "batch": batch_summary,
         "records": records,
     }
     verdicts = {
@@ -162,15 +188,9 @@ def _incident(
 def _record(row_id: str, real: bool) -> dict:
     base = {
         "row_id": row_id,
-        "provider": "anthropic",
-        "requested_model": "claude-opus-4-8",
+        "request_hash": f"request:{row_id}",
         "response": {"real": real},
-        "runtime": {
-            "wall_duration_ms": 100,
-            "total_cost_usd_equivalent": 0.01,
-            "input_tokens": 100,
-            "output_tokens": 10,
-            "model_usage": {"claude-opus-4-8": {}},
-        },
+        "raw_response": None,
+        "evidence_grounding": [],
     }
     return {**base, "record_sha256": canonical_sha256(base)}

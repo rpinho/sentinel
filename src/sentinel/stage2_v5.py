@@ -26,27 +26,29 @@ from sentinel.triage import (
 from sentinel.types import Event, format_timestamp, parse_timestamp
 
 PROTOCOL_SCHEMA_VERSION = 1
-REQUEST_BUNDLE_SCHEMA_VERSION = 1
-VERDICT_BUNDLE_SCHEMA_VERSION = 1
+REQUEST_BUNDLE_SCHEMA_VERSION = 2
+VERDICT_BUNDLE_SCHEMA_VERSION = 2
 EVIDENCE_POLICY_VERSION = "candidate-hour-signal-pack-v1"
 TRANSPORT_VERSION = "claude-code-subscription-cli-v1"
 DEFAULT_PROVIDER = "anthropic"
 DEFAULT_MODEL = "claude-opus-4-8"
 DEFAULT_CLI_VERSION = "2.1.215"
-DEFAULT_EFFORT = "medium"
+DEFAULT_EFFORT = "low"
 DEFAULT_SOURCE_LOOKBACK_HOURS = 24
 DEFAULT_RECENT_CONTEXT_HOURS = 3
 DEFAULT_EVENT_BUDGET_CHARS = 6_000
 DEFAULT_MAX_EVENT_TEXT_CHARS = 1_000
 DEFAULT_MAX_EVIDENCE_EVENTS = 8
 DEFAULT_NEGATIVES_PER_REPOSITORY_QUARTILE = 3
-DEFAULT_MAX_BUDGET_USD_PER_CALL = 0.50
+DEFAULT_MAX_BUDGET_USD_PER_RUN = 25.0
 
 STAGE2_SYSTEM_PROMPT = """You are Sentinel's stage-two precision filter. A frozen
-high-recall ranker selected one repository activity hour. Decide whether the evidence
-already visible before the candidate cutoff supports real software breakage, rather than
-routine maintenance, isolated non-defect requests, ordinary discussion, CI bookkeeping,
-stale-issue housekeeping, or automated activity.
+high-recall ranker selected a compact batch of repository activity hours for one scheduled
+run. Independently decide whether each candidate's evidence already visible before its
+cutoff supports real software breakage, rather than routine maintenance, isolated
+non-defect requests, ordinary discussion, CI bookkeeping, stale-issue housekeeping, or
+automated activity. Return exactly one verdict per candidate, in input order. Never use
+one candidate's evidence to judge another candidate.
 
 A credible reproducible crash, regression, incorrect behavior, or coherent cluster can be
 real even if only one report is visible. Activity volume alone is not evidence of
@@ -58,13 +60,14 @@ exists.
 When real is true, explain the likely cause only as far as the evidence supports. Name a
 release, version, commit, or pull request only when it is visible before the cutoff.
 Evidence quotes must be exact continuous substrings copied from supplied event text. If
-text exists and real is true, include at least one exact quote. If no text supports a real
-incident, return real=false rather than inventing evidence."""
+text exists and real is true, include one or at most two short exact quotes. When real is
+false, return no evidence quotes. If no text supports a real incident, return real=false
+rather than inventing evidence. Keep each cause to one short sentence."""
 
 STAGE2_TASK = (
-    "Classify this stage-one candidate as real software breakage or noise. Explain the "
-    "pre-cutoff evidence, identify a visible culprit reference only when supported, "
-    "calibrate confidence, and quote exact supporting event text."
+    "Classify every stage-one candidate as real software breakage or noise. For each, "
+    "explain the pre-cutoff evidence concisely, identify a visible culprit reference "
+    "only when supported, calibrate confidence, and quote exact supporting event text."
 )
 
 
@@ -83,6 +86,101 @@ class Stage2Request:
             "identity": dict(self.identity),
             "evidence_manifest": dict(self.evidence_manifest),
         }
+
+
+def build_batch_request(
+    requests: Sequence[Mapping[str, Any]],
+    *,
+    protocol: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Build one exact agent invocation for every candidate in a scheduled run."""
+
+    ordered = sorted(requests, key=lambda request: str(request["row_id"]))
+    packets: list[dict[str, Any]] = []
+    row_ids: list[str] = []
+    candidate_hashes: list[dict[str, str]] = []
+    for request in ordered:
+        identity = cast(Mapping[str, Any], request["identity"])
+        payload = cast(Mapping[str, Any], json.loads(str(identity["user_content"])))
+        row_id = str(request["row_id"])
+        candidate = cast(Mapping[str, Any], payload["candidate"])
+        if str(candidate["row_id"]) != row_id:
+            raise ValueError("v5 candidate row identity mismatch")
+        packet = {
+            "candidate": dict(candidate),
+            "pre_candidate_events": list(
+                cast(Sequence[Mapping[str, Any]], payload["pre_candidate_events"])
+            ),
+        }
+        packets.append(packet)
+        row_ids.append(row_id)
+        candidate_hashes.append(
+            {"row_id": row_id, "request_hash": str(request["request_hash"])}
+        )
+    if len(row_ids) != len(set(row_ids)):
+        raise ValueError("v5 batch contains duplicate candidate row IDs")
+    stage2 = cast(Mapping[str, Any], protocol["stage2"])
+    user_payload = {
+        "run": {
+            "study_id": protocol["study_id"],
+            "candidate_count": len(packets),
+            "instruction": STAGE2_TASK,
+            "output_order": "Return exactly one verdict for every candidate in this input order.",
+        },
+        "candidates": packets,
+    }
+    schema = build_batch_schema(row_ids)
+    identity = {
+        "provider": stage2["provider"],
+        "model": stage2["model"],
+        "transport": stage2["transport"],
+        "claude_cli_version": stage2["claude_cli_version"],
+        "system_prompt": STAGE2_SYSTEM_PROMPT,
+        "user_content": _canonical_json(user_payload),
+        "json_schema": schema,
+        "tools": [],
+        "safe_mode": True,
+        "session_persistence": False,
+        "prompt_suggestions": False,
+        "effort": stage2["effort"],
+        "max_budget_usd": stage2["max_budget_usd_per_run"],
+    }
+    base = {
+        "candidate_count": len(packets),
+        "candidate_request_hashes_sha256": canonical_sha256(candidate_hashes),
+        "identity": identity,
+    }
+    return {**base, "batch_request_hash": canonical_sha256(identity)}
+
+
+def build_batch_schema(row_ids: Sequence[str]) -> dict[str, Any]:
+    verdict = json.loads(json.dumps(TRIAGE_SCHEMA))
+    verdict["properties"] = {
+        "row_id": {
+            "type": "string",
+            "enum": list(row_ids),
+            "description": "Candidate row_id copied exactly from the input.",
+        },
+        **verdict["properties"],
+    }
+    verdict["required"] = ["row_id", *verdict["required"]]
+    verdict["properties"]["cause"]["maxLength"] = 300
+    verdict["properties"]["culprit_ref"]["anyOf"][0]["maxLength"] = 120
+    verdict["properties"]["evidence_quotes"]["maxItems"] = 2
+    verdict["properties"]["evidence_quotes"]["items"]["maxLength"] = 400
+    return {
+        "type": "object",
+        "properties": {
+            "verdicts": {
+                "type": "array",
+                "items": verdict,
+                "minItems": len(row_ids),
+                "maxItems": len(row_ids),
+            }
+        },
+        "required": ["verdicts"],
+        "additionalProperties": False,
+    }
 
 
 def build_sample(
@@ -317,7 +415,7 @@ def build_stage2_request(
         "session_persistence": False,
         "prompt_suggestions": False,
         "effort": stage2["effort"],
-        "max_budget_usd": stage2["max_budget_usd_per_call"],
+        "max_budget_usd": stage2["max_budget_usd_per_run"],
     }
     request_hash = canonical_sha256(identity)
     return Stage2Request(
@@ -466,20 +564,216 @@ def run_claude_subscription_request(
     return record
 
 
+def run_claude_subscription_batch(
+    batch_request: Mapping[str, Any],
+    *,
+    candidate_requests: Sequence[Mapping[str, Any]],
+    cache_dir: Path,
+    allow_live: bool,
+    timeout_seconds: int = 300,
+) -> dict[str, Any]:
+    """Replay or execute one scheduled-run batch through Claude subscription auth."""
+
+    batch_hash = str(batch_request["batch_request_hash"])
+    identity = cast(Mapping[str, Any], batch_request["identity"])
+    cache_path = cache_dir / f"{batch_hash}.json"
+    if cache_path.exists():
+        record = _read_json(cache_path)
+        _verify_cached_batch_record(record, batch_request)
+        return record
+    if not allow_live:
+        raise FileNotFoundError(f"no v5 batch verdict cache for {batch_hash}")
+    command = [
+        "claude",
+        "-p",
+        "--safe-mode",
+        "--no-session-persistence",
+        "--prompt-suggestions",
+        "false",
+        "--tools",
+        "",
+        "--permission-mode",
+        "dontAsk",
+        "--model",
+        str(identity["model"]),
+        "--effort",
+        str(identity["effort"]),
+        "--system-prompt",
+        str(identity["system_prompt"]),
+        "--json-schema",
+        _canonical_json(cast(Mapping[str, Any], identity["json_schema"])),
+        "--max-budget-usd",
+        str(identity["max_budget_usd"]),
+        "--output-format",
+        "json",
+    ]
+    environment = {
+        key: value
+        for key, value in os.environ.items()
+        if key
+        not in {
+            "ANTHROPIC_API_KEY",
+            "ANTHROPIC_AUTH_TOKEN",
+            "OPENAI_API_KEY",
+        }
+    }
+    started = time.monotonic()
+    completed = subprocess.run(
+        command,
+        input=str(identity["user_content"]),
+        text=True,
+        capture_output=True,
+        env=environment,
+        timeout=timeout_seconds,
+        check=False,
+    )
+    elapsed_ms = round((time.monotonic() - started) * 1000)
+    if completed.returncode != 0:
+        detail = (completed.stderr or completed.stdout).strip()[-4000:]
+        raise RuntimeError(
+            f"Claude CLI batch failed for {batch_hash} with exit "
+            f"{completed.returncode}: {detail}"
+        )
+    try:
+        envelope = json.loads(completed.stdout)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError("Claude CLI batch did not return a JSON envelope") from exc
+    if envelope.get("is_error") or envelope.get("subtype") != "success":
+        raise RuntimeError(
+            f"Claude CLI returned an unsuccessful batch envelope for {batch_hash}"
+        )
+    structured = envelope.get("structured_output")
+    if not isinstance(structured, Mapping):
+        try:
+            structured = json.loads(str(envelope.get("result") or ""))
+        except json.JSONDecodeError as exc:
+            raise TriageResponseError(
+                "Claude CLI batch response did not contain structured output"
+            ) from exc
+    raw_verdicts = cast(Sequence[Mapping[str, Any]], structured.get("verdicts"))
+    request_by_id = {
+        str(request["row_id"]): request for request in candidate_requests
+    }
+    raw_by_id: dict[str, Mapping[str, Any]] = {}
+    for verdict in raw_verdicts:
+        row_id = str(verdict.get("row_id") or "")
+        if row_id in raw_by_id:
+            raise TriageResponseError(f"duplicate v5 batch verdict for {row_id}")
+        raw_by_id[row_id] = verdict
+    if set(raw_by_id) != set(request_by_id):
+        missing = sorted(set(request_by_id) - set(raw_by_id))
+        extra = sorted(set(raw_by_id) - set(request_by_id))
+        raise TriageResponseError(
+            f"v5 batch verdict IDs differ: missing={missing[:5]} extra={extra[:5]}"
+        )
+    candidate_records: list[dict[str, Any]] = []
+    for row_id in sorted(request_by_id):
+        request = request_by_id[row_id]
+        raw = dict(raw_by_id[row_id])
+        raw.pop("row_id", None)
+        model_output = TriageOutput.from_mapping(raw)
+        request_payload = cast(
+            Mapping[str, Any],
+            json.loads(
+                str(cast(Mapping[str, Any], request["identity"])["user_content"])
+            ),
+        )
+        events = tuple(
+            Event.from_dict(event)
+            for event in cast(
+                Sequence[Mapping[str, Any]], request_payload["pre_candidate_events"]
+            )
+        )
+        output, grounding = _ground_evidence_quotes(model_output, events)
+        output, dropped = _drop_ungrounded_quotes(output, events)
+        grounding.extend(dropped)
+        if output.real and any(event.text for event in events) and not output.evidence_quotes:
+            output = TriageOutput(
+                real=False,
+                cause=output.cause,
+                culprit_ref=output.culprit_ref,
+                confidence=output.confidence,
+                evidence_quotes=(),
+            )
+            grounding.append(
+                {
+                    "model_quote": "",
+                    "grounded_quote": "",
+                    "method": "downgraded_real_without_exact_text_evidence",
+                }
+            )
+        _validate_evidence(output, events)
+        candidate = {
+            "row_id": row_id,
+            "request_hash": request["request_hash"],
+            "response": output.to_dict(),
+            "raw_response": model_output.to_dict() if output != model_output else None,
+            "evidence_grounding": grounding,
+        }
+        candidate_records.append(
+            {**candidate, "record_sha256": canonical_sha256(candidate)}
+        )
+    usage = cast(Mapping[str, Any], envelope.get("usage") or {})
+    base = {
+        "schema_version": 1,
+        "batch_request_hash": batch_hash,
+        "batch_request_identity_sha256": canonical_sha256(identity),
+        "provider": identity["provider"],
+        "requested_model": identity["model"],
+        "transport": identity["transport"],
+        "candidate_count": len(candidate_records),
+        "records": candidate_records,
+        "runtime": {
+            "wall_duration_ms": elapsed_ms,
+            "claude_duration_ms": envelope.get("duration_ms"),
+            "claude_api_duration_ms": envelope.get("duration_api_ms"),
+            "ttft_ms": envelope.get("ttft_ms"),
+            "total_cost_usd_equivalent": envelope.get("total_cost_usd"),
+            "input_tokens": usage.get("input_tokens"),
+            "output_tokens": usage.get("output_tokens"),
+            "cache_read_input_tokens": usage.get("cache_read_input_tokens"),
+            "cache_creation_input_tokens": usage.get("cache_creation_input_tokens"),
+            "service_tier": usage.get("service_tier"),
+            "model_usage": envelope.get("modelUsage"),
+            "num_turns": envelope.get("num_turns"),
+        },
+        "response_metadata": {
+            "session_id": envelope.get("session_id"),
+            "stop_reason": envelope.get("stop_reason"),
+            "terminal_reason": envelope.get("terminal_reason"),
+        },
+        "created_at": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
+    }
+    record = {**base, "record_sha256": canonical_sha256(base)}
+    _write_json_atomic(cache_path, record)
+    return record
+
+
 def finalize_verdict_bundle(
     *,
     protocol: Mapping[str, Any],
     requests: Mapping[str, Any],
-    records: Sequence[Mapping[str, Any]],
+    batch_record: Mapping[str, Any],
 ) -> dict[str, Any]:
-    ordered = sorted((dict(record) for record in records), key=lambda row: row["row_id"])
+    ordered = sorted(
+        (
+            dict(record)
+            for record in cast(
+                Sequence[Mapping[str, Any]], batch_record["records"]
+            )
+        ),
+        key=lambda row: row["row_id"],
+    )
     expected = {
         str(row["request_hash"])
         for row in cast(Sequence[Mapping[str, Any]], requests["requests"])
     }
     observed = {str(row["request_hash"]) for row in ordered}
     if expected != observed:
-        raise ValueError("v5 verdict bundle is incomplete or contains extra requests")
+        raise ValueError("v5 batch verdict is incomplete or contains extra requests")
+    batch_summary = {
+        key: value for key, value in batch_record.items() if key != "records"
+    }
     base = {
         "schema_version": VERDICT_BUNDLE_SCHEMA_VERSION,
         "study_id": protocol["study_id"],
@@ -488,6 +782,8 @@ def finalize_verdict_bundle(
         "provider": cast(Mapping[str, Any], protocol["stage2"])["provider"],
         "requested_model": cast(Mapping[str, Any], protocol["stage2"])["model"],
         "transport": cast(Mapping[str, Any], protocol["stage2"])["transport"],
+        "invocation_count": 1,
+        "batch": batch_summary,
         "records": ordered,
     }
     return {**base, "verdict_bundle_sha256": canonical_sha256(base)}
@@ -625,6 +921,19 @@ def _verify_cached_record(
     unstamped = {key: value for key, value in record.items() if key != "record_sha256"}
     if record.get("record_sha256") != canonical_sha256(unstamped):
         raise ValueError("v5 cached verdict record hash mismatch")
+
+
+def _verify_cached_batch_record(
+    record: Mapping[str, Any], batch_request: Mapping[str, Any]
+) -> None:
+    if record.get("batch_request_hash") != batch_request.get("batch_request_hash"):
+        raise ValueError("v5 cached batch request hash mismatch")
+    identity = cast(Mapping[str, Any], batch_request["identity"])
+    if record.get("batch_request_identity_sha256") != canonical_sha256(identity):
+        raise ValueError("v5 cached batch request identity mismatch")
+    unstamped = {key: value for key, value in record.items() if key != "record_sha256"}
+    if record.get("record_sha256") != canonical_sha256(unstamped):
+        raise ValueError("v5 cached batch record hash mismatch")
 
 
 def _write_json_atomic(path: Path, value: Mapping[str, Any]) -> None:

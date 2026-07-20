@@ -182,11 +182,10 @@ def evaluate(
         survives=survives,
     )
     runtime = _runtime_summary(
-        cast(Sequence[Mapping[str, Any]], verdicts["records"])
+        cast(Mapping[str, Any], verdicts["batch"]),
+        candidate_count=len(record_by_id),
     )
-    request_summary = _request_summary(
-        cast(Sequence[Mapping[str, Any]], requests["requests"])
-    )
+    request_summary = _request_summary(requests)
     llvmbot = _llvmbot_slice(
         audit=audit,
         incidents=incidents,
@@ -292,7 +291,8 @@ def evaluate(
         "interpretation": {
             "architecture": (
                 "Stage 1 is the unchanged v4 high-recall ranker; Stage 2 is the "
-                "frozen Claude precision filter. Only structured real=true survives."
+                "frozen Claude precision filter invoked once for the complete scheduled-run "
+                "candidate batch. Only structured real=true survives."
             ),
             "full_label_status": (
                 "Descriptive, not confirmatory: the v4 held-out audit found 30% "
@@ -352,23 +352,35 @@ def _verify_inputs(
         raise RuntimeError("v5 request count differs from frozen sample")
     if len(record_rows) != len(request_rows):
         raise RuntimeError("v5 verdict bundle is incomplete")
+    batch = cast(Mapping[str, Any], verdicts["batch"])
+    batch_unstamped = {
+        key: value for key, value in batch.items() if key != "record_sha256"
+    }
+    reconstructed_batch = {**batch_unstamped, "records": list(record_rows)}
+    if batch.get("record_sha256") != canonical_sha256(reconstructed_batch):
+        raise RuntimeError("invalid v5 batch record hash")
+    if batch.get("provider") != stage2["provider"] or batch.get(
+        "requested_model"
+    ) != expected_model:
+        raise RuntimeError("v5 batch provider/model attribution mismatch")
+    model_usage = cast(
+        Mapping[str, Any], cast(Mapping[str, Any], batch["runtime"])["model_usage"]
+    )
+    if expected_model not in model_usage:
+        raise RuntimeError(
+            f"v5 primary model attribution is {sorted(model_usage)}, expected {expected_model}"
+        )
+    if int(verdicts.get("invocation_count") or 0) != 1:
+        raise RuntimeError("v5 verdicts must come from one batched invocation")
+    frozen_batch = cast(Mapping[str, Any], requests["batch_request"])
+    if batch.get("batch_request_hash") != frozen_batch.get("batch_request_hash"):
+        raise RuntimeError("v5 verdict batch request identity mismatch")
     for record in record_rows:
         unstamped = {
             key: value for key, value in record.items() if key != "record_sha256"
         }
         if record.get("record_sha256") != canonical_sha256(unstamped):
             raise RuntimeError(f"invalid v5 record hash for {record.get('row_id')}")
-        if record.get("provider") != stage2["provider"] or record.get(
-            "requested_model"
-        ) != expected_model:
-            raise RuntimeError("v5 record provider/model attribution mismatch")
-        model_usage = cast(
-            Mapping[str, Any], cast(Mapping[str, Any], record["runtime"])["model_usage"]
-        )
-        if expected_model not in model_usage:
-            raise RuntimeError(
-                f"v5 primary model attribution is {sorted(model_usage)}, expected {expected_model}"
-            )
 
 
 def _source_breakdown(
@@ -433,12 +445,14 @@ def _llvmbot_slice(
     }
 
 
-def _runtime_summary(records: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
-    runtimes = [cast(Mapping[str, Any], record["runtime"]) for record in records]
-    wall = [float(runtime["wall_duration_ms"]) for runtime in runtimes]
-    costs = [float(runtime.get("total_cost_usd_equivalent") or 0) for runtime in runtimes]
-    input_tokens = [int(runtime.get("input_tokens") or 0) for runtime in runtimes]
-    output_tokens = [int(runtime.get("output_tokens") or 0) for runtime in runtimes]
+def _runtime_summary(
+    batch: Mapping[str, Any], *, candidate_count: int
+) -> dict[str, Any]:
+    runtime = cast(Mapping[str, Any], batch["runtime"])
+    wall = float(runtime["wall_duration_ms"])
+    cost = float(runtime.get("total_cost_usd_equivalent") or 0)
+    input_tokens = int(runtime.get("input_tokens") or 0)
+    output_tokens = int(runtime.get("output_tokens") or 0)
     actual_models: dict[str, dict[str, float]] = defaultdict(
         lambda: {
             "calls": 0,
@@ -449,37 +463,38 @@ def _runtime_summary(records: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
             "modeled_equivalent_cost_usd": 0.0,
         }
     )
-    for runtime in runtimes:
-        for model, usage in cast(
-            Mapping[str, Mapping[str, Any]], runtime.get("model_usage") or {}
-        ).items():
-            summary = actual_models[model]
-            summary["calls"] += 1
-            summary["input_tokens"] += int(usage.get("inputTokens") or 0)
-            summary["cache_creation_input_tokens"] += int(
-                usage.get("cacheCreationInputTokens") or 0
-            )
-            summary["cache_read_input_tokens"] += int(
-                usage.get("cacheReadInputTokens") or 0
-            )
-            summary["output_tokens"] += int(usage.get("outputTokens") or 0)
-            summary["modeled_equivalent_cost_usd"] += float(
-                usage.get("costUSD") or 0
-            )
+    for model, usage in cast(
+        Mapping[str, Mapping[str, Any]], runtime.get("model_usage") or {}
+    ).items():
+        summary = actual_models[model]
+        summary["calls"] += 1
+        summary["input_tokens"] += int(usage.get("inputTokens") or 0)
+        summary["cache_creation_input_tokens"] += int(
+            usage.get("cacheCreationInputTokens") or 0
+        )
+        summary["cache_read_input_tokens"] += int(
+            usage.get("cacheReadInputTokens") or 0
+        )
+        summary["output_tokens"] += int(usage.get("outputTokens") or 0)
+        summary["modeled_equivalent_cost_usd"] += float(usage.get("costUSD") or 0)
     return {
-        "requests": len(records),
-        "wall_latency_ms": _distribution(wall),
-        "modeled_equivalent_cost_usd_total": sum(costs),
-        "modeled_equivalent_cost_usd_per_candidate": _distribution(costs),
-        "input_tokens_total": sum(input_tokens),
-        "input_tokens_per_candidate": _distribution(input_tokens),
-        "output_tokens_total": sum(output_tokens),
-        "output_tokens_per_candidate": _distribution(output_tokens),
+        "invocations": 1,
+        "candidates": candidate_count,
+        "wall_duration_ms": wall,
+        "target_wall_duration_ms": 300_000,
+        "completed_within_five_minutes": wall <= 300_000,
+        "modeled_equivalent_cost_usd_total": cost,
+        "modeled_equivalent_cost_usd_amortized_per_candidate": _ratio(
+            cost, candidate_count
+        ),
+        "input_tokens_total": input_tokens,
+        "output_tokens_total": output_tokens,
         "actual_model_usage": dict(sorted(actual_models.items())),
     }
 
 
-def _request_summary(requests: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+def _request_summary(document: Mapping[str, Any]) -> dict[str, Any]:
+    requests = cast(Sequence[Mapping[str, Any]], document["requests"])
     chars = [
         len(str(cast(Mapping[str, Any], request["identity"])["user_content"]))
         for request in requests
@@ -494,6 +509,11 @@ def _request_summary(requests: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
     ]
     return {
         "count": len(requests),
+        "invocation_count": int(document["invocation_count"]),
+        "batch_user_content_chars": int(document["batch_user_content_chars"]),
+        "approximate_batch_user_tokens_at_four_chars_per_token": round(
+            int(document["batch_user_content_chars"]) / 4
+        ),
         "user_content_chars_total": sum(chars),
         "user_content_chars_per_candidate": _distribution(chars),
         "approximate_user_tokens_total_at_four_chars_per_token": round(sum(chars) / 4),
@@ -667,9 +687,9 @@ def render_markdown(scorecard: Mapping[str, Any]) -> str:
             "",
             "## Compact request and runtime envelope",
             "",
-            f"The frozen study judged {requests['count']} candidates: every true Stage 1 alert plus a deterministic inverse-probability-weighted sample of negative alerts. A request supplied a median of {_number(cast(Mapping[str, Any], requests['supplied_events_per_candidate'])['median'])} events and {_number(cast(Mapping[str, Any], requests['user_content_chars_per_candidate'])['median'])} user-payload characters. Full 24-hour source windows were hashed, never sent.",
+            f"The frozen study judged {requests['count']} candidates in **one agent invocation**: every true Stage 1 alert plus a deterministic inverse-probability-weighted sample of negative alerts. The batch was {_number(requests['batch_user_content_chars'])} characters total; each candidate supplied a median of {_number(cast(Mapping[str, Any], requests['supplied_events_per_candidate'])['median'])} events. Full 24-hour source windows were hashed, never sent.",
             "",
-            f"Claude CLI reported {_number(runtime['modeled_equivalent_cost_usd_total'])} USD of modeled equivalent usage. Median wall latency was {_number(cast(Mapping[str, Any], runtime['wall_latency_ms'])['median'])} ms per candidate. Calls used claude.ai subscription auth; this is not a per-call API billing claim, and no OpenAI calls were made.",
+            f"Claude CLI reported {_number(runtime['modeled_equivalent_cost_usd_total'])} USD of modeled equivalent usage. The complete batch finished in {_number(float(runtime['wall_duration_ms']) / 1000)} seconds (five-minute target met: `{str(runtime['completed_within_five_minutes']).lower()}`). The run used claude.ai subscription auth; this is not an API billing claim, and no OpenAI calls were made.",
             "",
             "## Interpretation limits",
             "",

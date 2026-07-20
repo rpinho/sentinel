@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Execute or replay the frozen v5 requests through Claude subscription auth."""
+"""Execute or replay one frozen v5 scheduled-run batch through Claude subscription auth."""
 
 from __future__ import annotations
 
@@ -7,8 +7,6 @@ import argparse
 import json
 import os
 import subprocess
-import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any, Mapping, Sequence, cast
 
@@ -16,13 +14,13 @@ from sentinel.detector_v3 import canonical_sha256
 from sentinel.stage2_v5 import (
     finalize_verdict_bundle,
     read_gzip_json,
-    run_claude_subscription_request,
+    run_claude_subscription_batch,
     write_gzip_json,
 )
 
 DEFAULT_PROTOCOL = Path("holdout/v5/protocol.json")
 DEFAULT_REQUESTS = Path("holdout/v5/requests.json.gz")
-DEFAULT_CACHE = Path(".cache/v5/claude-cli")
+DEFAULT_CACHE = Path(".cache/v5/claude-cli-batch")
 DEFAULT_OUTPUT = Path("holdout/v5/verdicts.json.gz")
 
 
@@ -32,82 +30,49 @@ def main() -> None:
     parser.add_argument("--requests", type=Path, default=DEFAULT_REQUESTS)
     parser.add_argument("--cache-dir", type=Path, default=DEFAULT_CACHE)
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
-    parser.add_argument("--workers", type=int, default=4)
-    parser.add_argument("--retries", type=int, default=2)
-    parser.add_argument("--limit", type=int)
+    parser.add_argument("--timeout-seconds", type=int, default=300)
     parser.add_argument("--live", action="store_true")
     args = parser.parse_args()
-    if args.workers < 1 or args.retries < 0:
-        parser.error("workers must be positive and retries non-negative")
+    if args.timeout_seconds < 1:
+        parser.error("timeout-seconds must be positive")
 
     protocol = _read_object(args.protocol)
     requests = read_gzip_json(args.requests)
     _verify_bundles(protocol, requests)
+    if int(requests.get("invocation_count") or 0) != 1:
+        raise RuntimeError("v5 requires exactly one batched agent invocation")
     if args.live:
         _verify_subscription_auth(protocol)
-    request_rows = list(cast(Sequence[Mapping[str, Any]], requests["requests"]))
-    if args.limit is not None:
-        request_rows = request_rows[: args.limit]
-    records: list[dict[str, Any]] = []
-    failures: list[tuple[str, str]] = []
-    started = time.monotonic()
-
-    def execute(request: Mapping[str, Any]) -> dict[str, Any]:
-        last_error: Exception | None = None
-        for attempt in range(args.retries + 1):
-            try:
-                return run_claude_subscription_request(
-                    request,
-                    cache_dir=args.cache_dir,
-                    allow_live=args.live,
-                )
-            except Exception as exc:  # checkpointed retries are intentionally broad
-                last_error = exc
-                if attempt < args.retries:
-                    time.sleep(2**attempt)
-        assert last_error is not None
-        raise last_error
-
-    with ThreadPoolExecutor(max_workers=args.workers) as pool:
-        future_by_request = {
-            pool.submit(execute, request): request for request in request_rows
-        }
-        for completed, future in enumerate(as_completed(future_by_request), start=1):
-            request = future_by_request[future]
-            try:
-                records.append(future.result())
-            except Exception as exc:
-                failures.append((str(request["row_id"]), str(exc)))
-            if completed == 1 or completed % 10 == 0 or completed == len(request_rows):
-                elapsed = time.monotonic() - started
-                print(
-                    "V5_PROGRESS "
-                    f"completed={completed}/{len(request_rows)} "
-                    f"valid={len(records)} failures={len(failures)} "
-                    f"elapsed_seconds={elapsed:.1f}",
-                    flush=True,
-                )
-    if failures:
-        detail = "\n".join(f"{row_id}: {error}" for row_id, error in failures[:20])
-        raise RuntimeError(f"v5 stage-two failures ({len(failures)}):\n{detail}")
-    if len(request_rows) != int(requests["request_count"]):
-        print(
-            "V5_PARTIAL "
-            f"cached={len(records)} total={requests['request_count']} "
-            "verdict_bundle_written=false"
-        )
-        return
+    batch_request = cast(Mapping[str, Any], requests["batch_request"])
+    candidate_requests = cast(
+        Sequence[Mapping[str, Any]], requests["requests"]
+    )
+    print(
+        "V5_BATCH_START "
+        f"candidates={len(candidate_requests)} invocations=1 "
+        f"user_chars={requests['batch_user_content_chars']} "
+        f"batch_request_hash={batch_request['batch_request_hash']}",
+        flush=True,
+    )
+    record = run_claude_subscription_batch(
+        batch_request,
+        candidate_requests=candidate_requests,
+        cache_dir=args.cache_dir,
+        allow_live=args.live,
+        timeout_seconds=args.timeout_seconds,
+    )
     bundle = finalize_verdict_bundle(
         protocol=protocol,
         requests=requests,
-        records=records,
+        batch_record=record,
     )
     write_gzip_json(args.output, bundle)
-    runtime = [cast(Mapping[str, Any], row["runtime"]) for row in records]
-    total_cost = sum(float(row.get("total_cost_usd_equivalent") or 0) for row in runtime)
+    runtime = cast(Mapping[str, Any], record["runtime"])
     print(
         "V5_VERDICTS "
-        f"count={len(records)} equivalent_cost_usd={total_cost:.4f} "
+        f"candidates={len(candidate_requests)} invocations=1 "
+        f"wall_seconds={float(runtime['wall_duration_ms']) / 1000:.1f} "
+        f"equivalent_cost_usd={float(runtime.get('total_cost_usd_equivalent') or 0):.4f} "
         f"verdict_bundle_sha256={bundle['verdict_bundle_sha256']}"
     )
 

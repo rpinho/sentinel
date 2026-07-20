@@ -9,9 +9,11 @@ import pytest
 from sentinel.stage2_v5 import (
     DEFAULT_EVENT_BUDGET_CHARS,
     DEFAULT_MODEL,
+    build_batch_request,
     build_sample,
     build_stage2_request,
     run_claude_subscription_request,
+    run_claude_subscription_batch,
     select_evidence,
 )
 from sentinel.types import Event
@@ -38,15 +40,16 @@ def _event(
 
 def _protocol() -> dict[str, Any]:
     return {
+        "study_id": "test-v5",
         "stage2": {
             "provider": "anthropic",
             "model": DEFAULT_MODEL,
             "transport": "claude-code-subscription-cli-v1",
             "claude_cli_version": "2.1.215",
-            "effort": "medium",
+            "effort": "low",
             "stage1_threshold": 0.4,
             "stage1_detector_version": "sha256:test",
-            "max_budget_usd_per_call": 0.5,
+            "max_budget_usd_per_run": 25.0,
         },
         "evidence_policy": {
             "source_lookback_hours": 24,
@@ -207,7 +210,7 @@ def test_subscription_runner_filters_api_keys_and_replays_exact_cache(
     assert calls[0]["env"].get("OPENAI_API_KEY") is None
     assert "--model" in calls[0]["command"]
     assert DEFAULT_MODEL in calls[0]["command"]
-    assert calls[0]["command"][calls[0]["command"].index("--effort") + 1] == "medium"
+    assert calls[0]["command"][calls[0]["command"].index("--effort") + 1] == "low"
     assert calls[0]["command"][calls[0]["command"].index("--prompt-suggestions") + 1] == "false"
 
 
@@ -256,3 +259,81 @@ def test_false_verdict_drops_ungrounded_metadata_quote(
     assert record["response"]["evidence_quotes"] == []
     assert record["raw_response"]["evidence_quotes"] == ['"labels":["triage"]']
     assert record["evidence_grounding"][0]["method"] == "dropped_not_in_event_text"
+
+
+def test_batch_runs_all_candidates_in_one_subscription_call(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    candidate_requests = []
+    for index in range(2):
+        candidate_requests.append(
+            build_stage2_request(
+                row={
+                    "row_id": f"row:{index}",
+                    "candidate_ts": "2025-05-05T13:00:00Z",
+                    "bucket_start": "2025-05-05T12:00:00Z",
+                    "entity": "example/repo",
+                    "features": {"activity_z": float(index)},
+                },
+                prediction={"probability": 0.6 + index / 10},
+                events=[_event(-5, text=f"candidate {index} crashes")],
+                protocol=_protocol(),
+            ).to_dict()
+        )
+    batch = build_batch_request(candidate_requests, protocol=_protocol())
+    payload = json.loads(str(batch["identity"]["user_content"]))
+    assert batch["candidate_count"] == 2
+    assert len(payload["candidates"]) == 2
+    assert payload["run"]["candidate_count"] == 2
+    assert batch["identity"]["effort"] == "low"
+    assert batch["identity"]["max_budget_usd"] == 25.0
+    calls: list[dict[str, Any]] = []
+
+    def fake_run(command: list[str], **kwargs: Any) -> SimpleNamespace:
+        calls.append({"command": command, **kwargs})
+        return SimpleNamespace(
+            returncode=0,
+            stderr="",
+            stdout=json.dumps(
+                {
+                    "subtype": "success",
+                    "is_error": False,
+                    "structured_output": {
+                        "verdicts": [
+                            {
+                                "row_id": f"row:{index}",
+                                "real": True,
+                                "cause": f"Candidate {index} crashes.",
+                                "culprit_ref": None,
+                                "confidence": 0.8,
+                                "evidence_quotes": [f"candidate {index} crashes"],
+                            }
+                            for index in range(2)
+                        ]
+                    },
+                    "usage": {"input_tokens": 1_000, "output_tokens": 200},
+                    "modelUsage": {"claude-opus-4-8": {}},
+                    "duration_ms": 1_000,
+                    "total_cost_usd": 0.1,
+                }
+            ),
+        )
+
+    monkeypatch.setattr("sentinel.stage2_v5.subprocess.run", fake_run)
+    live = run_claude_subscription_batch(
+        batch,
+        candidate_requests=candidate_requests,
+        cache_dir=tmp_path,
+        allow_live=True,
+    )
+    replay = run_claude_subscription_batch(
+        batch,
+        candidate_requests=candidate_requests,
+        cache_dir=tmp_path,
+        allow_live=False,
+    )
+
+    assert live == replay
+    assert len(calls) == 1
+    assert len(live["records"]) == 2
+    assert [record["row_id"] for record in live["records"]] == ["row:0", "row:1"]

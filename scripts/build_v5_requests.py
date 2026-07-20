@@ -12,6 +12,7 @@ from typing import Any, Mapping, Sequence, cast
 from sentinel.detector_v3 import canonical_sha256
 from sentinel.stage2_v5 import (
     REQUEST_BUNDLE_SCHEMA_VERSION,
+    build_batch_request,
     build_stage2_request,
     read_gzip_json,
     write_gzip_json,
@@ -76,6 +77,15 @@ def main() -> None:
         )
         requests.append(document)
     requests.sort(key=lambda row: str(row["row_id"]))
+    batch_request = build_batch_request(requests, protocol=protocol)
+    batch_identity = cast(Mapping[str, Any], batch_request["identity"])
+    if canonical_sha256(
+        cast(Mapping[str, Any], batch_identity["json_schema"])
+    ) != cast(Mapping[str, Any], protocol["stage2"])["structured_schema_sha256"]:
+        raise RuntimeError("v5 batch schema differs from frozen protocol")
+    batch_user_chars = len(
+        str(batch_identity["user_content"])
+    )
     base = {
         "schema_version": REQUEST_BUNDLE_SCHEMA_VERSION,
         "study_id": protocol["study_id"],
@@ -87,15 +97,19 @@ def main() -> None:
             "events_sha256"
         ],
         "request_count": len(requests),
+        "invocation_count": 1,
         "total_user_content_chars": total_user_chars,
+        "batch_user_content_chars": batch_user_chars,
+        "batch_request": batch_request,
         "requests": requests,
     }
     bundle = {**base, "request_bundle_sha256": canonical_sha256(base)}
     write_gzip_json(args.output, bundle)
     print(
         "V5_REQUESTS "
-        f"count={len(requests)} total_chars={total_user_chars} "
-        f"approx_tokens={round(total_user_chars / 4)} "
+        f"candidates={len(requests)} invocations=1 "
+        f"batch_chars={batch_user_chars} "
+        f"approx_batch_tokens={round(batch_user_chars / 4)} "
         f"request_bundle_sha256={bundle['request_bundle_sha256']}"
     )
 
