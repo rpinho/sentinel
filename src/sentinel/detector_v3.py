@@ -424,6 +424,14 @@ def _build_repo_window(
                 "bucket_start": format_timestamp(bucket),
                 "bucket_end": format_timestamp(bucket + timedelta(hours=1)),
                 "candidate_ts": format_timestamp(snapshot),
+                "candidate_url": next(
+                    (
+                        event.meta.get("url")
+                        for event in reversed(bucket_events)
+                        if event.meta.get("url")
+                    ),
+                    None,
+                ),
                 "label": 0,
                 "incident_ids": [],
                 "features": {name: float(features.get(name, 0.0)) for name in MODEL_FEATURES},
