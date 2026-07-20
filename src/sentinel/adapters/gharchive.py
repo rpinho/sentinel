@@ -137,6 +137,7 @@ class GHArchiveAdapter:
             "archive_hour": archive_hour.isoformat().replace("+00:00", "Z"),
             "archive_created_at": raw.get("created_at"),
             "actor": actor.get("login"),
+            "actor_type": actor.get("type"),
             "action": payload.get("action"),
         }
 
@@ -156,6 +157,8 @@ class GHArchiveAdapter:
                     "issue_created_at": issue.get("created_at"),
                     "url": issue.get("html_url"),
                     "author": (issue.get("user") or {}).get("login"),
+                    "author_type": (issue.get("user") or {}).get("type"),
+                    "is_pull_request": bool(issue.get("pull_request")),
                     "labels": [
                         label.get("name")
                         for label in issue.get("labels") or []
@@ -179,7 +182,10 @@ class GHArchiveAdapter:
                     "comment_created_at": comment.get("created_at"),
                     "url": comment.get("html_url"),
                     "author": (comment.get("user") or {}).get("login"),
+                    "author_type": (comment.get("user") or {}).get("type"),
                     "author_association": comment.get("author_association"),
+                    "issue_state": issue.get("state"),
+                    "is_pull_request": bool(issue.get("pull_request")),
                 },
             )
 
