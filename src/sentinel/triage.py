@@ -15,7 +15,7 @@ from urllib.parse import unquote
 from uuid import uuid4
 
 from dotenv import load_dotenv
-from openai import OpenAI, RateLimitError
+from openai import BadRequestError, OpenAI, RateLimitError
 
 from sentinel.store import Firing
 from sentinel.types import Event, format_timestamp
@@ -424,6 +424,7 @@ def triage_firing(
     # Preserve exact replay for fixtures created before the API's seed support
     # was verified. Every new live seed includes the fixed seed in both the
     # effective request and its cache identity.
+    unseeded_request = request
     request = _with_live_seed(request)
     cache_path = Path(cache_dir) / f"{request.prompt_hash}.json"
     fixture_path = Path(fixture_dir) / f"{request.prompt_hash}.json"
@@ -441,7 +442,19 @@ def triage_firing(
             f"no cached triage response for {request.prompt_hash} and OPENAI_API_KEY is absent"
         )
     live_client = client or cast(OpenAIClient, OpenAI(api_key=resolved_key))
-    response = _create_live_response(live_client, request.api_payload)
+    try:
+        response = _create_live_response(live_client, request.api_payload)
+    except BadRequestError as exc:
+        if not _is_unsupported_seed_error(exc):
+            raise
+        # Seed is an optional reproducibility hint, and Responses model support
+        # can differ by deployment. If the endpoint explicitly rejects it,
+        # retry the canonical request without seed and persist that exact request
+        # under its original hash. The fixture remains the source of truth.
+        request = unseeded_request
+        cache_path = Path(cache_dir) / f"{request.prompt_hash}.json"
+        fixture_path = Path(fixture_dir) / f"{request.prompt_hash}.json"
+        response = _create_live_response(live_client, request.api_payload)
     output_text = getattr(response, "output_text", None)
     if not isinstance(output_text, str) or not output_text.strip():
         raise TriageResponseError(
@@ -531,8 +544,8 @@ def _create_live_response(
     """Call Responses with bounded TPM retry handling."""
 
     call_payload = dict(api_payload)
-    # The endpoint accepts seed, but the installed SDK has not typed it yet.
-    # extra_body merges this field into the top-level HTTP JSON document.
+    # Some Responses deployments accept seed even though the installed SDK has
+    # not typed it. extra_body merges it into the top-level HTTP JSON document.
     if "seed" in call_payload:
         call_payload["extra_body"] = {"seed": call_payload.pop("seed")}
     for attempt in range(MAX_RATE_LIMIT_RETRIES + 1):
@@ -543,6 +556,13 @@ def _create_live_response(
                 raise
             time.sleep(_rate_limit_delay(exc))
     raise TriageError("unreachable live response retry state")
+
+
+def _is_unsupported_seed_error(exc: BadRequestError) -> bool:
+    body = getattr(exc, "body", None)
+    if not isinstance(body, Mapping):
+        return False
+    return body.get("param") == "seed" and body.get("code") == "unknown_parameter"
 
 
 def _rate_limit_delay(exc: RateLimitError) -> float:

@@ -7,7 +7,7 @@ from typing import Any
 
 import httpx
 import pytest
-from openai import RateLimitError
+from openai import BadRequestError, RateLimitError
 
 from sentinel.store import Firing
 from sentinel.triage import (
@@ -88,6 +88,29 @@ class RateLimitedResponses(FakeResponses):
             output_text=json.dumps(self.output),
             model="gpt-5.6-sol",
             id="resp_retry",
+        )
+
+
+class SeedRejectedResponses(FakeResponses):
+    def create(self, **kwargs: Any) -> SimpleNamespace:
+        self.calls.append(kwargs)
+        if kwargs.get("extra_body") == {"seed": 0}:
+            request = httpx.Request("POST", "https://api.openai.com/v1/responses")
+            response = httpx.Response(400, request=request)
+            raise BadRequestError(
+                "Unknown parameter: 'seed'.",
+                response=response,
+                body={
+                    "message": "Unknown parameter: 'seed'.",
+                    "type": "invalid_request_error",
+                    "param": "seed",
+                    "code": "unknown_parameter",
+                },
+            )
+        return SimpleNamespace(
+            output_text=json.dumps(self.output),
+            model="gpt-5.6-sol",
+            id="resp_no_seed",
         )
 
 
@@ -194,6 +217,32 @@ def test_live_rate_limit_retries_with_server_delay(
     assert sleeps == [1.0]
     assert all("temperature" not in call for call in responses.calls)
     assert all(call["extra_body"] == {"seed": 0} for call in responses.calls)
+
+
+def test_live_seed_rejection_falls_back_to_exact_unseeded_request(
+    tmp_path: Path,
+) -> None:
+    responses = SeedRejectedResponses(_live_output())
+    client = SimpleNamespace(responses=responses)
+    unseeded = build_triage_request(_firing(), [_issue()])
+
+    run = triage_firing(
+        _firing(),
+        [_issue()],
+        client=client,
+        cache_dir=tmp_path / "cache",
+        fixture_dir=tmp_path / "fixtures",
+    )
+    record = json.loads(
+        (tmp_path / "fixtures" / f"{run.prompt_hash}.json").read_text()
+    )
+
+    assert len(responses.calls) == 2
+    assert responses.calls[0]["extra_body"] == {"seed": 0}
+    assert "extra_body" not in responses.calls[1]
+    assert run.prompt_hash == unseeded.prompt_hash
+    assert "seed" not in record["request"]
+    assert "temperature" not in record["request"]
 
 
 def test_no_feedback_changes_exact_prompt_hash() -> None:
