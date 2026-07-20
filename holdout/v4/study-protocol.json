@@ -1,0 +1,163 @@
+{
+  "schema_version": 1,
+  "study_id": "sentinel-coherence-v4",
+  "frozen_before_test_extraction": true,
+  "selection_policy": "Seventy-five high-activity public software repositories spanning JavaScript/TypeScript, Python, Go, Rust, JVM, .NET, mobile, infrastructure, and data systems. The fifteen whole-repository test projects were not present in the v3 corpus and are frozen before any v4 test extraction or label inspection.",
+  "repositories": {
+    "train": [
+      "angular/angular",
+      "ansible/ansible",
+      "apache/airflow",
+      "apache/arrow",
+      "apache/kafka",
+      "bitcoin/bitcoin",
+      "containerd/containerd",
+      "dart-lang/sdk",
+      "denoland/deno",
+      "django/django",
+      "docker/compose",
+      "dotnet/aspnetcore",
+      "dotnet/efcore",
+      "dotnet/maui",
+      "electron/electron",
+      "elastic/elasticsearch",
+      "elastic/kibana",
+      "eslint/eslint",
+      "facebook/react",
+      "fastapi/fastapi",
+      "godotengine/godot",
+      "grafana/grafana",
+      "gradle/gradle",
+      "hashicorp/terraform",
+      "helm/helm",
+      "huggingface/transformers",
+      "istio/istio",
+      "jupyterlab/jupyterlab",
+      "kubernetes/kubernetes",
+      "laravel/framework",
+      "microsoft/TypeScript",
+      "microsoft/playwright",
+      "microsoft/terminal",
+      "microsoft/vscode",
+      "moby/moby",
+      "mui/material-ui",
+      "neovim/neovim",
+      "nextcloud/server",
+      "nodejs/node",
+      "npm/cli",
+      "nuxt/nuxt",
+      "numpy/numpy",
+      "open-telemetry/opentelemetry-collector",
+      "opencv/opencv",
+      "pallets/flask",
+      "pandas-dev/pandas",
+      "pnpm/pnpm",
+      "prometheus/prometheus",
+      "pytest-dev/pytest",
+      "redis/redis",
+      "scikit-learn/scikit-learn",
+      "spring-projects/spring-boot",
+      "storybookjs/storybook",
+      "sveltejs/svelte",
+      "tauri-apps/tauri",
+      "tokio-rs/tokio",
+      "vercel/next.js",
+      "vitejs/vite",
+      "vuejs/core",
+      "webpack/webpack"
+    ],
+    "test": [
+      "apache/spark",
+      "apache/superset",
+      "dotnet/runtime",
+      "facebook/react-native",
+      "flutter/flutter",
+      "golang/go",
+      "home-assistant/core",
+      "llvm/llvm-project",
+      "microsoft/PowerToys",
+      "mongodb/mongo",
+      "python/cpython",
+      "pytorch/pytorch",
+      "rails/rails",
+      "rust-lang/rust",
+      "tensorflow/tensorflow"
+    ]
+  },
+  "windows": [
+    {
+      "window_id": "2025-03-28",
+      "archive_start": "2025-03-21T00:00:00Z",
+      "detection_start": "2025-03-28T00:00:00Z",
+      "detection_end": "2025-04-08T00:00:00Z",
+      "confirmation_end": "2025-04-11T00:00:00Z"
+    },
+    {
+      "window_id": "2025-05-05",
+      "archive_start": "2025-04-28T00:00:00Z",
+      "detection_start": "2025-05-05T00:00:00Z",
+      "detection_end": "2025-05-17T00:00:00Z",
+      "confirmation_end": "2025-05-20T00:00:00Z"
+    }
+  ],
+  "label_rule": {
+    "version": "maintainer-confirmed-multisource-v4",
+    "unit": "repository UTC hour with at least one public issue-opened or issue-comment-created event",
+    "candidate_timestamp": "The end of the UTC hour. Features use only activity strictly before that timestamp. A positive is assigned only to the hour in which its issue was opened, and confirmation must occur later.",
+    "minimum_raw_activity": 1,
+    "confirmation_lookahead_hours": 72,
+    "maintainer_associations": [
+      "COLLABORATOR",
+      "MEMBER",
+      "OWNER"
+    ],
+    "sources_in_precedence_order": [
+      {
+        "source": "completed_bug_closure",
+        "definition": "A non-bot actor other than the reporter closes the issue as completed while its labels contain a bug, regression, defect, crash, panic, or correctness marker. The close must occur after the candidate timestamp and within the frozen lookahead."
+      },
+      {
+        "source": "merged_fixing_pr",
+        "definition": "A later merged pull request uses a closing keyword to reference the issue number. The merge event must occur after the candidate timestamp and within the frozen lookahead."
+      },
+      {
+        "source": "substantive_maintainer_comment",
+        "definition": "A later non-bot OWNER, MEMBER, or COLLABORATOR comment matches the committed substantive acknowledgment classifier. The comment must occur after the candidate timestamp and within the frozen lookahead."
+      }
+    ],
+    "bug_label_pattern": "(^|[^a-z])(bug|regression|defect|crash|panic|correctness)([^a-z]|$)",
+    "fixing_reference_pattern": "\\b(?:fix(?:e[sd])?|close[sd]?|resolve[sd]?)\\s*:?[ \\t]*(?:#[ \\t]*)?([0-9]+)\\b",
+    "pull_requests_excluded_from_activity": true,
+    "bots_excluded_from_confirmations": true
+  },
+  "feature_policy": {
+    "history_days": 7,
+    "phase": "same UTC hour and weekday/weekend class",
+    "text": "cross-thread token and character-shingle similarity from strictly pre-candidate issue activity",
+    "release_window_hours": 6,
+    "reuse": "The v3 burst and coherence feature families are reused unchanged so the population and label expansion, not a feature rewrite, is the v4 intervention."
+  },
+  "model_policy": {
+    "selection": "Leave-one-repository-out predictions on train repositories only.",
+    "primary_family": "coherence features only",
+    "ablation_family": "burst features only",
+    "estimator": "deterministic standardized logistic regression",
+    "threshold_selection": "maximize train OOF row-level F1, then precision, recall, ROC AUC, and the higher threshold",
+    "repository_balance": "Every training repository receives equal total weight; positive and negative classes receive equal weight within repositories containing both classes.",
+    "test_repositories_never_used_for_model_or_threshold_selection": true,
+    "headline_test_metrics": [
+      "precision",
+      "recall",
+      "roc_auc",
+      "median_lead_minutes"
+    ],
+    "uncertainty": "deterministic whole-repository bootstrap confidence intervals"
+  },
+  "power_targets": {
+    "minimum_train_positive_incidents": 200,
+    "minimum_test_positive_incidents": 50,
+    "maximum_single_train_repository_positive_share": 0.35,
+    "maximum_obvious_label_noise_rate_per_source": 0.2,
+    "audit_sample_per_source_per_split": 20
+  }
+}

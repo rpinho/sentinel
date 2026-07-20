@@ -4,6 +4,7 @@ __pycache__/
 .cache/
 *.duckdb
 data/raw/
+holdout/v4/events-*.json.gz
 
 # secrets — never commit
 .env
