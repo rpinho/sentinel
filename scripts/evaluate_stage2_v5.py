@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import random
 import statistics
 from collections import Counter, defaultdict
@@ -123,10 +124,12 @@ def evaluate(
         if str(sample["stratum"]).startswith("negative:")
     }
     surviving_positive_ids = {row_id for row_id in alert_positive_ids if survives[row_id]}
-    estimated_false_positives = sum(
-        float(sample_by_id[row_id]["analysis_weight"])
-        for row_id in sampled_negative_ids
-        if survives[row_id]
+    estimated_false_positives = math.fsum(
+        sorted(
+            float(sample_by_id[row_id]["analysis_weight"])
+            for row_id in sampled_negative_ids
+            if survives[row_id]
+        )
     )
     true_positive_hours = len(surviving_positive_ids)
     estimated_alerts = true_positive_hours + estimated_false_positives
