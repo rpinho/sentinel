@@ -118,6 +118,7 @@ class DetectorConfig:
     bot_regular_gap_mad_seconds: float = 0.0
     severity_digest_threshold: float = 0.0
     severity_interrupt_threshold: float = 1.0
+    severity_interrupt_enabled: bool = True
     severity_depth_saturation_multiplier: float = 2.0
     severity_lower_confidence_cap: float = 0.5
     metrics: tuple[RateMetricConfig, ...] = ()
@@ -257,6 +258,9 @@ class DetectorConfig:
             ),
             severity_interrupt_threshold=float(
                 raw.get("severity_interrupt_threshold", 1.0)
+            ),
+            severity_interrupt_enabled=bool(
+                raw.get("severity_interrupt_enabled", True)
             ),
             severity_depth_saturation_multiplier=float(
                 raw.get("severity_depth_saturation_multiplier", 2.0)

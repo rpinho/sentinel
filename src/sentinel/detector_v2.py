@@ -841,7 +841,12 @@ def _severity(
         0.5 if thin_fallback else 1.0,
     )
     attention = breadth * depth * velocity * confidence
-    interrupt_eligible = bool(persistent) and len(candidate_ids) >= 2 and not thin_fallback
+    interrupt_eligible = (
+        config.severity_interrupt_enabled
+        and bool(persistent)
+        and len(candidate_ids) >= 2
+        and not thin_fallback
+    )
     if interrupt_eligible and attention >= config.severity_interrupt_threshold:
         severity = "interrupt"
     elif attention >= config.severity_digest_threshold:
@@ -856,6 +861,7 @@ def _severity(
         "velocity": velocity,
         "confidence": confidence,
         "interrupt_eligible": interrupt_eligible,
+        "interrupt_policy_enabled": config.severity_interrupt_enabled,
         "independently_corroborated": independently_corroborated,
     }
 
