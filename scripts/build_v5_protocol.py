@@ -117,6 +117,11 @@ def main() -> None:
                 "ANTHROPIC_AUTH_TOKEN, and OPENAI_API_KEY removed from every subprocess."
             ),
             "verdict_rule": "Stage-two alert survives exactly when structured real=true.",
+            "evidence_grounding_rule": (
+                "Markdown-equivalent quotes are restored to exact source substrings; "
+                "remaining ungrounded annotations are dropped and audited. A real=true "
+                "verdict with textual events must retain at least one exact quote."
+            ),
             "system_prompt": STAGE2_SYSTEM_PROMPT,
             "task": STAGE2_TASK,
             "structured_schema_sha256": canonical_sha256(TRIAGE_SCHEMA),

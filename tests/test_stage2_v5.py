@@ -209,3 +209,50 @@ def test_subscription_runner_filters_api_keys_and_replays_exact_cache(
     assert DEFAULT_MODEL in calls[0]["command"]
     assert calls[0]["command"][calls[0]["command"].index("--effort") + 1] == "medium"
     assert calls[0]["command"][calls[0]["command"].index("--prompt-suggestions") + 1] == "false"
+
+
+def test_false_verdict_drops_ungrounded_metadata_quote(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    request = build_stage2_request(
+        row={
+            "row_id": "row:false",
+            "candidate_ts": "2025-05-05T13:00:00Z",
+            "bucket_start": "2025-05-05T12:00:00Z",
+            "entity": "example/repo",
+            "features": {"activity_z": 1.0},
+        },
+        prediction={"probability": 0.6},
+        events=[_event(-5)],
+        protocol=_protocol(),
+    ).to_dict()
+
+    def fake_run(command: list[str], **kwargs: Any) -> SimpleNamespace:
+        return SimpleNamespace(
+            returncode=0,
+            stderr="",
+            stdout=json.dumps(
+                {
+                    "subtype": "success",
+                    "is_error": False,
+                    "structured_output": {
+                        "real": False,
+                        "cause": "Routine metadata change.",
+                        "culprit_ref": None,
+                        "confidence": 0.8,
+                        "evidence_quotes": ['"labels":["triage"]'],
+                    },
+                    "usage": {},
+                    "modelUsage": {"claude-opus-4-8": {}},
+                }
+            ),
+        )
+
+    monkeypatch.setattr("sentinel.stage2_v5.subprocess.run", fake_run)
+    record = run_claude_subscription_request(
+        request, cache_dir=tmp_path, allow_live=True
+    )
+
+    assert record["response"]["evidence_quotes"] == []
+    assert record["raw_response"]["evidence_quotes"] == ['"labels":["triage"]']
+    assert record["evidence_grounding"][0]["method"] == "dropped_not_in_event_text"

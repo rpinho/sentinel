@@ -425,6 +425,8 @@ def run_claude_subscription_request(
         )
     )
     output, grounding = _ground_evidence_quotes(model_output, events)
+    output, dropped = _drop_ungrounded_quotes(output, events)
+    grounding.extend(dropped)
     _validate_evidence(output, events)
     usage = cast(Mapping[str, Any], envelope.get("usage") or {})
     record = {
@@ -565,6 +567,40 @@ def _is_probable_bot(event: Event) -> bool:
 
 def _event_sort_key(event: Event) -> tuple[Any, ...]:
     return event.ts, event.kind, _canonical_json(event.meta), event.text or ""
+
+
+def _drop_ungrounded_quotes(
+    output: TriageOutput, events: Sequence[Event]
+) -> tuple[TriageOutput, list[dict[str, str]]]:
+    """Drop non-source annotations; real verdicts still fail if no quote remains."""
+
+    source_texts = [" ".join((event.text or "").split()) for event in events if event.text]
+    kept: list[str] = []
+    audit: list[dict[str, str]] = []
+    for quote in output.evidence_quotes:
+        normalized = " ".join(quote.split())
+        if any(normalized in source for source in source_texts):
+            kept.append(quote)
+        else:
+            audit.append(
+                {
+                    "model_quote": quote,
+                    "grounded_quote": "",
+                    "method": "dropped_not_in_event_text",
+                }
+            )
+    if not audit:
+        return output, audit
+    return (
+        TriageOutput(
+            real=output.real,
+            cause=output.cause,
+            culprit_ref=output.culprit_ref,
+            confidence=output.confidence,
+            evidence_quotes=tuple(kept),
+        ),
+        audit,
+    )
 
 
 def _canonical_json(value: Any) -> str:
