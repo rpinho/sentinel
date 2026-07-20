@@ -286,6 +286,8 @@ def test_batch_runs_all_candidates_in_one_subscription_call(
     assert batch["candidate_count"] == 2
     assert batch["identity"]["json_schema"]["type"] == "object"
     assert len(payload["candidates"]) == 2
+    assert payload["candidates"][0]["candidate_index"] == 0
+    assert "row_id" not in payload["candidates"][0]["candidate"]
     assert payload["run"]["candidate_count"] == 2
     assert batch["identity"]["effort"] == "low"
     assert batch["identity"]["max_budget_usd"] == 25.0
@@ -303,7 +305,6 @@ def test_batch_runs_all_candidates_in_one_subscription_call(
                     "structured_output": {
                         "verdicts": [
                             {
-                                "row_id": f"row:{index}",
                                 "real": True,
                                 "cause": f"Candidate {index} crashes.",
                                 "culprit_ref": None,

@@ -30,7 +30,7 @@ def main() -> None:
     parser.add_argument("--requests", type=Path, default=DEFAULT_REQUESTS)
     parser.add_argument("--cache-dir", type=Path, default=DEFAULT_CACHE)
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
-    parser.add_argument("--timeout-seconds", type=int, default=300)
+    parser.add_argument("--timeout-seconds", type=int, default=600)
     parser.add_argument("--live", action="store_true")
     args = parser.parse_args()
     if args.timeout_seconds < 1:

@@ -121,6 +121,7 @@ def main() -> None:
             "production_cadence": "one agent invocation every 15 to 60 minutes",
             "evaluation_batch_count": 1,
             "target_batch_wall_seconds": 300,
+            "transport_safety_timeout_seconds": 600,
             "verdict_rule": "Stage-two alert survives exactly when structured real=true.",
             "evidence_grounding_rule": (
                 "Markdown-equivalent quotes are restored to exact source substrings; "

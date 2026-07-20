@@ -76,9 +76,9 @@ exists.
 When real is true, explain the likely cause only as far as the evidence supports. Name a
 release, version, commit, or pull request only when it is visible before the cutoff.
 Evidence quotes must be exact continuous substrings copied from supplied event text. If
-text exists and real is true, include one or at most two short exact quotes. When real is
+text exists and real is true, include at most one short exact quote (20 words maximum). When real is
 false, return no evidence quotes. If no text supports a real incident, return real=false
-rather than inventing evidence. Keep each cause to one short sentence."""
+rather than inventing evidence. Keep each cause to 12 words or fewer."""
 
 STAGE2_TASK = (
     "Classify every stage-one candidate as real software breakage or noise. For each, "
@@ -115,15 +115,19 @@ def build_batch_request(
     packets: list[dict[str, Any]] = []
     row_ids: list[str] = []
     candidate_hashes: list[dict[str, str]] = []
-    for request in ordered:
+    for candidate_index, request in enumerate(ordered):
         identity = cast(Mapping[str, Any], request["identity"])
         payload = cast(Mapping[str, Any], json.loads(str(identity["user_content"])))
         row_id = str(request["row_id"])
         candidate = cast(Mapping[str, Any], payload["candidate"])
         if str(candidate["row_id"]) != row_id:
             raise ValueError("v5 candidate row identity mismatch")
+        compact_candidate = {
+            key: value for key, value in candidate.items() if key != "row_id"
+        }
         packet = {
-            "candidate": dict(candidate),
+            "candidate_index": candidate_index,
+            "candidate": compact_candidate,
             "pre_candidate_events": [
                 _compact_batch_event(event)
                 for event in cast(
@@ -174,19 +178,10 @@ def build_batch_request(
 
 def build_batch_schema(row_ids: Sequence[str]) -> dict[str, Any]:
     verdict = json.loads(json.dumps(TRIAGE_SCHEMA))
-    verdict["properties"] = {
-        "row_id": {
-            "type": "string",
-            "enum": list(row_ids),
-            "description": "Candidate row_id copied exactly from the input.",
-        },
-        **verdict["properties"],
-    }
-    verdict["required"] = ["row_id", *verdict["required"]]
-    verdict["properties"]["cause"]["maxLength"] = 300
-    verdict["properties"]["culprit_ref"]["anyOf"][0]["maxLength"] = 120
-    verdict["properties"]["evidence_quotes"]["maxItems"] = 2
-    verdict["properties"]["evidence_quotes"]["items"]["maxLength"] = 400
+    verdict["properties"]["cause"]["maxLength"] = 120
+    verdict["properties"]["culprit_ref"]["anyOf"][0]["maxLength"] = 60
+    verdict["properties"]["evidence_quotes"]["maxItems"] = 1
+    verdict["properties"]["evidence_quotes"]["items"]["maxLength"] = 160
     return {
         "type": "object",
         "properties": {
@@ -712,27 +707,24 @@ def run_claude_subscription_batch(
             raise TriageResponseError(
                 "Claude CLI batch response did not contain structured output"
             ) from exc
-    raw_verdicts = cast(Sequence[Mapping[str, Any]], structured.get("verdicts"))
-    request_by_id = {
-        str(request["row_id"]): request for request in candidate_requests
-    }
-    raw_by_id: dict[str, Mapping[str, Any]] = {}
-    for verdict in raw_verdicts:
-        row_id = str(verdict.get("row_id") or "")
-        if row_id in raw_by_id:
-            raise TriageResponseError(f"duplicate v5 batch verdict for {row_id}")
-        raw_by_id[row_id] = verdict
-    if set(raw_by_id) != set(request_by_id):
-        missing = sorted(set(request_by_id) - set(raw_by_id))
-        extra = sorted(set(raw_by_id) - set(request_by_id))
+    raw_value = structured.get("verdicts")
+    if not isinstance(raw_value, list) or not all(
+        isinstance(verdict, Mapping) for verdict in raw_value
+    ):
+        raise TriageResponseError("v5 batch verdicts must be an array of objects")
+    raw_verdicts = cast(Sequence[Mapping[str, Any]], raw_value)
+    ordered_requests = sorted(
+        candidate_requests, key=lambda request: str(request["row_id"])
+    )
+    if len(raw_verdicts) != len(ordered_requests):
         raise TriageResponseError(
-            f"v5 batch verdict IDs differ: missing={missing[:5]} extra={extra[:5]}"
+            f"v5 batch returned {len(raw_verdicts)} verdicts for "
+            f"{len(ordered_requests)} candidates"
         )
     candidate_records: list[dict[str, Any]] = []
-    for row_id in sorted(request_by_id):
-        request = request_by_id[row_id]
-        raw = dict(raw_by_id[row_id])
-        raw.pop("row_id", None)
+    for request, raw_verdict in zip(ordered_requests, raw_verdicts):
+        row_id = str(request["row_id"])
+        raw = dict(raw_verdict)
         model_output = TriageOutput.from_mapping(raw)
         request_payload = cast(
             Mapping[str, Any],
