@@ -529,6 +529,7 @@ def firing_scorecard_row(
         "baseline_stddev": firing.baseline_stddev,
         "z_score": firing.score,
         "detector_version": firing.detector_version,
+        "detector_meta": dict(firing.meta),
         "source_url": source_event.meta.get("url") if source_event else None,
         "issue_numbers": sorted(issue_numbers(bucket_events)),
         "routing": routing_for_firing(firing),
@@ -766,6 +767,7 @@ def render_holdout_markdown(scorecard: Mapping[str, Any]) -> str:
     holdout = cast(Mapping[str, Any], scorecard["holdout"])
     coverage = cast(Mapping[str, Any], scorecard["coverage"])
     metrics = cast(Mapping[str, Mapping[str, Any]], scorecard["metrics"])
+    diagnostics = cast(Mapping[str, int], scorecard.get("detector_diagnostics") or {})
     lines = [
         "# Sentinel frozen holdout",
         "",
@@ -804,6 +806,10 @@ def render_holdout_markdown(scorecard: Mapping[str, Any]) -> str:
             f"Archive coverage: `{coverage['complete_repo_hours']}/"
             f"{coverage['expected_repo_hours']}` repo-hours "
             f"({_percent(coverage['ratio'])}).",
+            "",
+            "Detector interval verdicts: `"
+            + json.dumps(dict(sorted(diagnostics.items())), sort_keys=True)
+            + "`.",
             "",
             "Verdicts use the committed deterministic maintainer-acknowledgment rule. "
             "No later acknowledgment means `UNRESOLVED`, not a guessed false positive.",
