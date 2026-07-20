@@ -24,6 +24,7 @@ from sentinel.stage2_v5 import (
     EVIDENCE_POLICY_VERSION,
     PROTOCOL_SCHEMA_VERSION,
     STAGE2_SYSTEM_PROMPT,
+    STAGE2_FEATURES,
     STAGE2_TASK,
     TRANSPORT_VERSION,
     build_batch_schema,
@@ -140,6 +141,7 @@ def main() -> None:
             ),
             "stage1_threshold": test["threshold"],
             "stage1_detector_version": test["detector_version"],
+            "stage1_feature_projection": list(STAGE2_FEATURES),
             "max_budget_usd_per_run": DEFAULT_MAX_BUDGET_USD_PER_RUN,
         },
         "evidence_policy": {

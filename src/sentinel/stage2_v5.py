@@ -36,11 +36,27 @@ DEFAULT_CLI_VERSION = "2.1.215"
 DEFAULT_EFFORT = "low"
 DEFAULT_SOURCE_LOOKBACK_HOURS = 24
 DEFAULT_RECENT_CONTEXT_HOURS = 3
-DEFAULT_EVENT_BUDGET_CHARS = 6_000
-DEFAULT_MAX_EVENT_TEXT_CHARS = 1_000
-DEFAULT_MAX_EVIDENCE_EVENTS = 8
+DEFAULT_EVENT_BUDGET_CHARS = 1_000
+DEFAULT_MAX_EVENT_TEXT_CHARS = 300
+DEFAULT_MAX_EVIDENCE_EVENTS = 1
 DEFAULT_NEGATIVES_PER_REPOSITORY_QUARTILE = 3
 DEFAULT_MAX_BUDGET_USD_PER_RUN = 25.0
+
+STAGE2_FEATURES = (
+    "raw_activity_count",
+    "bot_excluded_activity_count",
+    "bot_excluded_activity_phase_z",
+    "breakage_issue_count",
+    "breakage_issue_share",
+    "breakage_thread_share",
+    "new_issue_count",
+    "release_version_mentioned",
+    "shared_version_thread_count",
+    "rolling_6h_breakage_issue_count",
+    "top_actor_activity_share",
+    "repeated_payload_share",
+    "minutes_since_nearest_release",
+)
 
 STAGE2_SYSTEM_PROMPT = """You are Sentinel's stage-two precision filter. A frozen
 high-recall ranker selected a compact batch of repository activity hours for one scheduled
@@ -108,9 +124,12 @@ def build_batch_request(
             raise ValueError("v5 candidate row identity mismatch")
         packet = {
             "candidate": dict(candidate),
-            "pre_candidate_events": list(
-                cast(Sequence[Mapping[str, Any]], payload["pre_candidate_events"])
-            ),
+            "pre_candidate_events": [
+                _compact_batch_event(event)
+                for event in cast(
+                    Sequence[Mapping[str, Any]], payload["pre_candidate_events"]
+                )
+            ],
         }
         packets.append(packet)
         row_ids.append(row_id)
@@ -162,6 +181,45 @@ def build_batch_schema(row_ids: Sequence[str]) -> dict[str, Any]:
             "description": "Candidate row_id copied exactly from the input.",
         },
         **verdict["properties"],
+    }
+
+
+def _compact_batch_event(event: Mapping[str, Any]) -> dict[str, Any]:
+    meta = cast(Mapping[str, Any], event.get("meta") or {})
+    compact_meta: dict[str, Any] = {}
+    for key in (
+        "action",
+        "actor",
+        "actor_type",
+        "author",
+        "author_association",
+        "author_type",
+        "source_event_type",
+        "issue_number",
+        "is_pull_request",
+        "state",
+        "state_reason",
+        "version",
+        "merged",
+    ):
+        value = meta.get(key)
+        if value is not None and value != "":
+            compact_meta[key] = value
+    labels = meta.get("labels")
+    if isinstance(labels, Sequence) and not isinstance(labels, (str, bytes)):
+        names = []
+        for label in labels[:3]:
+            if isinstance(label, Mapping):
+                names.append(str(label.get("name") or "")[:80])
+            else:
+                names.append(str(label)[:80])
+        if any(names):
+            compact_meta["labels"] = [name for name in names if name]
+    return {
+        "ts": event["ts"],
+        "kind": event["kind"],
+        "text": event.get("text"),
+        "meta": compact_meta,
     }
     verdict["required"] = ["row_id", *verdict["required"]]
     verdict["properties"]["cause"]["maxLength"] = 300
@@ -396,7 +454,11 @@ def build_stage2_request(
             "stage1_probability": prediction["probability"],
             "stage1_threshold": stage2["stage1_threshold"],
             "stage1_detector_version": stage2["stage1_detector_version"],
-            "features": row["features"],
+            "features": {
+                feature: cast(Mapping[str, Any], row["features"])[feature]
+                for feature in STAGE2_FEATURES
+                if feature in cast(Mapping[str, Any], row["features"])
+            },
         },
         "input_window": manifest,
         "pre_candidate_events": [event.to_dict() for event in selected],

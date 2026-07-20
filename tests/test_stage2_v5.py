@@ -55,8 +55,8 @@ def _protocol() -> dict[str, Any]:
             "source_lookback_hours": 24,
             "recent_context_hours": 3,
             "event_budget_chars": DEFAULT_EVENT_BUDGET_CHARS,
-            "max_event_text_chars": 1_000,
-            "max_evidence_events": 8,
+            "max_event_text_chars": 300,
+            "max_evidence_events": 1,
         },
     }
 
@@ -100,7 +100,7 @@ def test_evidence_is_strictly_pre_cutoff_and_compact() -> None:
     events = [
         _event(-25 * 60),
         _event(-120, kind="release", text="Release 2.0"),
-        _event(-50, text="x" * 3_000),
+        _event(-50, text="Regression: " + "x" * 3_000),
         *[_event(-index, kind="comment", text=f"context {index}") for index in range(1, 20)],
         _event(0, text="not allowed at cutoff"),
         _event(5, text="future"),
@@ -112,14 +112,15 @@ def test_evidence_is_strictly_pre_cutoff_and_compact() -> None:
         bucket_start=CUTOFF - timedelta(hours=1),
     )
 
-    assert len(selected) <= 8
+    assert len(selected) <= 1
     assert manifest["supplied_event_count"] == len(selected)
     assert manifest["supplied_event_json_chars"] <= DEFAULT_EVENT_BUDGET_CHARS
     assert all(event.ts < CUTOFF for event in selected)
     assert all(event.text not in {"not allowed at cutoff", "future"} for event in selected)
-    assert any(event.kind == "release" for event in selected)
-    truncated = next(event for event in selected if event.text and event.text.startswith("x"))
-    assert len(truncated.text or "") == 1_000
+    truncated = next(
+        event for event in selected if event.text and event.text.startswith("Regression:")
+    )
+    assert len(truncated.text or "") == 300
     assert truncated.meta["v5_text"]["truncated"] is True
 
 
