@@ -1,5 +1,7 @@
+import json
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 
 from sentinel.holdout import (
     auto_label_firing,
@@ -272,3 +274,23 @@ def test_freeze_hash_is_canonical_and_week_has_168_hours() -> None:
         )
         == 168
     )
+
+
+def test_committed_v2_holdout_publishes_negative_delta() -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    v1 = json.loads((repo_root / "holdout/scorecard.json").read_text())
+    v2 = json.loads((repo_root / "holdout/v2/scorecard.json").read_text())
+
+    assert v1["coverage"]["complete_repo_hours"] == 504
+    assert v2["coverage"]["complete_repo_hours"] == 504
+    assert v1["metrics"]["no_agent"]["firings"] == 20
+    assert v1["metrics"]["no_agent"]["true_positives"] == 1
+    assert v1["metrics"]["no_agent"]["false_positives"] == 1
+    assert len(v1["detector_misses"]) == 3
+
+    assert v2["holdout"]["detector_version"] == "sha256:3b11a572823b"
+    assert v2["metrics"]["no_agent"]["firings"] == 0
+    assert v2["metrics"]["no_agent"]["precision"] is None
+    assert v2["metrics"]["no_agent"]["false_positives_per_week"] == 0
+    assert len(v2["detector_misses"]) == 4
+    assert v2["feedback_precision_delta"] is None

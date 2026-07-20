@@ -492,3 +492,58 @@ def test_committed_webpack_fixtures_are_pre_firing_and_name_culprit() -> None:
             any(" ".join(quote.split()) in source for source in source_texts)
             for quote in output.evidence_quotes
         )
+
+
+def test_committed_webpack_v2_fixtures_are_exact_and_pre_firing() -> None:
+    fixture_dir = Path(__file__).parent / "fixtures" / "triage"
+    expected_modes = {
+        "8a8e84a669ab09ef0f5b271a481a33cb9cbdda8bec5e9a7295613b534d6caf25": True,
+        "96686e532f18a193de07145eae97cc25cb4b78dc485fd64940c9663a3146e4fd": False,
+    }
+    firing_ts = parse_timestamp("2025-04-07T18:55:02Z")
+    forbidden_ack = (
+        "2784517989",
+        "2025-04-07T20:14:04Z",
+        "Found buggy places",
+        "PR #19398",
+    )
+
+    for prompt_hash, feedback_enabled in expected_modes.items():
+        serialized = (fixture_dir / f"{prompt_hash}.json").read_text(
+            encoding="utf-8"
+        )
+        record = json.loads(serialized)
+        request = record["request"]
+        canonical = json.dumps(
+            request, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+        )
+        assert hashlib.sha256(canonical.encode("utf-8")).hexdigest() == prompt_hash
+        assert record["request_hash"] == prompt_hash
+        assert request["model"] == "gpt-5.6"
+        assert "temperature" not in request
+        assert "seed" not in request
+        assert all(marker not in serialized for marker in forbidden_ack)
+
+        payload = json.loads(request["input"][1]["content"])
+        events = payload["pre_firing_events"]
+        assert payload["firing"]["firing_id"] == (
+            "firing:07cb50298e4a5badf1114403"
+        )
+        assert len(events) == 28
+        assert payload["input_window"]["max_event_ts"] == "2025-04-07T18:52:11Z"
+        assert payload["feedback"]["enabled"] is feedback_enabled
+        assert all(event["entity"] == "webpack/webpack" for event in events)
+        assert all(parse_timestamp(event["ts"]) < firing_ts for event in events)
+
+        output = TriageOutput.from_mapping(record["response"])
+        source_texts = [
+            " ".join((event.get("text") or "").split()) for event in events
+        ]
+        assert output.real is True
+        assert output.culprit_ref == "v5.99.0"
+        assert output.confidence == 0.99
+        assert output.evidence_quotes
+        assert all(
+            any(" ".join(quote.split()) in source for source in source_texts)
+            for quote in output.evidence_quotes
+        )
