@@ -43,6 +43,7 @@ def _protocol() -> dict[str, Any]:
             "model": DEFAULT_MODEL,
             "transport": "claude-code-subscription-cli-v1",
             "claude_cli_version": "2.1.215",
+            "effort": "medium",
             "stage1_threshold": 0.4,
             "stage1_detector_version": "sha256:test",
             "max_budget_usd_per_call": 0.5,
@@ -206,3 +207,5 @@ def test_subscription_runner_filters_api_keys_and_replays_exact_cache(
     assert calls[0]["env"].get("OPENAI_API_KEY") is None
     assert "--model" in calls[0]["command"]
     assert DEFAULT_MODEL in calls[0]["command"]
+    assert calls[0]["command"][calls[0]["command"].index("--effort") + 1] == "medium"
+    assert calls[0]["command"][calls[0]["command"].index("--prompt-suggestions") + 1] == "false"

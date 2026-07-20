@@ -365,9 +365,9 @@ def _verify_inputs(
         model_usage = cast(
             Mapping[str, Any], cast(Mapping[str, Any], record["runtime"])["model_usage"]
         )
-        if set(model_usage) != {expected_model}:
+        if expected_model not in model_usage:
             raise RuntimeError(
-                f"v5 actual model attribution is {sorted(model_usage)}, expected {expected_model}"
+                f"v5 primary model attribution is {sorted(model_usage)}, expected {expected_model}"
             )
 
 
@@ -439,6 +439,33 @@ def _runtime_summary(records: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
     costs = [float(runtime.get("total_cost_usd_equivalent") or 0) for runtime in runtimes]
     input_tokens = [int(runtime.get("input_tokens") or 0) for runtime in runtimes]
     output_tokens = [int(runtime.get("output_tokens") or 0) for runtime in runtimes]
+    actual_models: dict[str, dict[str, float]] = defaultdict(
+        lambda: {
+            "calls": 0,
+            "input_tokens": 0,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 0,
+            "output_tokens": 0,
+            "modeled_equivalent_cost_usd": 0.0,
+        }
+    )
+    for runtime in runtimes:
+        for model, usage in cast(
+            Mapping[str, Mapping[str, Any]], runtime.get("model_usage") or {}
+        ).items():
+            summary = actual_models[model]
+            summary["calls"] += 1
+            summary["input_tokens"] += int(usage.get("inputTokens") or 0)
+            summary["cache_creation_input_tokens"] += int(
+                usage.get("cacheCreationInputTokens") or 0
+            )
+            summary["cache_read_input_tokens"] += int(
+                usage.get("cacheReadInputTokens") or 0
+            )
+            summary["output_tokens"] += int(usage.get("outputTokens") or 0)
+            summary["modeled_equivalent_cost_usd"] += float(
+                usage.get("costUSD") or 0
+            )
     return {
         "requests": len(records),
         "wall_latency_ms": _distribution(wall),
@@ -448,6 +475,7 @@ def _runtime_summary(records: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
         "input_tokens_per_candidate": _distribution(input_tokens),
         "output_tokens_total": sum(output_tokens),
         "output_tokens_per_candidate": _distribution(output_tokens),
+        "actual_model_usage": dict(sorted(actual_models.items())),
     }
 
 

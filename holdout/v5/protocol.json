@@ -3947,9 +3947,11 @@
   "stage2": {
     "authentication": "Claude Code claude.ai Max subscription; ANTHROPIC_API_KEY, ANTHROPIC_AUTH_TOKEN, and OPENAI_API_KEY removed from every subprocess.",
     "claude_cli_version": "2.1.215",
+    "effort": "medium",
     "max_budget_usd_per_call": 0.5,
     "model": "claude-opus-4-8",
     "model_choice": "Ricardo requested the smarter Opus tier before the protocol and requests were frozen; the Claude CLI resolved opus to this exact ID.",
+    "prompt_suggestions": false,
     "provider": "anthropic",
     "stage1_detector_version": "sha256:57021d95ec13",
     "stage1_threshold": 0.62,

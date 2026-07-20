@@ -22,6 +22,7 @@ def test_evaluate_two_stage_weighted_system_and_clean_cut() -> None:
             "provider": "anthropic",
             "model": "claude-opus-4-8",
             "transport": "subscription",
+            "effort": "medium",
         },
         "sampling": {
             "method": "test census",

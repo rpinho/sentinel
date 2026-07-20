@@ -12,6 +12,7 @@ from sentinel.detector_v3 import canonical_sha256
 from sentinel.stage2_v5 import (
     DEFAULT_CLI_VERSION,
     DEFAULT_EVENT_BUDGET_CHARS,
+    DEFAULT_EFFORT,
     DEFAULT_MAX_BUDGET_USD_PER_CALL,
     DEFAULT_MAX_EVENT_TEXT_CHARS,
     DEFAULT_MAX_EVIDENCE_EVENTS,
@@ -109,6 +110,8 @@ def main() -> None:
             ),
             "transport": TRANSPORT_VERSION,
             "claude_cli_version": DEFAULT_CLI_VERSION,
+            "effort": DEFAULT_EFFORT,
+            "prompt_suggestions": False,
             "authentication": (
                 "Claude Code claude.ai Max subscription; ANTHROPIC_API_KEY, "
                 "ANTHROPIC_AUTH_TOKEN, and OPENAI_API_KEY removed from every subprocess."

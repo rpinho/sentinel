@@ -33,6 +33,7 @@ TRANSPORT_VERSION = "claude-code-subscription-cli-v1"
 DEFAULT_PROVIDER = "anthropic"
 DEFAULT_MODEL = "claude-opus-4-8"
 DEFAULT_CLI_VERSION = "2.1.215"
+DEFAULT_EFFORT = "medium"
 DEFAULT_SOURCE_LOOKBACK_HOURS = 24
 DEFAULT_RECENT_CONTEXT_HOURS = 3
 DEFAULT_EVENT_BUDGET_CHARS = 6_000
@@ -314,6 +315,8 @@ def build_stage2_request(
         "tools": [],
         "safe_mode": True,
         "session_persistence": False,
+        "prompt_suggestions": False,
+        "effort": stage2["effort"],
         "max_budget_usd": stage2["max_budget_usd_per_call"],
     }
     request_hash = canonical_sha256(identity)
@@ -349,12 +352,16 @@ def run_claude_subscription_request(
         "-p",
         "--safe-mode",
         "--no-session-persistence",
+        "--prompt-suggestions",
+        "false",
         "--tools",
         "",
         "--permission-mode",
         "dontAsk",
         "--model",
         str(identity["model"]),
+        "--effort",
+        str(identity["effort"]),
         "--system-prompt",
         str(identity["system_prompt"]),
         "--json-schema",
