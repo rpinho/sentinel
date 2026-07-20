@@ -147,6 +147,11 @@ def test_live_response_is_cached_as_fixture_and_replays_without_key(
         cache_dir=cache_dir,
         fixture_dir=fixture_dir,
     )
+    live_record = json.loads(
+        (fixture_dir / f"{live.prompt_hash}.json").read_text(encoding="utf-8")
+    )
+    assert live_record["request"]["seed"] == 0
+    assert "temperature" not in live_record["request"]
     (cache_dir / f"{live.prompt_hash}.json").unlink()
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     replay = triage_firing(
@@ -165,8 +170,7 @@ def test_live_response_is_cached_as_fixture_and_replays_without_key(
     assert replay.output == live.output
     assert len(client.responses.calls) == 1
     assert "temperature" not in client.responses.calls[0]
-    assert client.responses.calls[0]["seed"] == 0
-    assert "extra_body" not in client.responses.calls[0]
+    assert client.responses.calls[0]["extra_body"] == {"seed": 0}
 
 
 def test_live_rate_limit_retries_with_server_delay(
@@ -189,7 +193,7 @@ def test_live_rate_limit_retries_with_server_delay(
     assert len(responses.calls) == 2
     assert sleeps == [1.0]
     assert all("temperature" not in call for call in responses.calls)
-    assert all(call["seed"] == 0 for call in responses.calls)
+    assert all(call["extra_body"] == {"seed": 0} for call in responses.calls)
 
 
 def test_no_feedback_changes_exact_prompt_hash() -> None:

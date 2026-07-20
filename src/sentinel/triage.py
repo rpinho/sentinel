@@ -531,6 +531,10 @@ def _create_live_response(
     """Call Responses with bounded TPM retry handling."""
 
     call_payload = dict(api_payload)
+    # The endpoint accepts seed, but the installed SDK has not typed it yet.
+    # extra_body merges this field into the top-level HTTP JSON document.
+    if "seed" in call_payload:
+        call_payload["extra_body"] = {"seed": call_payload.pop("seed")}
     for attempt in range(MAX_RATE_LIMIT_RETRIES + 1):
         try:
             return client.responses.create(**call_payload)
