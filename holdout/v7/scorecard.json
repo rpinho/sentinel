@@ -1,0 +1,301 @@
+{
+  "automation_candidate_stage": {
+    "dismissed": 1583,
+    "reached_screen": 0,
+    "rule": "All candidates classified as automation are recorded and dismissed before any judge call."
+  },
+  "candidate_dispositions": {
+    "all_candidates_accounted_for": true,
+    "by_disposition": {
+      "benign_dismiss": 16053,
+      "finding": 2,
+      "insufficient_data": 27,
+      "watch": 139
+    },
+    "by_series": {
+      "issue_thread_activity": 10975,
+      "release_adjacency_issue_rate": 74,
+      "repository_event_type_rate": 5172
+    },
+    "by_source": {
+      "deterministic_candidate_gate": 11809,
+      "investigation_judge": 4,
+      "screen_judge": 4408
+    },
+    "total": 16221
+  },
+  "clean_source_cut": {
+    "alert_hour_reduction_vs_stage1": 1722,
+    "false_positive_stories": 1,
+    "hour_mapped_precision": 0.5,
+    "hour_recall": 0.006756756756756757,
+    "incident_recall": 0.00641025641025641,
+    "incident_recall_repository_bootstrap_95": [
+      0.0,
+      0.017241379310344827
+    ],
+    "incidents": 156,
+    "incidents_caught": 1,
+    "lead_time": {
+      "count": 1,
+      "maximum_minutes": 1176.75,
+      "median_hours": 19.6125,
+      "median_minutes": 1176.75,
+      "minimum_minutes": 1176.75
+    },
+    "mapped_alert_hours": 2,
+    "matched_true_positive_hours": 1,
+    "published_stories": 2,
+    "story_precision": 0.5,
+    "story_precision_repository_bootstrap_95": [
+      0.0,
+      1.0
+    ],
+    "true_positive_hours_killed": 117,
+    "true_positive_stories": 1
+  },
+  "comparison_v5_v6_v7": {
+    "unit_note": "V5/v6 alerts are estimated repository-hours from their frozen sample; v7 reports exact story precision and an exact story-to-hour mapping.",
+    "versions": [
+      {
+        "alerts_or_stories": 1228.3333333333333,
+        "incident_recall": 0.7700348432055749,
+        "median_lead_hours": 11.93305,
+        "modeled_equivalent_cost_usd": 1.7439795000000002,
+        "precision": 0.166078697421981,
+        "true_positive_hours_killed": 31,
+        "version": "v5"
+      },
+      {
+        "alerts_or_stories": 749.6666666666666,
+        "incident_recall": 0.5644599303135889,
+        "median_lead_hours": 12.318333333333333,
+        "modeled_equivalent_cost_usd": 32.5438545,
+        "precision": 0.19608714984437528,
+        "true_positive_hours_killed": 88,
+        "version": "v6"
+      },
+      {
+        "alerts_or_stories": 2,
+        "incident_recall": 0.003484320557491289,
+        "mapped_alert_hours": 2,
+        "median_lead_hours": 19.6125,
+        "modeled_equivalent_cost_usd": 36.891279499999996,
+        "precision": 0.5,
+        "primary_story_precision": 0.5,
+        "true_positive_hours_killed": 234,
+        "version": "v7"
+      }
+    ]
+  },
+  "end_to_end": {
+    "alert_hour_reduction_vs_stage1": 1722,
+    "false_positive_stories": 1,
+    "hour_mapped_precision": 0.5,
+    "hour_recall": 0.003745318352059925,
+    "incident_recall": 0.003484320557491289,
+    "incident_recall_repository_bootstrap_95": [
+      0.0,
+      0.010101010101010102
+    ],
+    "incidents": 287,
+    "incidents_caught": 1,
+    "lead_time": {
+      "count": 1,
+      "maximum_minutes": 1176.75,
+      "median_hours": 19.6125,
+      "median_minutes": 1176.75,
+      "minimum_minutes": 1176.75
+    },
+    "mapped_alert_hours": 2,
+    "matched_true_positive_hours": 1,
+    "published_stories": 2,
+    "story_precision": 0.5,
+    "story_precision_repository_bootstrap_95": [
+      0.0,
+      1.0
+    ],
+    "true_positive_hours_killed": 234,
+    "true_positive_stories": 1
+  },
+  "finding": {
+    "conclusion": "Signal-scoped v7 did not clear both the precision and recall bar; the frozen result is reported without tuning.",
+    "hour_precision_delta_vs_v6": 0.30391285015562475,
+    "incident_recall_delta_vs_v6": -0.5609756097560976
+  },
+  "frozen_identities": {
+    "feedback_snapshot_sha256": "062c596a46c6592c839716bdba2f7bdb29ef57401c50cc8f11f2e861f326fe4f",
+    "v4_scorecard_sha256": "7a823f275f6be144cd9c5eb90b65ce913781c709017075437cad67738d3825ea",
+    "v4_test_dataset_content_sha256": "895395b1b41a733996ceecd7c1c33913e01ffe9482db68a6f8f2ce85c7c0732d",
+    "v4_test_events_sha256": "fed1af4af7730317dadb665c93c28014979a9954f3928c78863e470fdb64126b",
+    "v5_scorecard_sha256": "5c997bf587d82c801c70234f32a05516a965d2e8fa6260284d497b6235cadf80",
+    "v6_scorecard_sha256": "fd1f49731874c08a721539952bfbe32103a7775e2d9850423c3ffdd731d97f2e"
+  },
+  "funnel": {
+    "compression": {
+      "gate_to_investigation": 1103.0,
+      "generated_to_gate": 3.6765639165911153,
+      "investigation_to_story": 2.0
+    },
+    "deterministic_gate_survivors": 4412,
+    "investigation_dispositions": {
+      "benign_dismiss": 1,
+      "finding": 2,
+      "watch": 1
+    },
+    "investigation_findings_before_story_dedup": 2,
+    "published_stories": 2,
+    "scoped_candidates_generated": 16221,
+    "screen_dispositions": {
+      "benign_dismiss": 4243,
+      "insufficient_data": 27,
+      "investigate": 4,
+      "watch": 138
+    },
+    "screen_elected_investigations": 4,
+    "stage1_alert_hours": 1724
+  },
+  "interpretation": {
+    "architecture": "V7 judges signal-scoped claims, fetches heavy evidence only after election, and publishes deduplicated stories.",
+    "clean_source_status": "Confirmatory-grade source cut on a reused, already published test—not a fresh holdout.",
+    "cost_status": "Claude ran with claude.ai subscription auth and API credentials removed; USD is modeled equivalent usage, not API billing.",
+    "full_label_status": "Descriptive because the published v4 comment-source audit found 30% obvious label noise.",
+    "no_openai_calls": true
+  },
+  "protocol_sha256": "dd5cf502cc62108d82792690be0d19a961e85307063c251f7e3c439e0f5f06e9",
+  "runtime": {
+    "combined_modeled_equivalent_cost_usd": 36.891279499999996,
+    "investigation": {
+      "actual_model_usage": {
+        "claude-haiku-4-5-20251001": {
+          "cacheCreationInputTokens": 0.0,
+          "cacheReadInputTokens": 0.0,
+          "contextWindow": 200000.0,
+          "costUSD": 0.012125,
+          "inputTokens": 12035.0,
+          "maxOutputTokens": 32000.0,
+          "outputTokens": 18.0,
+          "webSearchRequests": 0.0
+        },
+        "claude-opus-4-8": {
+          "cacheCreationInputTokens": 17587.0,
+          "cacheReadInputTokens": 0.0,
+          "contextWindow": 1000000.0,
+          "costUSD": 0.26120499999999996,
+          "inputTokens": 2.0,
+          "maxOutputTokens": 64000.0,
+          "outputTokens": 3413.0,
+          "webSearchRequests": 0.0
+        }
+      },
+      "invocations": 1,
+      "modeled_equivalent_cost_usd": 0.27332999999999996,
+      "wall_duration_ms_max": 47278.0,
+      "wall_duration_ms_median": 47278.0,
+      "wall_duration_ms_sum": 47278.0
+    },
+    "screen": {
+      "actual_model_usage": {
+        "claude-haiku-4-5-20251001": {
+          "cacheCreationInputTokens": 0.0,
+          "cacheReadInputTokens": 0.0,
+          "contextWindow": 4600000.0,
+          "costUSD": 1.6785630000000002,
+          "inputTokens": 1676648.0,
+          "maxOutputTokens": 736000.0,
+          "outputTokens": 383.0,
+          "webSearchRequests": 0.0
+        },
+        "claude-opus-4-8": {
+          "cacheCreationInputTokens": 2172852.0,
+          "cacheReadInputTokens": 420733.0,
+          "contextWindow": 23000000.0,
+          "costUSD": 34.9393865,
+          "inputTokens": 50.0,
+          "maxOutputTokens": 1472000.0,
+          "outputTokens": 520010.0,
+          "webSearchRequests": 0.0
+        }
+      },
+      "invocations": 23,
+      "modeled_equivalent_cost_usd": 36.617949499999995,
+      "wall_duration_ms_max": 464914.0,
+      "wall_duration_ms_median": 234591.0,
+      "wall_duration_ms_sum": 5537893.0
+    }
+  },
+  "schema_version": 1,
+  "scorecard_sha256": "c2097f6ed1039f4295b1d26db2c71cc24472a0a6d98bda68fe68959e0578e19f",
+  "stories": [
+    {
+      "attribution_status": "verified",
+      "candidate_ids": [
+        "v7candidate:0a009766f045322799015b9a"
+      ],
+      "earliest_candidate_ts": "2025-04-02T21:00:00Z",
+      "entity": "home-assistant/core",
+      "evidence_quotes": [
+        "Fibaro integration error after 2025.4 upgrade",
+        "Template Alarm Control Panel broke on 2025.4"
+      ],
+      "issue_numbers": [
+        142104,
+        142105,
+        142106,
+        142108
+      ],
+      "matched_incident_ids": [
+        "v4incident:f5960f9f1b9f4383feec"
+      ],
+      "matched_incident_row_ids": [
+        "v4row:6f2baee341b98bb21d70"
+      ],
+      "row_ids": [
+        "v4row:6f2baee341b98bb21d70"
+      ],
+      "series": [
+        "release_adjacency_issue_rate"
+      ],
+      "severity": "medium",
+      "story_id": "v7story:68ca0ff16b0ecac3bddf76cc",
+      "story_key": "ha-core-2025.4.0-release-regression",
+      "story_sha256": "725398b1506c31bf81392e3834b1bc074369f7d933c28e445a5387e7c3aa37a0",
+      "summaries": [
+        "Multiple independently scoped breakage reports followed HA Core 2025.4.0 across different integrations (Fibaro UnboundLocalError, Schlage login failure, Template Alarm Control Panel, Tado hot water), several citing 2025.3.4 as last working. Attribution drill is verified with signature concordance and independent corroboration, supporting a release regression. Note some in-window issues (ADS, zwave_js, SQL) reference older versions and are unrelated noise."
+      ],
+      "true_positive": true
+    },
+    {
+      "attribution_status": "no_claim",
+      "candidate_ids": [
+        "v7candidate:39277b1237caaed3ddc8a8f9"
+      ],
+      "earliest_candidate_ts": "2025-04-02T01:00:00Z",
+      "entity": "pytorch/pytorch",
+      "evidence_quotes": [
+        "Security certificate expired on https://download.pytorch.org/whl/",
+        "The CI script failed, so I visited the wheel site and discovered that the site's RSA security certificate Expired"
+      ],
+      "issue_numbers": [
+        150491
+      ],
+      "matched_incident_ids": [],
+      "matched_incident_row_ids": [],
+      "row_ids": [
+        "v4row:b6de07be70d41788d971"
+      ],
+      "series": [
+        "issue_thread_activity"
+      ],
+      "severity": "medium",
+      "story_id": "v7story:136a383e403cae4afc8da5bc",
+      "story_key": "issue:150491",
+      "story_sha256": "ebf3f3146351e14c3ec9b72cf71fed33d1cfd1481503822950f4872cd037ccec",
+      "summaries": [
+        "Expired RSA certificate on download.pytorch.org broke CI pipelines and wheel installs, corroborated by five distinct human actors within the hour and a documented workaround (--trusted-host). This is real external-infrastructure breakage with broad reach, not merely elevated thread rate. No release/change is claimed as cause, so no code attribution is asserted."
+      ],
+      "true_positive": false
+    }
+  ],
+  "study_id": "sentinel-signal-scoped-stage2-v7"
+}
