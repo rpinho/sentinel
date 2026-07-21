@@ -283,3 +283,29 @@ Frozen identities:
 recall over the invalid v7 election while remaining far below a production paging bar.
 The next scientific step is a calibrated election rank learned away from this test and a
 fresh holdout—not another label-informed adjustment to v7.1.
+
+---
+
+## Final submission validation (2026-07-21) — PASS
+
+- `94 passed` in the full test suite; the sole warning remains Starlette's documented
+  `httpx` TestClient deprecation.
+- The v4 evaluator reproduced `holdout/v4/scorecard.json` byte-for-byte. Its embedded
+  `7a823f…` value is the canonical SHA-256 of the unstamped payload; adding that identity
+  field and pretty-printing produces the exact committed file SHA-256 `3fb108…`. A
+  regression test now verifies both identities, and the generated Markdown explains the
+  distinction without changing any frozen JSON byte.
+- V7.1 protocol, 442 investigation requests, JSON scorecard, and Markdown scorecard all
+  rebuilt byte-for-byte. The compact web bundle and all six packaged v3-v7.1 scorecards
+  also rebuilt byte-for-byte; the view identity remains `a037e955…`.
+- The production command was launched with `PORT=18765`; `/replay/webpack` and
+  `/scorecard` both returned HTTP 200 with the expected GPT-5.6 hero and frozen v7.1 row.
+- `render.yaml` passes the current official Render Blueprint JSON Schema. It declares a
+  free Docker Web Service, a `/replay/webpack` health check, and stable manual deploys.
+  Docker itself is not installed on this Mini, so the image could not be executed locally.
+- `uv build` succeeded. A clean temporary Python 3.11 environment installed only the
+  built wheel, returned HTTP 200 from both judge routes, loaded the 33-story v7.1 row,
+  and confirmed that the wheel contains the MIT license and frozen web fixtures.
+
+**Final verdict:** the repository is licensed, deterministic, installable, and ready for
+the account-gated Render deployment and Devpost form/video steps in `SUBMISSION.md`.

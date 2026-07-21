@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: sentinel-detect
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /replay/webpack
+    autoDeployTrigger: off

@@ -112,6 +112,15 @@ docker build -t sentinel .
 docker run --rm -p 8000:8000 sentinel
 ```
 
+Deploy the same no-key judge path to a free Render Web Service:
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/rpinho/sentinel)
+
+The committed `render.yaml` selects the free Docker plan, binds the server to Render's
+`PORT`, and checks `/replay/webpack`. After approving the Blueprint, open the generated
+`onrender.com` URL. Free instances can take about a minute to wake after 15 idle minutes;
+the replay and scorecard remain deterministic because their inputs ship in the image.
+
 ## Ingest any event stream
 
 Every adapter produces this contract:
@@ -286,6 +295,9 @@ maintainer-comment audit had 30% obvious noise against the frozen 20% ceiling be
 `llvmbot` automated mirrors evaded the name-based bot rule. The numbers are therefore
 published as descriptive, not confirmatory. See `holdout/v4/SCORECARD-v4.md` and
 `docs/detector-v4-study.md` for the protocol, hashes, audit, and reproduction commands.
+The cited v4 scorecard hash is the canonical identity of its unstamped payload, not the
+literal hash of the stamped, pretty-printed file; both values and the reason they differ
+are documented beside the artifact.
 
 Reproduce the committed v4 models and scorecard without network or model API calls:
 
@@ -412,15 +424,35 @@ uv run python scripts/verify_detector_v2_acceptance.py \
 See `HANDOFF.md` for the product brief, `TRIAGE.md` for the implemented agent contract,
 and `FEEDBACK_LOOP.md` for the learning-loop rationale.
 
-## How Codex accelerated the build
+## How Codex was used
 
-Codex worked as the implementation and validation partner across the same repository: it
-traced the temporal-leakage risk into hard input assertions, reproduced detector v2 from
-raw source events, built the provider/cache boundary, generated deterministic replay data,
-implemented the three server-rendered surfaces, and browser-tested desktop and mobile
-layouts. It also preserved negative results instead of tuning them away: the frozen v2
-holdout still shows zero firings and four misses. Human product judgment set the claim,
-the frozen-data protocol, and the rule that a result that cannot be reproduced does not ship.
+Codex was the implementation and validation partner from the first scaffold through the
+public scorecard. The build started with a source-neutral event contract, GH Archive and
+npm adapters, DuckDB persistence, deterministic metrics, and an append-only feedback
+loop. Codex then implemented the provider/cache boundary and the strictly pre-firing
+GPT-5.6 triage path, built each frozen holdout from v1 through v7.1, and finished the
+server-rendered replay, scorecard, and live surfaces plus their responsive browser checks.
+
+Codex mattered most in the experiment loop. It turned temporal leakage concerns into
+executable invariants, reproduced metrics from raw committed data, hashed every frozen
+input and output, replayed exact model responses without network access, and kept failed
+experiments visible. V2 killed all alerts and missed known incidents; v5 and v6 showed
+that richer LLM evidence did not rescue the repository-hour unit; v7 fixed the unit but
+violated its predeclared funnel; v7.1 changed only that label-blind throttle. Codex helped
+isolate each failure to the next testable intervention instead of tuning the published
+result away.
+
+The key product and research decisions remained human: define the incident labels and
+candidate unit, freeze train/test boundaries before evaluation, require roughly one
+order of magnitude of compression per funnel stage, publish every miss, and reject any
+claim that could not be replayed from source data. GPT-5.6 powers the offline hero triage:
+from 28 events that all predate the firing, it identifies webpack `v5.99.0`; the exact
+request and response are committed under hash
+`42978ab2a88d53b077361e8749d54c3c5f63f3c54f9672be390c4308a10f3b4c`, with
+temperature omitted and replay determinism coming from the exact-response cache.
+
+Primary Codex build thread: `019f7bbe-1df8-7a61-b236-51a38404e1b2`. The matching
+`/feedback` session share is the thread supplied with the hackathon submission.
 
 ## Honest limitations and deliberately deferred work
 
@@ -448,3 +480,7 @@ public-data demonstration.
 
 For the 60-second judge path, exact commands, and claim-to-hash map, see
 [`SUBMISSION.md`](SUBMISSION.md).
+
+## License
+
+MIT © 2026 Ricardo Pinho. See [`LICENSE`](LICENSE).

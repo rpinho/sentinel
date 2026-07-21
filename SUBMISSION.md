@@ -8,6 +8,117 @@ a median 13.4 hours before confirmation. Repository-hour LLM judging failed; sig
 scoped v7 fixed the unit, but its election violated the committed funnel shape. V7.1
 changes only that label-blind throttle; both frozen results remain visible.
 
+## Copy-ready Devpost fields
+
+**Title:** Sentinel — the anomaly detector that publishes every miss
+
+**Tagline:** A learned anomaly ranker with a public, replayable scorecard.
+
+**Recommended track:** **Developer Tools.** Sentinel monitors software-event streams and
+turns them into testable anomaly candidates, deterministic evidence packs, agent verdicts,
+and a public miss ledger. That maps directly to the track's testing, DevOps, and agentic-
+workflow language. Work & Productivity is defensible because the output helps teams triage
+faster, but it describes the beneficiary rather than the product; Developer Tools is the
+closer category. Ricardo makes the final selection.
+
+**Thumbnail:** upload `src/sentinel/web/static/og.png`.
+
+**Technologies:** Python, FastAPI, DuckDB, scikit-learn, Jinja2, uv, GPT-5.6, OpenAI
+Responses API, Claude Code, GH Archive, npm, Docker, Render.
+
+**Repository:** https://github.com/rpinho/sentinel
+
+**Hosted demo:** `[paste the onrender.com URL after deployment]`
+
+**Public YouTube demo:** `[paste the public video URL]`
+
+**Primary Codex thread:** `019f7bbe-1df8-7a61-b236-51a38404e1b2`. In that thread, run
+`/feedback`, choose to share the existing session, and submit it. Use the session ID the
+dialog returns in the form if it differs from the technical thread ID shown here.
+
+### Description / project story
+
+Sentinel surfaced **253 of 287 maintainer-confirmed incidents (88.2%) a median 13.4
+hours before confirmation** on a whole-repository-held-out study of public GitHub events.
+Its learned coherence ranker reached ROC AUC 0.841 and found 64 incidents that were
+invisible to the old burst gate. It publishes the uncomfortable parts beside the result:
+13.6% alert precision, a label-source audit that exceeded its noise ceiling, and every
+known miss.
+
+The product ingests public software-event streams into a source-neutral contract, scores
+active repository-hours with learned coherence features, turns alerts into signal-scoped
+claims, fetches bounded evidence only for elected claims, and routes structured findings.
+The judge path is a real, no-key web application: `/replay/webpack` recomputes a detector
+firing from 245 source events and resolves the exact committed GPT-5.6 response;
+`/scorecard` publishes the complete v1→v7.1 experiment trail and miss ledgers; `/live`
+fetches a recent GH Archive hour on demand and reports incomplete history as immature.
+
+The most important result is methodological. Repository-hour LLM triage did not work:
+richer evidence improved estimated precision only from 16.6% to 19.6% while reducing
+incident recall from 77.0% to 56.4%. V7 corrected the candidate unit but accidentally
+compressed 4,412 screened claims to four investigations, violating a predeclared funnel
+shape. V7.1 froze every other input and changed only that label-blind throttle to 442.
+It caught six additional incidents, but story precision fell to 24.2%. Both runs remain
+published. Sentinel learns through explicit, falsifiable iterations instead of silently
+tuning away a negative result.
+
+Codex implemented and validated the project from scaffold to deployment: adapters,
+DuckDB and feedback storage, deterministic detectors, temporal no-leakage boundaries,
+provider-independent triage, exact-response caching, frozen studies, scorecard surfaces,
+responsive browser checks, and release packaging. Human decisions defined the labels,
+freeze boundaries, candidate unit, funnel contract, and publish-every-miss rule. GPT-5.6
+powers the offline hero: using only 28 strictly pre-firing events, it names webpack
+`v5.99.0` 79 minutes before the maintainer confirmation. The committed request/response
+cache—not temperature or seed—is the source of deterministic replay.
+
+### What is new during Build Week
+
+The repository's dated commit history and primary Codex session record the Build Week
+work: the initial event-stream scaffold; feedback-aware agent triage; powered v2-v4
+detector studies; v5-v7.1 precision-stage experiments; exact GPT-5.6 replay; public web
+surfaces; responsive validation; packaging; and hosted-deployment preparation. The frozen
+artifact hashes make the sequence auditable even where publication-time commit IDs were
+remapped.
+
+## Deploy the judge instance on Render
+
+No API key, database, payment plan, or application secret is needed for the replay and
+scorecard. The only account-gated step is approving the free Render Blueprint:
+
+1. Make sure the final `main` commit is visible at https://github.com/rpinho/sentinel.
+2. Open the **Deploy to Render** button in `README.md`, or go directly to
+   `https://render.com/deploy?repo=https://github.com/rpinho/sentinel`.
+3. Sign in to Render. On the Blueprint review, keep the repository's default branch and
+   confirm one `sentinel-detect` Web Service using **Docker** and the **Free** plan.
+4. Click **Deploy Blueprint**. No environment variables are required.
+5. Open the new service and wait for the Events page to report the deploy is live. Click
+   its `onrender.com` URL; the root redirects to `/replay/webpack`.
+6. Verify `/replay/webpack` and `/scorecard`, then paste the base URL into Devpost's
+   website/testing field. If the service name was already taken, use the generated URL
+   Render displays rather than assuming the subdomain.
+
+The Blueprint disables automatic deploys so the judged commit stays stable. If it was
+created before the final commit, use **Manual Deploy → Deploy latest commit** once. Render
+free Web Services spin down after 15 idle minutes and can take about a minute to wake;
+that loading delay does not require credentials or payment from judges.
+
+## One-take demo video — 2:45 target
+
+Before recording, open the hosted `/scorecard` at the top, the hosted `/replay/webpack`,
+and the GitHub README at **How Codex was used** in three tabs. Use voice only—no music—and
+hide bookmarks, notifications, account avatars, and unrelated tabs.
+
+| Time | Screen and action | Voiceover |
+|---|---|---|
+| 0:00–0:22 | Start on `/scorecard`; hold on the five headline tiles. | “Sentinel is an anomaly detector that grades itself in public. On held-out public software events, its learned ranker surfaced 88% of maintainer-confirmed incidents a median 13.4 hours early. It also publishes 13.6% precision, its label caveat, and every miss.” |
+| 0:22–1:05 | Switch to `/replay/webpack`; point to source count, firing time, GPT-5.6 verdict, then maintainer confirmation. | “This replay is computed from 245 committed source events, not a screenshot. Stage one fires at 18:55. GPT-5.6 sees only the 28 earlier events, names version 5.99.0, and the exact cached response replays with network calls disabled. The maintainer confirmation arrives 79 minutes later.” |
+| 1:05–1:43 | Return to `/scorecard`; show v4 and scroll into the miss ledger. | “The positive result is the learned coherence ranker: point-eight-four-one AUC, 88% incident recall, and 64 incidents outside the old burst population. The audit also found one noisy label source, so these metrics are descriptive. The scorecard exposes that caveat and all labeled misses instead of hiding them.” |
+| 1:43–2:20 | Scroll through the v1→v7.1 progression and paired v7 funnels. | “Each failure became one frozen intervention. V2 killed noise and signal. Richer hourly LLM evidence still lost recall. V7 fixed the candidate unit but compressed 4,412 claims to four, violating the design. V7.1 changed only that throttle to 442 and published the lower 24.2% precision and 2.44% recall it actually measured.” |
+| 2:20–2:45 | Switch to README **How Codex was used**; end on repo/deploy links. | “Codex built and validated the adapters, detector, leakage boundaries, frozen studies, exact caches, and web surfaces. Human decisions set the labels, freeze rules, and publish-every-miss contract. GPT-5.6 powers the grounded hero verdict. The code, hashes, hosted demo, and full experiment trail are public.” |
+
+Upload the recording as a public YouTube video, keep it under three minutes, and paste its
+URL into the submission. Do not add copyrighted music or unrelated third-party imagery.
+
 ## Run the judge path
 
 ```bash
@@ -86,10 +197,10 @@ Full caveats and validation evidence are in `VALIDATION_REPORT.md`.
 
 ## Note on commit ids inside frozen artifacts
 
-Before publication, repository history was rewritten once to remove two lines of
-personal prose from `HANDOFF.md`. No code, data, or hash-recorded artifact
-bytes changed; frozen artifacts are preserved byte-for-byte. Commit ids recorded *inside*
-those artifacts therefore refer to the pre-publication history. Anchor map (old → published):
+Before publication, repository history was rewritten to remove private, non-project
+narrative and standardize publication metadata. No frozen code result, dataset, or
+hash-recorded artifact bytes changed. Commit ids recorded *inside* those artifacts
+therefore refer to the pre-publication history. Anchor map (old → published):
 
 - `928f681cd82c` → `2145bea74893`
 - `a90f276e0cc6` → `cd4e67018ab9`

@@ -81,4 +81,6 @@ Predeclared per-source noise ceiling: 20.0%. Held-out label-quality target met: 
 - Label audit: `117b48e112a0323e6cc8e55026e21664a578fb79b7e32ce1c3f5d7c19ba57b34`
 - Scorecard: `7a823f275f6be144cd9c5eb90b65ce913781c709017075437cad67738d3825ea`
 
+The scorecard identity is the SHA-256 of the canonical, unstamped JSON payload. The evaluator then adds `scorecard_sha256` and pretty-serializes the publication file; those publication steps change its literal bytes without changing any frozen result field. The exact committed file SHA-256 is `3fb1086e009fdb9268eaf03bba3cdb0a83c0da30308c27ac396934fc9dbc9104`; the frozen payload identity above remains embedded in the JSON and in every downstream v5-v7.1 protocol that consumes it.
+
 V1/v2/v3/v4 use different frozen corpora. Their progression documents iteration; it is not a same-sample leaderboard.

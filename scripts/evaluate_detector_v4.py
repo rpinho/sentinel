@@ -616,6 +616,14 @@ def render_markdown(scorecard: Mapping[str, Any]) -> str:
             f"- Label audit: `{identities['label_audit_sha256']}`",
             f"- Scorecard: `{scorecard['scorecard_sha256']}`",
             "",
+            "The scorecard identity is the SHA-256 of the canonical, unstamped JSON payload. "
+            "The evaluator then adds `scorecard_sha256` and pretty-serializes the publication "
+            "file; those publication steps change its literal bytes without changing any "
+            "frozen result field. The exact committed file SHA-256 is "
+            "`3fb1086e009fdb9268eaf03bba3cdb0a83c0da30308c27ac396934fc9dbc9104`; "
+            "the frozen payload identity above remains embedded in the JSON and in every "
+            "downstream v5-v7.1 protocol that consumes it.",
+            "",
             "V1/v2/v3/v4 use different frozen corpora. Their progression documents iteration; it is not a same-sample leaderboard.",
             "",
         ]

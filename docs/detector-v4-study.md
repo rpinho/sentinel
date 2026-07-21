@@ -73,6 +73,14 @@ Expected artifact identities:
 - Combined label audit: `117b48e112a0323e6cc8e55026e21664a578fb79b7e32ce1c3f5d7c19ba57b34`
 - Scorecard: `7a823f275f6be144cd9c5eb90b65ce913781c709017075437cad67738d3825ea`
 
+The scorecard value is a canonical content identity, not the hash of the final
+pretty-printed file. The evaluator hashes the unstamped scorecard payload, inserts that
+identity as `scorecard_sha256`, and then serializes the publication artifact. That final
+stamp and formatting are the only post-hash byte changes; no result field changed. The
+committed `holdout/v4/scorecard.json` file itself hashes to
+`3fb1086e009fdb9268eaf03bba3cdb0a83c0da30308c27ac396934fc9dbc9104`. The frozen
+canonical identity remains in the JSON and in the downstream v5-v7.1 protocols.
+
 The primary publication artifacts are `holdout/v4/SCORECARD-v4.md` and
 `holdout/v4/scorecard.json`; `holdout/v4/dataset.json` maps the compressed split files
 to their content hashes, and `holdout/v4/label-audit.json` preserves every reviewed

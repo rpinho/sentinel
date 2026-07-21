@@ -1,6 +1,9 @@
+import hashlib
 import importlib.util
+import json
 from pathlib import Path
 
+from sentinel.detector_v3 import canonical_sha256
 from sentinel.model_v4 import finalize_model
 
 
@@ -71,6 +74,21 @@ def test_evaluate_v4_label_quality_gate_prevents_confirmatory_claim() -> None:
 
     assert "descriptive, not confirmatory" in finding["conclusion"]
     assert "substantive_maintainer_comment" in finding["conclusion"]
+
+
+def test_v4_published_scorecard_distinguishes_content_and_file_hashes() -> None:
+    path = Path("holdout/v4/scorecard.json")
+    published_bytes = path.read_bytes()
+    scorecard = json.loads(published_bytes)
+    content_hash = scorecard.pop("scorecard_sha256")
+
+    assert canonical_sha256(scorecard) == content_hash
+    assert content_hash == (
+        "7a823f275f6be144cd9c5eb90b65ce913781c709017075437cad67738d3825ea"
+    )
+    assert hashlib.sha256(published_bytes).hexdigest() == (
+        "3fb1086e009fdb9268eaf03bba3cdb0a83c0da30308c27ac396934fc9dbc9104"
+    )
 
 
 def _row(row_id: str, entity: str, label: int, signal: float) -> dict:
