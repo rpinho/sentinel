@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 {% block content %}
   <section class="hero scorecard-hero scorecard-v6-hero">
-    <div class="eyebrow"><span>V1 → V7</span><span>FROZEN RESULTS</span></div>
+    <div class="eyebrow"><span>V1 → V7.1</span><span>FROZEN RESULTS</span></div>
     <p class="kicker">The product is the scorecard</p>
     <h1>88% of incidents.<br>13 hours early.</h1>
-    <p class="lede">A learned coherence ranker surfaces 88% of maintainer-confirmed incidents a median 13.4 hours before confirmation. Repository-hour judging failed in v5–v6; signal-scoped v7 fixed the unit but over-filtered at election. We froze all three failures.</p>
+    <p class="lede">A learned coherence ranker surfaces 88% of maintainer-confirmed incidents a median 13.4 hours before confirmation. Repository-hour judging failed in v5–v6. V7 fixed the unit; its election throttle violated the pre-declared funnel shape. Both the run and the label-blind correction stay visible.</p>
   </section>
 
   <section class="metric-row five-up" aria-label="V4 learned ranker headline metrics">
@@ -37,16 +37,25 @@
       <div class="stage-row" role="row"><b>Stage 1 / v4</b><span>{{ scorecard.stage1.alerts }}</span><span>{{ scorecard.stage1.precision|percentage }}</span><span>{{ scorecard.stage1.incident_recall|percentage }}</span><span>—</span></div>
       <div class="stage-row" role="row"><b>V5 / one-event evidence</b><span>1,228 est.</span><span>16.6%</span><span>77.0%</span><span>31</span></div>
       <div class="stage-row selected" role="row"><b>V6 / rich evidence</b><span>{{ "%.0f"|format(scorecard.end_to_end.estimated_alerts) }} est.</span><span>{{ scorecard.end_to_end.precision|percentage }}</span><span>{{ scorecard.end_to_end.incident_recall|percentage }}</span><span>{{ scorecard.end_to_end.true_positive_hours_killed }}</span></div>
-      <div class="stage-row" role="row"><b>V7 / signal-scoped stories</b><span>{{ scorecard.v7.published_stories }}</span><span>{{ scorecard.v7.hour_mapped_precision|percentage }}</span><span>{{ scorecard.v7.incident_recall|percentage }}</span><span>{{ scorecard.v7.true_positive_hours_killed }}</span></div>
+      {% for run in scorecard.signal_scoped_runs %}
+        <div class="stage-row signal-run-row{% if run.status == 'complete' %} selected{% endif %}" role="row">
+          <b>{{ run.version|upper }} / signal-scoped stories <small class="run-status run-status-{{ run.status }}">{{ run.status_label }}</small></b>
+          {% if run.end_to_end %}
+            <span>{{ run.end_to_end.published_stories }}</span><span>{{ run.end_to_end.hour_mapped_precision|percentage }}</span><span>{{ run.end_to_end.incident_recall|percentage }}</span><span>{{ run.end_to_end.true_positive_hours_killed }}</span>
+          {% else %}
+            <span>—</span><span>—</span><span>—</span><span>—</span>
+          {% endif %}
+        </div>
+      {% endfor %}
     </div>
     <p class="truth-note"><b>Frozen finding:</b> {{ scorecard.v6_finding.conclusion }} The repository-hour is a mixed bag; richer context made the judge more confident about routine activity, not more accurate about the issue thread inside it.</p>
-    <p class="truth-note nuance-note"><b>V7 finding:</b> {{ scorecard.v7_finding.conclusion }} Signal scoping made candidates adjudicable, but the compact screen elected only {{ scorecard.v7_funnel.screen_elected_investigations }} of {{ scorecard.v7_funnel.deterministic_gate_survivors }} claims and caught {{ scorecard.v7.incidents_caught }} / {{ scorecard.v7.incidents }} labeled incidents.</p>
+    <p class="truth-note nuance-note"><b>V7 protocol finding:</b> Signal scoping made candidates adjudicable. The election policy did not test that architecture fairly: it elected only {{ scorecard.v7_funnel.screen_elected_investigations }} of {{ scorecard.v7_funnel.deterministic_gate_survivors }} claims, a label-blind violation of the pre-declared roughly-order-of-magnitude funnel shape.</p>
     <p class="truth-note nuance-note"><b>Label-noise nuance:</b> stage two rejected {{ scorecard.automation.stage2_rejected }} / {{ scorecard.automation.candidates }} automation-suspect sampled rows and {{ scorecard.known_llvmbot.stage2_rejected_rows }} / {{ scorecard.known_llvmbot.stage1_alert_rows }} known llvmbot-poisoned rows. Some measured recall loss is rejection against known-noisy labels—but the clean-source cut shows that does not explain the failure away.</p>
   </section>
 
   <section class="section-shell evidence-section">
     <div class="section-heading">
-      <div><p class="kicker">WHAT CHANGED IN V7</p><h2>One claim at a time. Too few investigations.</h2></div>
+      <div><p class="kicker">V7 → V7.1</p><h2>Unit solved. Throttle wrong. One correction.</h2></div>
       <p>Every generated signal has a disposition. Automation dies before the judge, all eligible claims are screened compactly, and only elected claims receive bounded, self-documenting evidence.</p>
     </div>
     <div class="evidence-stats">
@@ -55,7 +64,22 @@
       <article><span>INVESTIGATED</span><strong>{{ scorecard.v7_funnel.screen_elected_investigations }}</strong><p>one bounded heavy-evidence batch</p></article>
       <article><span>PUBLISHED STORIES</span><strong>{{ scorecard.v7.published_stories }}</strong><p>{{ scorecard.v7.incidents_caught }} matched labeled incident</p></article>
     </div>
-    <p class="truth-note"><b>Failure mode:</b> a 1,103× gate-to-investigation compression is not rate discipline—it is recall destruction. The architecture is preserved as a negative result; no threshold or prompt was tuned after scoring.</p>
+    <div class="run-correction" aria-label="V7 election correction status">
+      {% for run in scorecard.signal_scoped_runs %}
+        <article class="run-card run-card-{{ run.status }}">
+          <div><span>{{ run.version|upper }}</span><span class="run-status run-status-{{ run.status }}">{{ run.status_label }}</span></div>
+          {% if run.funnel %}
+            <strong>{{ run.funnel.deterministic_gate_survivors }} → {{ run.funnel.screen_elected_investigations }}</strong>
+            <p>screened claims → investigations</p>
+          {% else %}
+            <strong>4,412 → ~few hundred</strong>
+            <p>pre-declared correction target; result pending</p>
+          {% endif %}
+          <small>{{ run.note }}</small>
+        </article>
+      {% endfor %}
+    </div>
+    <p class="truth-note"><b>Isolated failure:</b> a 1,103× gate-to-investigation compression is not rate discipline—it breaks the committed architecture brief on its face. V7.1 freezes every v7 input, prompt, model, and rule except that one label-blind election constant.</p>
   </section>
 
   <section class="section-shell evidence-section">
@@ -97,21 +121,21 @@
 
   <section class="section-shell table-section progression-section">
     <div class="section-heading">
-      <div><p class="kicker">ITERATION TRAIL</p><h2>Seven frozen versions. No erased failures.</h2></div>
-      <p>V1–v2 and v3–v7 use different studies, so their absolute metrics are not treated as a single leaderboard. V7 precision is story-level; its hour mapping is reported above.</p>
+      <div><p class="kicker">ITERATION TRAIL</p><h2>Frozen versions. No erased failures.</h2></div>
+      <p>V1–v2 and v3–v7.1 use different studies, so their absolute metrics are not treated as a single leaderboard. V7+ precision is story-level; its hour mapping is reported above.</p>
     </div>
     <div class="table-wrap">
       <table class="progression-table">
         <thead><tr><th>Version / architecture</th><th>Alerts</th><th>Precision</th><th>Incident recall</th><th>Misses</th><th>Frozen identity</th></tr></thead>
         <tbody>
           {% for row in scorecard.progression %}
-            <tr {% if row.version == 'v7' %}class="current-row"{% endif %}>
+            <tr class="{% if row.version in ['v7', 'v7.1'] %}current-row {% endif %}{% if row.status == 'pending' %}pending-row{% endif %}">
               <td><b>{{ row.version|upper }} · {{ row.architecture }}</b><span class="cell-detail">{{ row.note }}</span></td>
-              <td>{{ row.alerts }}</td>
+              <td>{{ row.alerts if row.alerts is not none else '—' }}</td>
               <td>{{ row.precision|percentage }}</td>
               <td>{{ row.incident_recall|percentage }}</td>
-              <td><span class="miss-badge">{{ row.misses }} MISS{% if row.misses != 1 %}ES{% endif %}</span></td>
-              <td><a class="artifact-link" href="{{ row.artifact_url }}"><code class="hash-code">{{ row.hash }}</code></a></td>
+              <td>{% if row.misses is not none %}<span class="miss-badge">{{ row.misses }} MISS{% if row.misses != 1 %}ES{% endif %}</span>{% else %}<span class="run-status run-status-pending">PENDING</span>{% endif %}</td>
+              <td>{% if row.artifact_url %}<a class="artifact-link" href="{{ row.artifact_url }}"><code class="hash-code">{{ row.hash }}</code></a>{% else %}<code class="hash-code">awaiting frozen artifact</code>{% endif %}</td>
             </tr>
           {% endfor %}
         </tbody>
@@ -178,4 +202,15 @@
       <div><span>scorecard sha256</span><a href="/artifacts/v7"><code>{{ scorecard.v7_identities.scorecard_sha256 }}</code></a></div>
     </div>
   </section>
+  {% for run in scorecard.signal_scoped_runs %}
+    {% if run.version == 'v7.1' and run.status == 'complete' %}
+      <section class="integrity-strip correction-integrity">
+        <p class="kicker">V7.1 FROZEN IDENTITIES</p>
+        <div class="integrity-grid two-up">
+          <div><span>protocol sha256</span><a href="{{ run.artifact_url }}"><code>{{ run.identities.protocol_sha256 }}</code></a></div>
+          <div><span>scorecard sha256</span><a href="{{ run.artifact_url }}"><code>{{ run.identities.scorecard_sha256 }}</code></a></div>
+        </div>
+      </section>
+    {% endif %}
+  {% endfor %}
 {% endblock %}

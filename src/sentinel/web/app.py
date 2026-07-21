@@ -65,6 +65,7 @@ V7_SCREEN_REQUESTS_PATH = PROJECT_ROOT / "holdout" / "v7" / "requests-screen.jso
 V7_SCREEN_VERDICTS_PATH = PROJECT_ROOT / "holdout" / "v7" / "verdicts-screen.json.gz"
 V7_INVESTIGATION_REQUESTS_PATH = PROJECT_ROOT / "holdout" / "v7" / "requests-investigation.json.gz"
 V7_INVESTIGATION_VERDICTS_PATH = PROJECT_ROOT / "holdout" / "v7" / "verdicts-investigation.json.gz"
+V71_SCORECARD_PATH = PROJECT_ROOT / "holdout" / "v7.1" / "scorecard.json"
 LIVE_STAGE2_CACHE_DIR = STATE_DIR / "live" / "claude-stage2"
 PACKAGED_ARTIFACT_DIR = PACKAGE_DIR / "data" / "artifacts"
 LIVE_CACHE_DIR = STATE_DIR / "live" / "gharchive"
@@ -97,6 +98,11 @@ ARTIFACT_PATHS = {
         V7_SCORECARD_PATH
         if V7_SCORECARD_PATH.is_file()
         else PACKAGED_ARTIFACT_DIR / "scorecard-v7.json.gz"
+    ),
+    "v7.1": (
+        V71_SCORECARD_PATH
+        if V71_SCORECARD_PATH.is_file()
+        else PACKAGED_ARTIFACT_DIR / "scorecard-v7.1.json.gz"
     ),
 }
 
@@ -362,6 +368,89 @@ def build_scorecard_view() -> dict[str, Any]:
     return bundle["view"]
 
 
+def _signal_scoped_run_view(
+    version: str, scorecard: Mapping[str, Any] | None
+) -> dict[str, Any]:
+    """Normalize a frozen signal-scoped run or its not-yet-published slot."""
+
+    if scorecard is None:
+        return {
+            "version": version,
+            "status": "pending",
+            "status_label": "CORRECTED RUN IN PROGRESS",
+            "architecture": "Same signal-scoped pipeline / corrected election",
+            "artifact_url": None,
+            "alerts": None,
+            "precision": None,
+            "incident_recall": None,
+            "misses": None,
+            "hash": None,
+            "end_to_end": None,
+            "clean_source": None,
+            "funnel": None,
+            "finding": None,
+            "note": (
+                "Everything except the label-blind election policy remains frozen; "
+                "the bounded subscription run has not published yet."
+            ),
+        }
+
+    end_to_end = scorecard["end_to_end"]
+    is_v7 = version == "v7"
+    return {
+        "version": version,
+        "status": "policy_failed" if is_v7 else "complete",
+        "status_label": (
+            "ELECTION POLICY FAILED SPEC" if is_v7 else "CORRECTED RUN FROZEN"
+        ),
+        "architecture": (
+            "Signal-scoped screen → selective investigation"
+            if is_v7
+            else "Same signal-scoped pipeline / corrected election"
+        ),
+        "artifact_url": f"/artifacts/{version}",
+        "alerts": end_to_end["published_stories"],
+        "precision": end_to_end["story_precision"],
+        "incident_recall": end_to_end["incident_recall"],
+        "misses": end_to_end["incidents"] - end_to_end["incidents_caught"],
+        "hash": scorecard["scorecard_sha256"],
+        "end_to_end": end_to_end,
+        "clean_source": scorecard.get("clean_source_cut"),
+        "funnel": scorecard["funnel"],
+        "finding": scorecard.get("finding"),
+        "identities": {
+            "protocol_sha256": scorecard.get("protocol_sha256"),
+            "scorecard_sha256": scorecard["scorecard_sha256"],
+            **scorecard.get("frozen_identities", {}),
+        },
+        "note": (
+            "Signal scoping stands; election violated the pre-declared funnel shape "
+            "by investigating only 4 of 4,412 screened claims."
+            if is_v7
+            else "Only the pre-declared, label-blind election policy changed from v7."
+        ),
+    }
+
+
+def _progression_row(run: Mapping[str, Any]) -> dict[str, Any]:
+    return {
+        key: run.get(key)
+        for key in (
+            "version",
+            "status",
+            "status_label",
+            "architecture",
+            "alerts",
+            "precision",
+            "incident_recall",
+            "misses",
+            "hash",
+            "artifact_url",
+            "note",
+        )
+    }
+
+
 def build_scorecard_view_from_sources() -> dict[str, Any]:
     """Build the compact web view from the committed frozen study artifacts."""
 
@@ -372,6 +461,7 @@ def build_scorecard_view_from_sources() -> dict[str, Any]:
     v5 = _read_json(V5_SCORECARD_PATH)
     v6 = _read_json(V6_SCORECARD_PATH)
     v7 = _read_json(V7_SCORECARD_PATH)
+    v71 = _read_json(V71_SCORECARD_PATH) if V71_SCORECARD_PATH.is_file() else None
     v7_protocol = _read_json(V7_PROTOCOL_PATH)
     v7_screen_requests = _read_gzip_json(V7_SCREEN_REQUESTS_PATH)
     v7_screen_verdicts = _read_gzip_json(V7_SCREEN_VERDICTS_PATH)
@@ -407,6 +497,10 @@ def build_scorecard_view_from_sources() -> dict[str, Any]:
     ]
     stage1_misses = [
         _study_miss_view(row, stage="stage 1") for row in v4["test"]["misses"]
+    ]
+    signal_scoped_runs = [
+        _signal_scoped_run_view("v7", v7),
+        _signal_scoped_run_view("v7.1", v71),
     ]
     progression = [
         {
@@ -476,18 +570,7 @@ def build_scorecard_view_from_sources() -> dict[str, Any]:
             "artifact_url": "/artifacts/v6",
             "note": "Precision stayed roughly flat while 91 labeled incidents were filtered out.",
         },
-        {
-            "version": "v7",
-            "architecture": "Signal-scoped screen → selective investigation",
-            "alerts": v7["end_to_end"]["published_stories"],
-            "precision": v7["end_to_end"]["story_precision"],
-            "incident_recall": v7["end_to_end"]["incident_recall"],
-            "misses": v7["end_to_end"]["incidents"]
-            - v7["end_to_end"]["incidents_caught"],
-            "hash": v7["scorecard_sha256"],
-            "artifact_url": "/artifacts/v7",
-            "note": "Correct candidate unit, failed election policy: only 4 of 4,412 screened claims were investigated.",
-        },
+        *[_progression_row(run) for run in signal_scoped_runs],
     ]
 
     return {
@@ -510,6 +593,7 @@ def build_scorecard_view_from_sources() -> dict[str, Any]:
         },
         "window": v2["detection_window"],
         "progression": progression,
+        "signal_scoped_runs": signal_scoped_runs,
         "stage1": v6["stage1"],
         "end_to_end": v6["end_to_end"],
         "clean_source": v6["clean_source_cut"],

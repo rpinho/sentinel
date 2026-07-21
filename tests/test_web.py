@@ -17,6 +17,8 @@ from sentinel.web.app import (
     V5_SCORECARD_PATH,
     V6_SCORECARD_PATH,
     V7_SCORECARD_PATH,
+    V71_SCORECARD_PATH,
+    _signal_scoped_run_view,
     app,
     build_replay_view,
     build_scorecard_view,
@@ -65,7 +67,7 @@ def test_replay_recomputes_offline_from_source_and_fixture(monkeypatch: Any) -> 
     assert legacy.headers["location"] == "/replay/webpack"
 
 
-def test_scorecard_publishes_v1_to_v7_and_complete_v6_miss_ledger() -> None:
+def test_scorecard_publishes_v1_to_v71_and_complete_v6_miss_ledger() -> None:
     response = client.get("/scorecard")
     view = build_scorecard_view()
 
@@ -75,7 +77,7 @@ def test_scorecard_publishes_v1_to_v7_and_complete_v6_miss_ledger() -> None:
     assert "13.4h" in response.text
     assert "All 125 labeled misses are here" in response.text
     assert "repository-hour is a mixed bag" in response.text
-    assert "Too few investigations" in response.text
+    assert "Unit solved. Throttle wrong. One correction." in response.text
     assert "1,103×" in response.text
     assert [row["version"] for row in view["progression"]] == [
         "v1",
@@ -85,6 +87,7 @@ def test_scorecard_publishes_v1_to_v7_and_complete_v6_miss_ledger() -> None:
         "v5",
         "v6",
         "v7",
+        "v7.1",
     ]
     assert len(view["v1_firings"]) == 20
     assert len(view["v1_misses"]) == 3
@@ -95,6 +98,14 @@ def test_scorecard_publishes_v1_to_v7_and_complete_v6_miss_ledger() -> None:
     assert view["v7"]["published_stories"] == 2
     assert view["v7"]["incidents_caught"] == 1
     assert view["v7_funnel"]["screen_elected_investigations"] == 4
+    assert view["signal_scoped_runs"][0]["status"] == "policy_failed"
+    assert "ELECTION POLICY FAILED SPEC" in response.text
+    if view["signal_scoped_runs"][1]["status"] == "pending":
+        assert "CORRECTED RUN IN PROGRESS" in response.text
+        assert "awaiting frozen artifact" in response.text
+    else:
+        assert view["signal_scoped_runs"][1]["status"] == "complete"
+        assert "CORRECTED RUN FROZEN" in response.text
     assert response.text.count("MISS · STAGE") == 125
     for firing in view["v1_firings"]:
         assert firing["url"] in response.text
@@ -124,6 +135,46 @@ def test_scorecard_artifacts_are_directly_downloadable() -> None:
             "content-disposition"
         ]
     assert client.get("/artifacts/v8").status_code == 404
+    v71 = client.get("/artifacts/v7.1")
+    if V71_SCORECARD_PATH.is_file():
+        assert v71.status_code == 200
+        assert "sentinel-v7.1-scorecard.json" in v71.headers[
+            "content-disposition"
+        ]
+    else:
+        assert v71.status_code == 404
+
+
+def test_signal_scoped_run_slot_accepts_pending_and_frozen_v71() -> None:
+    pending = _signal_scoped_run_view("v7.1", None)
+    assert pending["status"] == "pending"
+    assert pending["end_to_end"] is None
+    assert pending["artifact_url"] is None
+
+    frozen = _signal_scoped_run_view(
+        "v7.1",
+        {
+            "scorecard_sha256": "a" * 64,
+            "protocol_sha256": "b" * 64,
+            "frozen_identities": {"screen_verdict_bundle_sha256": "c" * 64},
+            "funnel": {
+                "deterministic_gate_survivors": 4412,
+                "screen_elected_investigations": 320,
+            },
+            "end_to_end": {
+                "published_stories": 42,
+                "story_precision": 0.5,
+                "incident_recall": 0.25,
+                "incidents": 100,
+                "incidents_caught": 25,
+            },
+        },
+    )
+    assert frozen["status"] == "complete"
+    assert frozen["alerts"] == 42
+    assert frozen["misses"] == 75
+    assert frozen["funnel"]["screen_elected_investigations"] == 320
+    assert frozen["identities"]["protocol_sha256"] == "b" * 64
 
 
 def test_packaged_scorecards_are_exact_holdout_copies() -> None:
@@ -136,6 +187,7 @@ def test_packaged_scorecards_are_exact_holdout_copies() -> None:
     assert V5_SCORECARD_PATH == Path.cwd() / "holdout/v5/scorecard.json"
     assert V6_SCORECARD_PATH == Path.cwd() / "holdout/v6/scorecard.json"
     assert V7_SCORECARD_PATH == Path.cwd() / "holdout/v7/scorecard.json"
+    assert V71_SCORECARD_PATH == Path.cwd() / "holdout/v7.1/scorecard.json"
     fixture_name = (
         "42978ab2a88d53b077361e8749d54c3c5f63f3c54f9672be390c4308a10f3b4c.json"
     )

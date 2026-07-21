@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build the compact, packaged scorecard view from frozen v1–v7 artifacts."""
+"""Build the compact packaged scorecard view, including v7.1 when published."""
 
 from __future__ import annotations
 
@@ -16,6 +16,7 @@ from sentinel.web.app import (
     V5_SCORECARD_PATH,
     V6_SCORECARD_PATH,
     V7_SCORECARD_PATH,
+    V71_SCORECARD_PATH,
     _canonical_sha256,
     build_scorecard_view_from_sources,
 )
@@ -49,6 +50,8 @@ def main() -> None:
         "v6": V6_SCORECARD_PATH,
         "v7": V7_SCORECARD_PATH,
     }
+    if V71_SCORECARD_PATH.is_file():
+        sources["v7.1"] = V71_SCORECARD_PATH
     for version, source in sources.items():
         destination = args.artifact_dir / f"scorecard-{version}.json.gz"
         _write_gzip(destination, source.read_bytes())
