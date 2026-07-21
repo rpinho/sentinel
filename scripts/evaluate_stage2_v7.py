@@ -77,6 +77,9 @@ def evaluate(
     screen_verdicts: Mapping[str, Any],
     investigation_requests: Mapping[str, Any],
     investigation_verdicts: Mapping[str, Any],
+    current_version: str = "v7",
+    elected_candidate_ids: set[str] | None = None,
+    inherited_screen: bool = False,
 ) -> dict[str, Any]:
     _verify(
         protocol,
@@ -88,6 +91,7 @@ def evaluate(
         screen_verdicts,
         investigation_requests,
         investigation_verdicts,
+        inherited_screen=inherited_screen,
     )
     candidates = cast(Sequence[Mapping[str, Any]], screen_requests["candidates"])
     candidate_by_id = {str(item["candidate_id"]): item for item in candidates}
@@ -106,7 +110,12 @@ def evaluate(
         else:
             screen_record = screen_by_id[candidate_key]
             screen_response = cast(Mapping[str, Any], screen_record["response"])
-            if screen_response["disposition"] == "investigate":
+            elected = (
+                candidate_key in elected_candidate_ids
+                if elected_candidate_ids is not None
+                else screen_response["disposition"] == "investigate"
+            )
+            if elected:
                 final_record = final_by_id[candidate_key]
                 response = dict(cast(Mapping[str, Any], final_record["response"]))
                 source = "investigation_judge"
@@ -134,7 +143,15 @@ def evaluate(
     clean_sources = set(cast(Sequence[str], cast(Mapping[str, Any], protocol["evaluation"])["clean_sources"]))
     clean_incidents = [item for item in incidents if str(item["label_source"]) in clean_sources]
     clean = _metrics(stories, clean_incidents, v4_scorecard, clean=True)
-    funnel = _funnel(candidates, screen_verdicts, investigation_verdicts, stories)
+    funnel = _funnel(
+        candidates,
+        screen_verdicts,
+        investigation_verdicts,
+        stories,
+        elected_candidate_count=(
+            len(elected_candidate_ids) if elected_candidate_ids is not None else None
+        ),
+    )
     runtime = {
         "screen": _runtime(cast(Sequence[Mapping[str, Any]], screen_verdicts["batches"])),
         "investigation": _runtime(cast(Sequence[Mapping[str, Any]], investigation_verdicts["batches"])),
@@ -148,7 +165,7 @@ def evaluate(
             _comparison_row("v5", v5_system, cast(Mapping[str, Any], v5_scorecard.get("runtime") or {})),
             _comparison_row("v6", v6_system, cast(Mapping[str, Any], v6_scorecard.get("runtime") or {})),
             {
-                "version": "v7",
+                "version": current_version,
                 "precision": end_to_end["hour_mapped_precision"],
                 "primary_story_precision": end_to_end["story_precision"],
                 "incident_recall": end_to_end["incident_recall"],
@@ -178,7 +195,11 @@ def evaluate(
         "runtime": runtime,
         "comparison_v5_v6_v7": comparison,
         "interpretation": {
-            "architecture": "V7 judges signal-scoped claims, fetches heavy evidence only after election, and publishes deduplicated stories.",
+            "architecture": (
+                "V7 judges signal-scoped claims, fetches heavy evidence only after election, and publishes deduplicated stories."
+                if current_version == "v7"
+                else "V7.1 reuses the exact v7 signal-scoped screen and corrects only its label-blind election policy before heavy investigation."
+            ),
             "full_label_status": "Descriptive because the published v4 comment-source audit found 30% obvious label noise.",
             "clean_source_status": "Confirmatory-grade source cut on a reused, already published test—not a fresh holdout.",
             "no_openai_calls": True,
@@ -358,14 +379,18 @@ def _lead_summary(values: Sequence[float]) -> dict[str, Any]:
     }
 
 
-def _funnel(candidates: Sequence[Mapping[str, Any]], screen: Mapping[str, Any], investigation: Mapping[str, Any], stories: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+def _funnel(candidates: Sequence[Mapping[str, Any]], screen: Mapping[str, Any], investigation: Mapping[str, Any], stories: Sequence[Mapping[str, Any]], *, elected_candidate_count: int | None = None) -> dict[str, Any]:
     screen_records = cast(Sequence[Mapping[str, Any]], screen["records"])
     investigation_records = cast(Sequence[Mapping[str, Any]], investigation["records"])
     counts = {
         "stage1_alert_hours": 1724,
         "scoped_candidates_generated": len(candidates),
         "deterministic_gate_survivors": sum(item["deterministic_disposition"] == "eligible" for item in candidates),
-        "screen_elected_investigations": sum(cast(Mapping[str, Any], item["response"])["disposition"] == "investigate" for item in screen_records),
+        "screen_elected_investigations": (
+            elected_candidate_count
+            if elected_candidate_count is not None
+            else sum(cast(Mapping[str, Any], item["response"])["disposition"] == "investigate" for item in screen_records)
+        ),
         "investigation_findings_before_story_dedup": sum(cast(Mapping[str, Any], item["response"])["disposition"] == "finding" for item in investigation_records),
         "published_stories": len(stories),
     }
@@ -430,27 +455,39 @@ def _finding(result: Mapping[str, Any]) -> dict[str, Any]:
     primary = cast(Mapping[str, Any], result["end_to_end"])
     comparison = cast(Sequence[Mapping[str, Any]], cast(Mapping[str, Any], result["comparison_v5_v6_v7"])["versions"])
     v6 = next(item for item in comparison if item["version"] == "v6")
+    current_version = str(comparison[-1]["version"])
+    version_name = "Signal-scoped v7" if current_version == "v7" else "Signal-scoped v7.1"
     return {
         "conclusion": (
-            "Signal-scoped v7 improved end-to-end hourly precision over v6 while preserving at least half of labeled incidents."
+            f"{version_name} improved end-to-end hourly precision over v6 while preserving at least half of labeled incidents."
             if float(primary["hour_mapped_precision"]) > float(v6["precision"]) and float(primary["incident_recall"]) >= 0.5
-            else "Signal-scoped v7 did not clear both the precision and recall bar; the frozen result is reported without tuning."
+            else f"{version_name} did not clear both the precision and recall bar; the frozen result is reported without tuning."
         ),
         "hour_precision_delta_vs_v6": float(primary["hour_mapped_precision"]) - float(v6["precision"]),
         "incident_recall_delta_vs_v6": float(primary["incident_recall"]) - float(v6["incident_recall"]),
     }
 
 
-def _verify(protocol: Mapping[str, Any], dataset: Mapping[str, Any], v4: Mapping[str, Any], v5: Mapping[str, Any], v6: Mapping[str, Any], screen_requests: Mapping[str, Any], screen_verdicts: Mapping[str, Any], investigation_requests: Mapping[str, Any], investigation_verdicts: Mapping[str, Any]) -> None:
+def _verify(protocol: Mapping[str, Any], dataset: Mapping[str, Any], v4: Mapping[str, Any], v5: Mapping[str, Any], v6: Mapping[str, Any], screen_requests: Mapping[str, Any], screen_verdicts: Mapping[str, Any], investigation_requests: Mapping[str, Any], investigation_verdicts: Mapping[str, Any], *, inherited_screen: bool = False) -> None:
     protocol_hash = canonical_sha256(protocol)
     frozen = cast(Mapping[str, Any], protocol["frozen_identities"])
     if cast(Mapping[str, Any], dataset["hashes"])["dataset_content_sha256"] != frozen["v4_test_dataset_content_sha256"]:
         raise RuntimeError("v7 evaluation dataset mismatch")
     if v4["scorecard_sha256"] != frozen["v4_scorecard_sha256"] or v5["scorecard_sha256"] != frozen["v5_scorecard_sha256"] or v6["scorecard_sha256"] != frozen["v6_scorecard_sha256"]:
         raise RuntimeError("v7 comparison scorecard mismatch")
-    for document in [screen_requests, screen_verdicts, investigation_requests, investigation_verdicts]:
+    for document in [investigation_requests, investigation_verdicts]:
         if document.get("protocol_sha256") != protocol_hash:
             raise RuntimeError("v7 artifact protocol mismatch")
+    if inherited_screen:
+        parent = cast(Mapping[str, Any], protocol["parent_v7"])
+        if screen_requests.get("protocol_sha256") != parent["protocol_sha256"] or screen_verdicts.get("protocol_sha256") != parent["protocol_sha256"]:
+            raise RuntimeError("v7.1 inherited screen protocol mismatch")
+        if screen_requests.get("request_bundle_sha256") != parent["screen_request_bundle_sha256"] or screen_verdicts.get("verdict_bundle_sha256") != parent["screen_verdict_bundle_sha256"]:
+            raise RuntimeError("v7.1 inherited screen identity mismatch")
+    else:
+        for document in [screen_requests, screen_verdicts]:
+            if document.get("protocol_sha256") != protocol_hash:
+                raise RuntimeError("v7 artifact protocol mismatch")
     if screen_verdicts["request_bundle_sha256"] != screen_requests["request_bundle_sha256"]:
         raise RuntimeError("v7 screen linkage mismatch")
     if investigation_requests["screen_verdict_bundle_sha256"] != screen_verdicts["verdict_bundle_sha256"]:
