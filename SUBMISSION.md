@@ -83,3 +83,16 @@ uv run python scripts/evaluate_stage2_v71.py
 ```
 
 Full caveats and validation evidence are in `VALIDATION_REPORT.md`.
+
+## Note on commit ids inside frozen artifacts
+
+Before publication, repository history was rewritten once to remove two lines of
+personal prose from `HANDOFF.md`. No code, data, or hash-recorded artifact
+bytes changed; frozen artifacts are preserved byte-for-byte. Commit ids recorded *inside*
+those artifacts therefore refer to the pre-publication history. Anchor map (old → published):
+
+- `928f681cd82c` → `5e1544697201`
+- `a90f276e0cc6` → `8f4d96941d5c`
+- `dca2f815b86b` → `fcdef339fd59`
+- `e2ee6717c6ab` → `e8689c1237e9`
+- `fa96bee27a9e` → `b3cfcd0984ad`
