@@ -5,7 +5,8 @@ An anomaly detection + triage agent for public event streams that **grades itsel
 > **A learned coherence ranker surfaces 88% of maintainer-confirmed incidents a
 > median 13.4 hours before maintainers confirm them. Adding an LLM triage stage at
 > repository-hour granularity does not work; signal-scoped v7 fixed the candidate
-> unit but over-filtered at election. We froze both failures.**
+> unit, but its 4,412→4 election violated the pre-declared funnel shape. V7.1
+> changes only that label-blind throttle and publishes the result beside v7.**
 
 Sentinel is a two-stage system:
 
@@ -19,7 +20,7 @@ Sentinel is a two-stage system:
 Everything around the judge is deterministic: source normalization, feature definitions,
 the frozen threshold, batching, evidence selection, routing, hashes, exact-response cache,
 and the append-only scorecard feedback loop. The judge is provider-agnostic. The published
-v7 study used Claude Opus 4.8 through Claude subscription authentication; the offline hero
+v7/v7.1 studies used Claude Opus 4.8 through Claude subscription authentication; the offline hero
 uses a committed GPT-5.6 exact-response fixture.
 
 ```mermaid
@@ -43,13 +44,17 @@ flowchart LR
 | v4 | Powered, whole-repository-held-out study | **ROC AUC 0.841, 88% incident recall, 13.4h median lead.** 64 / 287 incidents were outside burst windows entirely. |
 | v5 | One giant LLM batch | Evidence-starved: 16.6% precision, 77.0% incident recall. |
 | v6 | Rich evidence in scheduled-size batches | 19.6% precision, 56.4% incident recall. The repository-hour is the wrong triage unit. |
-| v7 | Signal-scoped screen → selective investigation | 50.0% story precision, **0.35% incident recall**. Only 4 / 4,412 screened claims were investigated; election destroyed recall. |
+| v7 | Signal-scoped screen → categorical election | 50.0% story precision, **0.35% incident recall**. The 4 / 4,412 election violated the committed funnel spec before labels were consulted. |
+| v7.1 | Exact v7 reuse → top-decile election | 24.2% story precision, **2.44% incident recall** (7 / 287). The corrected 4,412→442 policy restored the pre-declared shape; no other component changed. |
 
-The v6/v7 results are intentionally not marketed as wins. A repository-hour mixes unrelated
+The v6 result is intentionally not marketed as a win. A repository-hour mixes unrelated
 threads, routine automation, and real incidents; richer evidence made the judge more
-confident about the bag, not more accurate about the issue inside it. V7 corrected that
-unit, then compressed 4,412 screened claims to four investigations and caught only one of
-287 labeled incidents. Every frozen identity is visible at `/scorecard`.
+confident about the bag, not more accurate about the issue inside it. V7 corrected the
+unit, but its 1,103× election throttle failed the architecture's pre-declared rate shape;
+that is a spec violation, not a finding against signal scoping. V7.1 freezes all v7 inputs,
+prompts, models, schemas, evidence, and evaluation, changes only the label-blind election
+to 9.98×, and catches seven of 287 labeled incidents. Every frozen identity is visible at
+`/scorecard`.
 
 ## Install and test
 
@@ -70,7 +75,7 @@ Open `http://127.0.0.1:8000`. The server exposes:
 - `/replay/webpack`: recomputes the webpack v5.99.0 stage-one firing from 245 committed
   source events, resolves the exact GPT-5.6 stage-two fixture with network calls disabled,
   and links every timeline timestamp to GitHub. The legacy incident URL redirects here.
-- `/scorecard`: publishes the v1→v7 iteration trail, frozen identities, the v7 funnel,
+- `/scorecard`: publishes the v1→v7.1 iteration trail, frozen identities, both v7 funnels,
   full- and clean-source cuts, automation accounting, and all 125 v6 labeled misses.
 - `/live`: fetches one recent completed GH Archive hour only after a visible button press,
   persists exact coverage, and runs the frozen v4 learned ranker once its seven-day history
@@ -307,14 +312,32 @@ killed. The clean-source cut was 50.0% story precision and 0.64% incident recall
 
 The run used Claude subscription auth with API credentials removed, made zero OpenAI
 calls, completed one full 200-claim batch in 206 seconds, and consumed $36.89 in modeled-
-equivalent usage (not API billing). The failed election policy is frozen without post-test
-tuning. See `holdout/v7/SCORECARD-v7.md`; replay the exact cached result with:
+equivalent usage (not API billing). The spec-violating election policy is frozen without
+post-test tuning.
+
+V7.1 reuses the exact v7 census and screen verdicts, then investigates
+`ceil(4,412 / 10) = 442` claims through the unchanged heavy-evidence path. It publishes
+33 stories, catches seven incidents, and measures 24.2% story precision, 22.6%
+hour-mapped precision, 2.44% incident recall, and 10.0h median lead. The corrected run
+used 23 new subscription investigation batches and $17.80 of modeled-equivalent usage
+(not API billing); it made zero OpenAI calls.
+
+See `holdout/v7/SCORECARD-v7.md` and `holdout/v7.1/SCORECARD-v7.1.md`. Replay both exact
+cached results with:
 
 ```bash
 uv run python scripts/run_stage2_v7.py --phase screen
 uv run python scripts/build_v7_investigations.py
 uv run python scripts/run_stage2_v7.py --phase investigation
 uv run python scripts/evaluate_stage2_v7.py
+uv run python scripts/build_v71_protocol.py
+uv run python scripts/build_v71_investigations.py
+uv run python scripts/run_stage2_v7.py --phase investigation \
+  --protocol holdout/v7.1/protocol.json \
+  --requests holdout/v7.1/requests-investigation.json.gz \
+  --cache-dir .cache/v7.1/claude-cli-investigation \
+  --output holdout/v7.1/verdicts-investigation.json.gz
+uv run python scripts/evaluate_stage2_v71.py
 ```
 
 Holdout execution is cost-safe by default. `scripts/run_holdout_v2.sh` blanks the API key
@@ -388,8 +411,8 @@ the frozen-data protocol, and the rule that a result that cannot be reproduced d
 
 ## Honest limitations and deliberately deferred work
 
-The v6/v7 full-label metrics remain descriptive because the frozen v4 audit found 30%
-obvious noise in `substantive_maintainer_comment` labels. V5–v7 reuse the published v4
+The v6/v7/v7.1 full-label metrics remain descriptive because the frozen v4 audit found 30%
+obvious noise in `substantive_maintainer_comment` labels. V5–v7.1 reuse the published v4
 test and are not fresh holdouts. Inverse-probability weighting estimates totals from a
 frozen negative sample. The live page cannot claim a healthy state until the complete
 seven-day repository history exists. The current evidence says rich LLM triage at hourly
@@ -402,12 +425,13 @@ public-data demonstration.
 
 ## Future work
 
-- Keep v7's signal-scoped unit, but calibrate the screen/election policy on a training or
-  validation split before freezing a fresh holdout. Watches cannot silently substitute
-  for investigations when recall is the binding metric.
+- Keep v7's signal-scoped unit and v7.1's order-of-magnitude funnel contract, but learn a
+  calibrated election rank on training or validation data before freezing a fresh
+  holdout. Watches cannot silently substitute for investigations when recall is the
+  binding metric.
 - Add content/actor identity checks for llvmbot-class mirrors that GitHub metadata can
   misclassify as human users.
-- Collect a fresh post-v7 holdout before making a production precision claim.
+- Collect a fresh post-v7.1 holdout before making a production precision claim.
 
 For the 60-second judge path, exact commands, and claim-to-hash map, see
 [`SUBMISSION.md`](SUBMISSION.md).

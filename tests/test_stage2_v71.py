@@ -16,6 +16,8 @@ ROOT = Path(__file__).parents[1]
 V71_PROTOCOL_SHA256 = "bd7336d99fc9603c0ecb6913adb4159b64271484e0dfb3025e938c82973040f9"
 V71_ELECTION_MANIFEST_SHA256 = "759b84ce4c20ace8aeb8d589df13ef50f24306d0f6ae8b926ba019aa5f39bcd8"
 V71_INVESTIGATION_REQUESTS_SHA256 = "f773dabdb37e76b5b078ee975cea323a764b9fa2b314e5424f42657d7f9fc547"
+V71_INVESTIGATION_VERDICTS_SHA256 = "93a0ce8ba15f93706e32e95327b00500e04c23c4a0949e9fc1229e16ce716a6d"
+V71_SCORECARD_SHA256 = "1bba31c415856ff0eedfe6d68efccf36c6436e7e525f9af4d4302fd857083af5"
 
 
 def test_election_count_is_the_predeclared_top_decile() -> None:
@@ -117,6 +119,42 @@ def test_frozen_v71_election_reuses_v7_and_selects_442() -> None:
         if item["response"]["disposition"] == "investigate"
     }
     assert original_investigates <= selected_ids
+
+
+def test_published_v71_result_is_complete_linked_and_frozen() -> None:
+    with gzip.open(
+        ROOT / "holdout/v7.1/requests-investigation.json.gz", "rt"
+    ) as handle:
+        requests = json.load(handle)
+    with gzip.open(
+        ROOT / "holdout/v7.1/verdicts-investigation.json.gz", "rt"
+    ) as handle:
+        verdicts = json.load(handle)
+    scorecard = json.loads(
+        (ROOT / "holdout/v7.1/scorecard.json").read_text(encoding="utf-8")
+    )
+
+    assert verdicts["request_bundle_sha256"] == requests["request_bundle_sha256"]
+    assert verdicts["verdict_bundle_sha256"] == V71_INVESTIGATION_VERDICTS_SHA256
+    assert verdicts["verdict_bundle_sha256"] == canonical_sha256(
+        {
+            key: value
+            for key, value in verdicts.items()
+            if key != "verdict_bundle_sha256"
+        }
+    )
+    assert len(verdicts["records"]) == 442
+    assert scorecard["scorecard_sha256"] == V71_SCORECARD_SHA256
+    assert scorecard["scorecard_sha256"] == canonical_sha256(
+        {
+            key: value
+            for key, value in scorecard.items()
+            if key != "scorecard_sha256"
+        }
+    )
+    assert scorecard["funnel"]["screen_elected_investigations"] == 442
+    assert scorecard["end_to_end"]["incidents_caught"] == 7
+    assert scorecard["end_to_end"]["published_stories"] == 33
 
 
 def _candidate(candidate_id: str, *, magnitude: float, breadth: int) -> dict:

@@ -1,0 +1,1367 @@
+{
+  "automation_candidate_stage": {
+    "dismissed": 1583,
+    "reached_screen": 0,
+    "rule": "All candidates classified as automation are recorded and dismissed before any judge call."
+  },
+  "candidate_dispositions": {
+    "all_candidates_accounted_for": true,
+    "by_disposition": {
+      "benign_dismiss": 16023,
+      "finding": 35,
+      "insufficient_data": 6,
+      "watch": 157
+    },
+    "by_series": {
+      "issue_thread_activity": 10975,
+      "release_adjacency_issue_rate": 74,
+      "repository_event_type_rate": 5172
+    },
+    "by_source": {
+      "deterministic_candidate_gate": 11809,
+      "investigation_judge": 442,
+      "screen_judge": 3970
+    },
+    "total": 16221
+  },
+  "clean_source_cut": {
+    "alert_hour_reduction_vs_stage1": 1692,
+    "false_positive_stories": 28,
+    "hour_mapped_precision": 0.125,
+    "hour_recall": 0.02702702702702703,
+    "incident_recall": 0.02564102564102564,
+    "incident_recall_repository_bootstrap_95": [
+      0.0,
+      0.06837606837606838
+    ],
+    "incidents": 156,
+    "incidents_caught": 4,
+    "lead_time": {
+      "count": 4,
+      "maximum_minutes": 3760.25,
+      "median_hours": 12.312222222222223,
+      "median_minutes": 738.7333333333333,
+      "minimum_minutes": 283.78333333333336
+    },
+    "mapped_alert_hours": 32,
+    "matched_true_positive_hours": 4,
+    "published_stories": 33,
+    "story_precision": 0.15151515151515152,
+    "story_precision_repository_bootstrap_95": [
+      0.05263157894736842,
+      0.35714285714285715
+    ],
+    "true_positive_hours_killed": 114,
+    "true_positive_stories": 5
+  },
+  "comparison_v5_v6_v7": {
+    "unit_note": "V5/v6 alerts are estimated repository-hours from their frozen samples; v7 and v7.1 report exact story precision and story-to-hour mapping.",
+    "versions": [
+      {
+        "alerts_or_stories": 1228.3333333333333,
+        "incident_recall": 0.7700348432055749,
+        "median_lead_hours": 11.93305,
+        "modeled_equivalent_cost_usd": 1.7439795000000002,
+        "precision": 0.166078697421981,
+        "true_positive_hours_killed": 31,
+        "version": "v5"
+      },
+      {
+        "alerts_or_stories": 749.6666666666666,
+        "incident_recall": 0.5644599303135889,
+        "median_lead_hours": 12.318333333333333,
+        "modeled_equivalent_cost_usd": 32.5438545,
+        "precision": 0.19608714984437528,
+        "true_positive_hours_killed": 88,
+        "version": "v6"
+      },
+      {
+        "alerts_or_stories": 2,
+        "incident_recall": 0.003484320557491289,
+        "mapped_alert_hours": 2,
+        "median_lead_hours": 19.6125,
+        "modeled_equivalent_cost_usd": 36.891279499999996,
+        "precision": 0.5,
+        "primary_story_precision": 0.5,
+        "true_positive_hours_killed": 234,
+        "version": "v7"
+      },
+      {
+        "alerts_or_stories": 33,
+        "incident_recall": 0.024390243902439025,
+        "mapped_alert_hours": 31,
+        "median_lead_hours": 9.968055555555557,
+        "modeled_equivalent_cost_usd": 54.41675599999999,
+        "precision": 0.22580645161290322,
+        "primary_story_precision": 0.24242424242424243,
+        "true_positive_hours_killed": 228,
+        "version": "v7.1"
+      }
+    ]
+  },
+  "end_to_end": {
+    "alert_hour_reduction_vs_stage1": 1693,
+    "false_positive_stories": 25,
+    "hour_mapped_precision": 0.22580645161290322,
+    "hour_recall": 0.026217228464419477,
+    "incident_recall": 0.024390243902439025,
+    "incident_recall_repository_bootstrap_95": [
+      0.0035842293906810036,
+      0.05116279069767442
+    ],
+    "incidents": 287,
+    "incidents_caught": 7,
+    "lead_time": {
+      "count": 7,
+      "maximum_minutes": 3760.25,
+      "median_hours": 9.968055555555557,
+      "median_minutes": 598.0833333333334,
+      "minimum_minutes": 184.13333333333333
+    },
+    "mapped_alert_hours": 31,
+    "matched_true_positive_hours": 7,
+    "published_stories": 33,
+    "story_precision": 0.24242424242424243,
+    "story_precision_repository_bootstrap_95": [
+      0.05555555555555555,
+      0.35294117647058826
+    ],
+    "true_positive_hours_killed": 228,
+    "true_positive_stories": 8
+  },
+  "finding": {
+    "conclusion": "V7.1 corrected the label-blind election throttle and the frozen result is reported without any label-informed tuning.",
+    "hour_precision_delta_vs_v7": -0.27419354838709675,
+    "incident_recall_delta_vs_v7": 0.020905923344947737,
+    "incidents_caught_delta_vs_v7": 6,
+    "story_precision_delta_vs_v7": -0.25757575757575757
+  },
+  "frozen_identities": {
+    "architecture_brief_file_sha256": "b6349fb086da4e8b1d733970919ed72a2a514eba525ab0dd47432f23ad7edac8",
+    "feedback_snapshot_sha256": "062c596a46c6592c839716bdba2f7bdb29ef57401c50cc8f11f2e861f326fe4f",
+    "parent_v7_protocol_sha256": "dd5cf502cc62108d82792690be0d19a961e85307063c251f7e3c439e0f5f06e9",
+    "parent_v7_scorecard_sha256": "c2097f6ed1039f4295b1d26db2c71cc24472a0a6d98bda68fe68959e0578e19f",
+    "parent_v7_screen_request_bundle_sha256": "ea880012f9c4a23cabfce53bc1020a832e8cb7085d2d3fbeb8fd41fa74b97082",
+    "parent_v7_screen_verdict_bundle_sha256": "05e486df639c302ede86e5ef7fc63960de468109e82863b4eeccd530866dc839",
+    "v4_scorecard_sha256": "7a823f275f6be144cd9c5eb90b65ce913781c709017075437cad67738d3825ea",
+    "v4_test_dataset_content_sha256": "895395b1b41a733996ceecd7c1c33913e01ffe9482db68a6f8f2ce85c7c0732d",
+    "v4_test_events_sha256": "fed1af4af7730317dadb665c93c28014979a9954f3928c78863e470fdb64126b",
+    "v5_scorecard_sha256": "5c997bf587d82c801c70234f32a05516a965d2e8fa6260284d497b6235cadf80",
+    "v6_scorecard_sha256": "fd1f49731874c08a721539952bfbe32103a7775e2d9850423c3ffdd731d97f2e"
+  },
+  "funnel": {
+    "compression": {
+      "gate_to_investigation": 9.981900452488688,
+      "generated_to_gate": 3.6765639165911153,
+      "investigation_to_story": 13.393939393939394
+    },
+    "deterministic_gate_survivors": 4412,
+    "investigation_dispositions": {
+      "benign_dismiss": 244,
+      "finding": 35,
+      "insufficient_data": 6,
+      "watch": 157
+    },
+    "investigation_findings_before_story_dedup": 35,
+    "published_stories": 33,
+    "scoped_candidates_generated": 16221,
+    "screen_dispositions": {
+      "benign_dismiss": 4243,
+      "insufficient_data": 27,
+      "investigate": 4,
+      "watch": 138
+    },
+    "screen_elected_investigations": 442,
+    "stage1_alert_hours": 1724
+  },
+  "interpretation": {
+    "architecture": "V7.1 reuses the exact v7 signal-scoped screen and corrects only its label-blind election policy before heavy investigation.",
+    "clean_source_status": "Confirmatory-grade source cut on a reused, already published test—not a fresh holdout.",
+    "cost_status": "Claude ran with claude.ai subscription auth and API credentials removed; USD is modeled equivalent usage, not API billing.",
+    "full_label_status": "Descriptive because the published v4 comment-source audit found 30% obvious label noise.",
+    "no_openai_calls": true
+  },
+  "protocol_sha256": "bd7336d99fc9603c0ecb6913adb4159b64271484e0dfb3025e938c82973040f9",
+  "runtime": {
+    "combined_modeled_equivalent_cost_usd": 54.41675599999999,
+    "incremental_v7_1_modeled_equivalent_cost_usd": 17.7988065,
+    "investigation": {
+      "actual_model_usage": {
+        "claude-haiku-4-5-20251001": {
+          "cacheCreationInputTokens": 0.0,
+          "cacheReadInputTokens": 0.0,
+          "contextWindow": 4600000.0,
+          "costUSD": 0.7933979999999999,
+          "inputTokens": 791588.0,
+          "maxOutputTokens": 736000.0,
+          "outputTokens": 362.0,
+          "webSearchRequests": 0.0
+        },
+        "claude-opus-4-8": {
+          "cacheCreationInputTokens": 1117449.0,
+          "cacheReadInputTokens": 194047.0,
+          "contextWindow": 23000000.0,
+          "costUSD": 17.005408499999994,
+          "inputTokens": 54.0,
+          "maxOutputTokens": 1472000.0,
+          "outputTokens": 229345.0,
+          "webSearchRequests": 0.0
+        }
+      },
+      "invocations": 23,
+      "modeled_equivalent_cost_usd": 17.7988065,
+      "wall_duration_ms_max": 328101.0,
+      "wall_duration_ms_median": 117805.0,
+      "wall_duration_ms_sum": 2929654.0
+    },
+    "screen": {
+      "actual_model_usage": {
+        "claude-haiku-4-5-20251001": {
+          "cacheCreationInputTokens": 0.0,
+          "cacheReadInputTokens": 0.0,
+          "contextWindow": 4600000.0,
+          "costUSD": 1.6785630000000002,
+          "inputTokens": 1676648.0,
+          "maxOutputTokens": 736000.0,
+          "outputTokens": 383.0,
+          "webSearchRequests": 0.0
+        },
+        "claude-opus-4-8": {
+          "cacheCreationInputTokens": 2172852.0,
+          "cacheReadInputTokens": 420733.0,
+          "contextWindow": 23000000.0,
+          "costUSD": 34.9393865,
+          "inputTokens": 50.0,
+          "maxOutputTokens": 1472000.0,
+          "outputTokens": 520010.0,
+          "webSearchRequests": 0.0
+        }
+      },
+      "invocations": 23,
+      "modeled_equivalent_cost_usd": 36.617949499999995,
+      "wall_duration_ms_max": 464914.0,
+      "wall_duration_ms_median": 234591.0,
+      "wall_duration_ms_sum": 5537893.0
+    },
+    "screen_reused_from_v7": true
+  },
+  "schema_version": 1,
+  "scorecard_sha256": "1bba31c415856ff0eedfe6d68efccf36c6436e7e525f9af4d4302fd857083af5",
+  "stories": [
+    {
+      "attribution_status": "correlation_only",
+      "candidate_ids": [
+        "v7candidate:1ba27267729eb78c7894e078"
+      ],
+      "earliest_candidate_ts": "2025-04-07T21:00:00Z",
+      "entity": "dotnet/runtime",
+      "evidence_quotes": [
+        "It is broken again since .NET 7.",
+        "we should fix this @rikm if possible"
+      ],
+      "issue_numbers": [
+        114351
+      ],
+      "matched_incident_ids": [],
+      "matched_incident_row_ids": [],
+      "row_ids": [
+        "v4row:4b0b5bb9b94bc35ead64"
+      ],
+      "series": [
+        "issue_thread_activity"
+      ],
+      "severity": "low",
+      "story_id": "v7story:65c8018697b1c4e34f76cd34",
+      "story_key": "issue:114351",
+      "story_sha256": "9b6e6c1903f64dea4aa4df4d00c4168516d13b0f0b895eef0331eb34678d02ff",
+      "summaries": [
+        "Contributor reports SslStream RemoteCertificateValidationCallback regression since .NET 7, corroborated by member who agrees it should be fixed. Confirmed but narrow, long-standing."
+      ],
+      "true_positive": false
+    },
+    {
+      "attribution_status": "no_claim",
+      "candidate_ids": [
+        "v7candidate:ccbc4921bded5e952b9568e9"
+      ],
+      "earliest_candidate_ts": "2025-05-08T18:00:00Z",
+      "entity": "dotnet/runtime",
+      "evidence_quotes": [
+        "IdnMappingIdnaConformanceTests failing on Windows",
+        "This is failing in 9.0 and 8.0"
+      ],
+      "issue_numbers": [
+        115006
+      ],
+      "matched_incident_ids": [],
+      "matched_incident_row_ids": [],
+      "row_ids": [
+        "v4row:13c644777460f922b6c0"
+      ],
+      "series": [
+        "issue_thread_activity"
+      ],
+      "severity": "low",
+      "story_id": "v7story:c89adda9b12a2befbc97dfc7",
+      "story_key": "issue:115006",
+      "story_sha256": "89c4a680b9b33dbb02f1d076645519dd57128f2e5aee81cb3d6cdf19dbd4e30c",
+      "summaries": [
+        "Reopened known-issue tracking a Globalization IdnMapping conformance test failing on Windows across 8.0/9.0, with backport gap discussion. Genuine CI breakage, narrow to test/release branches."
+      ],
+      "true_positive": false
+    },
+    {
+      "attribution_status": "no_claim",
+      "candidate_ids": [
+        "v7candidate:dbcf05c1a6e9e7a8817ec3fe"
+      ],
+      "earliest_candidate_ts": "2025-05-13T13:00:00Z",
+      "entity": "dotnet/runtime",
+      "evidence_quotes": [
+        "Segmentation fault (SIGSEGV) libclrjit.so`GenTreeVisitor"
+      ],
+      "issue_numbers": [
+        115515
+      ],
+      "matched_incident_ids": [
+        "v4incident:50147eb9b4c38357d25c"
+      ],
+      "matched_incident_row_ids": [
+        "v4row:70af225540cbcde08917"
+      ],
+      "row_ids": [
+        "v4row:70af225540cbcde08917"
+      ],
+      "series": [
+        "issue_thread_activity"
+      ],
+      "severity": "low",
+      "story_id": "v7story:16e5ff5d00117c35c879d468",
+      "story_key": "issue:115515",
+      "story_sha256": "9f5085269c4b6ba7bfcae2cb4cad4720c400cf4e5313cc0640082d34e48f9309",
+      "summaries": [
+        "New reproducible SIGSEGV in libclrjit.so GenTreeVisitor on Linux, routed to JIT team. Genuine crash report but single reporter, uncorroborated."
+      ],
+      "true_positive": true
+    },
+    {
+      "attribution_status": "correlation_only",
+      "candidate_ids": [
+        "v7candidate:b485cccca49a6971547b3d02"
+      ],
+      "earliest_candidate_ts": "2025-04-01T09:00:00Z",
+      "entity": "facebook/react-native",
+      "evidence_quotes": [
+        "Apparantly the new upgrade xcode 16.3 is causing this issue. Downgrade to Xcode 16.2 and it works fine it seems.",
+        "Xcode 16.3 removes the base template for `std::char_traits`"
+      ],
+      "issue_numbers": [
+        50411
+      ],
+      "matched_incident_ids": [],
+      "matched_incident_row_ids": [],
+      "row_ids": [
+        "v4row:447508ccffbd19702c46"
+      ],
+      "series": [
+        "issue_thread_activity"
+      ],
+      "severity": "medium",
+      "story_id": "v7story:db4edcf84400ec3a89df77db",
+      "story_key": "issue:50411",
+      "story_sha256": "1e51c5b60013ec7d12a4594dcb600c7fae5a7cdb651fb8a7b36d9b2476ec511c",
+      "summaries": [
+        "Xcode 16.3 removes the std::char_traits base template, breaking iOS builds across many RN versions (0.72–0.78). Multiple independent users confirm same signature; downgrading to Xcode 16.2 works. Broad build-blocking impact; external toolchain cause named but drill unverified."
+      ],
+      "true_positive": false
+    },
+    {
+      "attribution_status": "correlation_only",
+      "candidate_ids": [
+        "v7candidate:68a8c247d7d09b4dec206a44"
+      ],
+      "earliest_candidate_ts": "2025-03-31T16:00:00Z",
+      "entity": "flutter/flutter",
+      "evidence_quotes": [
+        "@jason-simmons noted that the issue does not happen when https://dart-review.googlesource.com/c/sdk/+/415201 is reverted from the frontend server cc @alexmarkov"
+      ],
+      "issue_numbers": [
+        166124
+      ],
+      "matched_incident_ids": [],
+      "matched_incident_row_ids": [],
+      "row_ids": [
+        "v4row:1d91643fdd60af476bed"
+      ],
+      "series": [
+        "issue_thread_activity"
+      ],
+      "severity": "low",
+      "story_id": "v7story:61ef761ec55a4ed9a604da07",
+      "story_key": "issue:166124",
+      "story_sha256": "6ce5a0ef39ee2cef79da801abd2552dea7846a5692aa24bb473de2c8ca38483b",
+      "summaries": [
+        "Maintainers identify a Dart SDK change (dart-review 415201) as the cause and coordinate a revert; genuine regression but contained developer/CI workflow. Drill not verified, so causal naming remains correlation only."
+      ],
+      "true_positive": false
+    },
+    {
+      "attribution_status": "correlation_only",
+      "candidate_ids": [
+        "v7candidate:6a590c386351c0c718ed3b51"
+      ],
+      "earliest_candidate_ts": "2025-05-12T15:00:00Z",
+      "entity": "flutter/flutter",
+      "evidence_quotes": [
+        "Bumping to P0 as this blocks a release."
+      ],
+      "issue_numbers": [
+        168556
+      ],
+      "matched_incident_ids": [],
+      "matched_incident_row_ids": [],
+      "row_ids": [
+        "v4row:1158b0c2d81081ffcf10"
+      ],
+      "series": [
+        "issue_thread_activity"
+      ],
+      "severity": "low",
+      "story_id": "v7story:5b7292ba7e81e0bb151ca0fa",
+      "story_key": "issue:168556",
+      "story_sha256": "edfc98039171ab1036c6a96383a7661c828f0394cd32c725be9874b437f9b293",
+      "summaries": [
+        "Maintainers flag a P0 blocking a release: Dart SDK 3.9 Beta roll fails DartIsolateTest.DartPluginRegistrant with a test hang. Genuine release-blocking breakage, contained to engineering."
+      ],
+      "true_positive": false
+    },
+    {
+      "attribution_status": "correlation_only",
+      "candidate_ids": [
+        "v7candidate:34c52f27b04bd610bdb2a554"
+      ],
+      "earliest_candidate_ts": "2025-05-09T18:00:00Z",
+      "entity": "flutter/flutter",
+      "evidence_quotes": [
+        "Flutter release builder is failing on `flutter-3.32-candidate.0`",
+        "We need to revert https://dart-internal-review.git.corp.google.com/c/dart-internal/+/7740"
+      ],
+      "issue_numbers": [
+        168607
+      ],
+      "matched_incident_ids": [],
+      "matched_incident_row_ids": [],
+      "row_ids": [
+        "v4row:3fb68dc2041f3cadafde"
+      ],
+      "series": [
+        "issue_thread_activity"
+      ],
+      "severity": "low",
+      "story_id": "v7story:56bb82e92f15b8625f65193a",
+      "story_key": "issue:168607",
+      "story_sha256": "a59164bd8318e689b8e8816831100c88e50925f0eeefc8ee1994a277edbdb0f7",
+      "summaries": [
+        "Contributor reports the Flutter release builder failing on flutter-3.32-candidate.0 with a missing-builder error, root-caused to an unbranched recipe change and resolved by revert within minutes. Confirmed CI breakage, narrow internal scope, already fixed."
+      ],
+      "true_positive": false
+    },
+    {
+      "attribution_status": "correlation_only",
+      "candidate_ids": [
+        "v7candidate:653ac739b88aebc814b17cfa"
+      ],
+      "earliest_candidate_ts": "2025-04-03T03:00:00Z",
+      "entity": "golang/go",
+      "evidence_quotes": [
+        "Backport issue(s) opened: #73144 (for 1.24).",
+        "This is a regression that can cause arbitrary crashes in programs that exit goroutines under LockOSThread and are running on Linux 6.11 or higher."
+      ],
+      "issue_numbers": [
+        73141
+      ],
+      "matched_incident_ids": [
+        "v4incident:c5c0a93b30be4c58c4c3"
+      ],
+      "matched_incident_row_ids": [
+        "v4row:60530dd383517e7f03c9"
+      ],
+      "row_ids": [
+        "v4row:f3569c6bdf434640dd26"
+      ],
+      "series": [
+        "issue_thread_activity"
+      ],
+      "severity": "medium",
+      "story_id": "v7story:6bcbce64532c23729bedd5b8",
+      "story_key": "issue:73141",
+      "story_sha256": "d7f93d35eaf568fa228d74bae50633bc3d0af30725ba55b7232c08cf02407dea",
+      "summaries": [
+        "Go maintainer reproduces the segfault, root-causes it to vgetrandomPutState allocating after releasing the P, and requests a 1.24 backport, explicitly calling it a regression causing arbitrary crashes under LockOSThread on Linux 6.11+. Confirmed breakage, though scope is narrow."
+      ],
+      "true_positive": true
+    },
+    {
+      "attribution_status": "verified",
+      "candidate_ids": [
+        "v7candidate:0a009766f045322799015b9a"
+      ],
+      "earliest_candidate_ts": "2025-04-02T21:00:00Z",
+      "entity": "home-assistant/core",
+      "evidence_quotes": [
+        "Fibaro integration error after 2025.4 upgrade",
+        "Template Alarm Control Panel broke on 2025.4"
+      ],
+      "issue_numbers": [
+        142104,
+        142105,
+        142106,
+        142108
+      ],
+      "matched_incident_ids": [
+        "v4incident:f5960f9f1b9f4383feec"
+      ],
+      "matched_incident_row_ids": [
+        "v4row:6f2baee341b98bb21d70"
+      ],
+      "row_ids": [
+        "v4row:6f2baee341b98bb21d70"
+      ],
+      "series": [
+        "release_adjacency_issue_rate"
+      ],
+      "severity": "medium",
+      "story_id": "v7story:07d4ccc36e15e850f0a3bbe3",
+      "story_key": "home-assistant-2025.4.0-release-regression",
+      "story_sha256": "a25355f74d5ecfff5479f7f58145e32bd1247b75ef43668a63d39c2d181090a2",
+      "summaries": [
+        "Multiple independent users report distinct integration regressions immediately after 2025.4.0 (Tado hot water, Fibaro UnboundLocalError, Schlage login, Template Alarm Control Panel), several citing 2025.3.4 as last working. 7 issues, verified adjacency drill."
+      ],
+      "true_positive": true
+    },
+    {
+      "attribution_status": "correlation_only",
+      "candidate_ids": [
+        "v7candidate:beae6356794105fab08a08fc",
+        "v7candidate:bfe3236ace6ba40e89708540"
+      ],
+      "earliest_candidate_ts": "2025-04-02T21:00:00Z",
+      "entity": "home-assistant/core",
+      "evidence_quotes": [
+        "Fibaro integration error after 2025.4 upgrade",
+        "Since update to core-2025.4.0, Wolflink integration does not work anymore. module 'lxml.html' has no attribute 'document_fromstring'",
+        "Unable to turn hot water on and off in Tado integration"
+      ],
+      "issue_numbers": [
+        142038,
+        142092,
+        142104,
+        142105,
+        142106,
+        142132,
+        142134,
+        142135,
+        142136,
+        142141
+      ],
+      "matched_incident_ids": [
+        "v4incident:f5960f9f1b9f4383feec"
+      ],
+      "matched_incident_row_ids": [
+        "v4row:6f2baee341b98bb21d70"
+      ],
+      "row_ids": [
+        "v4row:6f2baee341b98bb21d70",
+        "v4row:968008e0bf8c7fbdc8ff"
+      ],
+      "series": [
+        "repository_event_type_rate"
+      ],
+      "severity": "medium",
+      "story_id": "v7story:1e56d7c4b260b6411d8b89ae",
+      "story_key": "home-assistant-2025.4.0-release-regression-surge",
+      "story_sha256": "f3f193e2e48a595140c9108e5f4003bd706cb14b9d7e586adc022a87a63bdb69",
+      "summaries": [
+        "Second issue-rate spike window (7 vs baseline ~2) for home-assistant/core, again dominated by 2025.4.0 post-upgrade failures (Tado hot water, Fibaro, Schlage, Tesla Fleet). Same release-driven regression surge; shares story with sibling window. Cause named, drill unverified.",
+        "Repository issue-open rate for home-assistant/core spiked (10 vs baseline ~3) with 9 distinct authors, dominated by post-upgrade regressions after core-2025.4.0 (Tado, Wolflink lxml, Fibaro UnboundLocalError, Schlage, ZHA). Broad release-driven breakage surge; cause named, drill unverified. Grouped with sibling rate window."
+      ],
+      "true_positive": true
+    },
+    {
+      "attribution_status": "verified",
+      "candidate_ids": [
+        "v7candidate:69e106596d87b24f5def411b"
+      ],
+      "earliest_candidate_ts": "2025-03-28T19:00:00Z",
+      "entity": "home-assistant/core",
+      "evidence_quotes": [
+        "Remote calendar fails to connect",
+        "What version of Home Assistant Core has the issue? core-2025.4.0b7"
+      ],
+      "issue_numbers": [
+        136768,
+        141675,
+        141679
+      ],
+      "matched_incident_ids": [
+        "v4incident:77f3c4942a1e06f808af"
+      ],
+      "matched_incident_row_ids": [
+        "v4row:d7d9865babbaa0dee63e"
+      ],
+      "row_ids": [
+        "v4row:d7d9865babbaa0dee63e"
+      ],
+      "series": [
+        "release_adjacency_issue_rate"
+      ],
+      "severity": "low",
+      "story_id": "v7story:95b4d573e3b8382a6703086a",
+      "story_key": "home-assistant-2025.4.0b6-release-adjacent-issue-cluster",
+      "story_sha256": "bd17a220cbaf3a6c84cffe67fcdc495efb158aa0549cffebe4e08e32a02bf797",
+      "summaries": [
+        "Cluster of issue openings adjacent to release 2025.4.0b6, including a new Remote Calendar integration connection failure on core-2025.4.0b7. Pack marks attribution verified, but evidence is heterogeneous with several old issues merely re-touched; low absolute magnitude."
+      ],
+      "true_positive": true
+    },
+    {
+      "attribution_status": "verified",
+      "candidate_ids": [
+        "v7candidate:7bdeb675fdc8c2c48843411b"
+      ],
+      "earliest_candidate_ts": "2025-03-28T20:00:00Z",
+      "entity": "home-assistant/core",
+      "evidence_quotes": [
+        "Client unable to keep up with pending messages.",
+        "Home Assistant Sky Connect `KeyError: <ApplicationType.CPC: 'cpc'>` in update entity"
+      ],
+      "issue_numbers": [
+        136921,
+        141624,
+        141657,
+        141681
+      ],
+      "matched_incident_ids": [],
+      "matched_incident_row_ids": [],
+      "row_ids": [
+        "v4row:7915bcdcd9cbc9d45b79"
+      ],
+      "series": [
+        "release_adjacency_issue_rate"
+      ],
+      "severity": "medium",
+      "story_id": "v7story:2fe8ad459a9feb8280d0f908",
+      "story_key": "home-assistant-2025.4.0b7-release-adjacent-regression-cluster",
+      "story_sha256": "51b4ccfec3808af08666138d5e16dd4d7c3af4b758011d2fd21b0bb58e376933",
+      "summaries": [
+        "Issue openings adjacent to 2025.4.0b7 include a contributor-observed beta regression (Sky Connect KeyError: ApplicationType.CPC in update entity on 2025.4.0b5) plus multiple version-mentioning breakage reports; pack attribution drill verified with signature concordance."
+      ],
+      "true_positive": false
+    },
+    {
+      "attribution_status": "verified",
+      "candidate_ids": [
+        "v7candidate:996451e0e217baa78a41fb2b"
+      ],
+      "earliest_candidate_ts": "2025-05-07T11:00:00Z",
+      "entity": "home-assistant/core",
+      "evidence_quotes": [
+        "MELCloud attribute error preventing from loading.",
+        "MELCloud integration - exception when loading"
+      ],
+      "issue_numbers": [
+        144034,
+        144036
+      ],
+      "matched_incident_ids": [],
+      "matched_incident_row_ids": [],
+      "row_ids": [
+        "v4row:be04d602970fa88ab5b4"
+      ],
+      "series": [
+        "release_adjacency_issue_rate"
+      ],
+      "severity": "medium",
+      "story_id": "v7story:a6d940795df5670a8e62057b",
+      "story_key": "home-assistant-2025.5.0-melcloud-load-failure",
+      "story_sha256": "4f96e4882f8fd37102439275b77b8c7e9dd09604a8e4dffc847d828341d5f8fb",
+      "summaries": [
+        "Two independent reporters describe MELCloud failing to load with import/attribute errors immediately following the 2025.5.0 beta series; signature-concordant, corroborated breakage adjacent to release."
+      ],
+      "true_positive": false
+    },
+    {
+      "attribution_status": "verified",
+      "candidate_ids": [
+        "v7candidate:719b37862077f493deaf25c6"
+      ],
+      "earliest_candidate_ts": "2025-05-07T19:00:00Z",
+      "entity": "home-assistant/core",
+      "evidence_quotes": [
+        "AccuWeather: KeyError: 5 when processing pollen data for sensor.<location>_uv_index_day_*",
+        "Unable to connect Microsoft OneDrive"
+      ],
+      "issue_numbers": [
+        143520,
+        144424,
+        144425,
+        144426
+      ],
+      "matched_incident_ids": [],
+      "matched_incident_row_ids": [],
+      "row_ids": [
+        "v4row:a58f02a0f14475cb1009"
+      ],
+      "series": [
+        "release_adjacency_issue_rate"
+      ],
+      "severity": "low",
+      "story_id": "v7story:a8794d9a79f456da44f2eb44",
+      "story_key": "home-assistant-2025.5.0b10-release-adjacent-issue-cluster",
+      "story_sha256": "c0219144a6b5b09bb88227dae0785c2178c5aade4b6c02ee399d89799cd6de16",
+      "summaries": [
+        "Cluster of new issues adjacent to release 2025.5.0b10 (OneDrive connect failure, AccuWeather KeyError 5, Xiaomi/roborock fetch error, group sum). Pack marks attribution verified, but issues cite prior 2025.4.x cores and no version-mention concordance; low magnitude."
+      ],
+      "true_positive": false
+    },
+    {
+      "attribution_status": "correlation_only",
+      "candidate_ids": [
+        "v7candidate:a72a5db26af2894f92416c95"
+      ],
+      "earliest_candidate_ts": "2025-05-13T06:00:00Z",
+      "entity": "home-assistant/core",
+      "evidence_quotes": [
+        "Error Network Tuya after update ### The problem Tuya all Devices are offline",
+        "Tuya suddenly stopped working. Reinitialize does not solve problem"
+      ],
+      "issue_numbers": [
+        144781,
+        144785,
+        144786,
+        144789,
+        144791
+      ],
+      "matched_incident_ids": [],
+      "matched_incident_row_ids": [],
+      "row_ids": [
+        "v4row:cd87abb0872bb7f0887f"
+      ],
+      "series": [
+        "repository_event_type_rate"
+      ],
+      "severity": "medium",
+      "story_id": "v7story:31f4ee338a0266091ec32e2f",
+      "story_key": "home-assistant-core-tuya-integration-outage",
+      "story_sha256": "7b2c0457c4f9f5b58d9d3176d6fac39d2d7695f186f5385e0afb3d9a3fd00956",
+      "summaries": [
+        "Multiple independent users report Tuya setup failing with identical query_devices_by_home stack traces around core-2025.5.x, several noting it broke 'after update'. Concurrent same-signature reports constitute corroborated breakage of moderate user breadth."
+      ],
+      "true_positive": false
+    },
+    {
+      "attribution_status": "correlation_only",
+      "candidate_ids": [
+        "v7candidate:130e9253d2debe26b4c24208"
+      ],
+      "earliest_candidate_ts": "2025-05-13T09:00:00Z",
+      "entity": "home-assistant/core",
+      "evidence_quotes": [
+        "Error setting up entry gg-XXXX for tuya",
+        "Error setting up entry ramsch@peter-jojko.de for tuya"
+      ],
+      "issue_numbers": [
+        144785,
+        144791,
+        144797
+      ],
+      "matched_incident_ids": [],
+      "matched_incident_row_ids": [],
+      "row_ids": [
+        "v4row:2b882f46176c61c0832e"
+      ],
+      "series": [
+        "repository_event_type_rate"
+      ],
+      "severity": "medium",
+      "story_id": "v7story:8fddf88897f1b8d5e10cb681",
+      "story_key": "home-assistant-tuya-setup-break-2025-05-13",
+      "story_sha256": "66d041a0ba2824f63dd31deb8f20a63ae1343fd2a6e41fda821ab5dbd97d1896",
+      "summaries": [
+        "Three independently-scoped users report the same Tuya integration failure signature (Error setting up entry / update_device_cache in tuya_sharing/manager.py) on core-2025.5.1, indicating a real concordant integration breakage. Other issues in the window are unrelated. Not release-attributed via verified drill (may be server-side), so causation is correlational."
+      ],
+      "true_positive": false
+    },
+    {
+      "attribution_status": "correlation_only",
+      "candidate_ids": [
+        "v7candidate:7f84cebf89be2fbc86807cdf"
+      ],
+      "earliest_candidate_ts": "2025-03-28T21:00:00Z",
+      "entity": "home-assistant/core",
+      "evidence_quotes": [
+        "I’m getting the same issue, haven’t installed any updates, I’m on 2025.2.4",
+        "Was working before I upgraded to 2025.3.4"
+      ],
+      "issue_numbers": [
+        141683
+      ],
+      "matched_incident_ids": [],
+      "matched_incident_row_ids": [],
+      "row_ids": [
+        "v4row:8cca963b854602520f6e"
+      ],
+      "series": [
+        "issue_thread_activity"
+      ],
+      "severity": "medium",
+      "story_id": "v7story:3630dc7eb38aa68b68c5b910",
+      "story_key": "issue:141683",
+      "story_sha256": "04284229e17c052e2cef100c2e33780ad49e407646fb98036f8d1b09d83f51b7",
+      "summaries": [
+        "Multiple independent users report Tado login/config-flow failures with matching tracebacks after upgrade; plausible integration/API breakage corroborated across reporters, though release attribution not verified (one user on 2025.2.4)."
+      ],
+      "true_positive": false
+    },
+    {
+      "attribution_status": "correlation_only",
+      "candidate_ids": [
+        "v7candidate:676779f49c7ce3cb2fe20e82"
+      ],
+      "earliest_candidate_ts": "2025-03-30T09:00:00Z",
+      "entity": "home-assistant/core",
+      "evidence_quotes": [
+        "Radio Browser was working fine untill just recently (last 24hours?)",
+        "Same issue here. Was working fine yesterday morning UK time, and later in the evening it stopped working."
+      ],
+      "issue_numbers": [
+        141775
+      ],
+      "matched_incident_ids": [],
+      "matched_incident_row_ids": [],
+      "row_ids": [
+        "v4row:6e1c31acb54aeb9be3bc"
+      ],
+      "series": [
+        "issue_thread_activity"
+      ],
+      "severity": "medium",
+      "story_id": "v7story:21d7ba33eb95edb00b291e5f",
+      "story_key": "issue:141775",
+      "story_sha256": "57df828548e637fe1c5b48c17d90435af1fa91f7b2fd96b15ee2742a7fbd00e7",
+      "summaries": [
+        "Multiple independent users across regions report the Radio Browser integration stopped connecting within the same window ('Failed setup, will retry: Could not connect to Radio Browser API'). Corroborated breakage, likely upstream API outage rather than a named HA release."
+      ],
+      "true_positive": false
+    },
+    {
+      "attribution_status": "correlation_only",
+      "candidate_ids": [
+        "v7candidate:68ba047831c0ce8257b963b7"
+      ],
+      "earliest_candidate_ts": "2025-04-01T11:00:00Z",
+      "entity": "home-assistant/core",
+      "evidence_quotes": [
+        "Same issue here. It stopped working the moment we shifted from winter to summer time. Not sure if it has something to do with it...",
+        "Tado integration stopped working"
+      ],
+      "issue_numbers": [
+        141988
+      ],
+      "matched_incident_ids": [],
+      "matched_incident_row_ids": [],
+      "row_ids": [
+        "v4row:ce4e62c319fb290b084e"
+      ],
+      "series": [
+        "issue_thread_activity"
+      ],
+      "severity": "low",
+      "story_id": "v7story:a3b99f1c22cea42a06e6e4c0",
+      "story_key": "issue:141988",
+      "story_sha256": "9e8eed67a753c02ec8a033904a508c3bb31cdd23e2651f6f6b9ca8aeadbd8d6c",
+      "summaries": [
+        "Several independent users report the Tado integration stopped logging in around the same time, with reporters noting it was not triggered by an HA update (Tado changed URLs). Corroborated upstream breakage, low absolute volume."
+      ],
+      "true_positive": false
+    },
+    {
+      "attribution_status": "correlation_only",
+      "candidate_ids": [
+        "v7candidate:7d208dd5cc7525c177037fdb"
+      ],
+      "earliest_candidate_ts": "2025-04-02T16:00:00Z",
+      "entity": "home-assistant/core",
+      "evidence_quotes": [
+        "I will work on a PR since we don't want it to throw an exception like that"
+      ],
+      "issue_numbers": [
+        142049
+      ],
+      "matched_incident_ids": [],
+      "matched_incident_row_ids": [],
+      "row_ids": [
+        "v4row:04216525cb31cee185c9"
+      ],
+      "series": [
+        "issue_thread_activity"
+      ],
+      "severity": "low",
+      "story_id": "v7story:8297e145be3a1fe6b1d92e98",
+      "story_key": "issue:142049",
+      "story_sha256": "5cb3143b3b31589d77d2f804c4896769a02ac5552d0ca7e69fa8513e6b720655",
+      "summaries": [
+        "NUT device actions throw 'ConfigEntry has no attribute runtime_data'; maintainer confirmed it and committed to a PR. Real but narrow bug affecting one reporter's config entry."
+      ],
+      "true_positive": false
+    },
+    {
+      "attribution_status": "correlation_only",
+      "candidate_ids": [
+        "v7candidate:347b147bf31ded15f2c3c5d7"
+      ],
+      "earliest_candidate_ts": "2025-04-07T11:00:00Z",
+      "entity": "home-assistant/core",
+      "evidence_quotes": [
+        "I have the same issue since the update on 2025.4.1",
+        "There was a recent change with the authentication of Tado"
+      ],
+      "issue_numbers": [
+        142343
+      ],
+      "matched_incident_ids": [],
+      "matched_incident_row_ids": [],
+      "row_ids": [
+        "v4row:8f024b7017a96e8c820d"
+      ],
+      "series": [
+        "issue_thread_activity"
+      ],
+      "severity": "low",
+      "story_id": "v7story:471a41263b7a89b499f6c135",
+      "story_key": "issue:142343",
+      "story_sha256": "6e2a77b6d6dd39d9ef8f15673a956be867d6413f783f175dc907aec871f62753",
+      "summaries": [
+        "Multiple independent users report Tado integration authentication/timeout failures tied to a recent Tado auth change, partially addressed in 2025.4.1 but still failing for some. Corroborated but low magnitude; attribution to the change is correlational only."
+      ],
+      "true_positive": false
+    },
+    {
+      "attribution_status": "correlation_only",
+      "candidate_ids": [
+        "v7candidate:1d1b8c75669354905d993007"
+      ],
+      "earliest_candidate_ts": "2025-04-06T06:00:00Z",
+      "entity": "home-assistant/core",
+      "evidence_quotes": [
+        "It's probably dropping the connection right in the middle of the encrypted handshake and we can't tell the difference"
+      ],
+      "issue_numbers": [
+        142381
+      ],
+      "matched_incident_ids": [
+        "v4incident:4583f1292667e7a245c5"
+      ],
+      "matched_incident_row_ids": [
+        "v4row:4610264c9484d29ec798"
+      ],
+      "row_ids": [
+        "v4row:4610264c9484d29ec798"
+      ],
+      "series": [
+        "issue_thread_activity"
+      ],
+      "severity": "low",
+      "story_id": "v7story:e3dfeedcf50c1f0dda414efc",
+      "story_key": "issue:142381",
+      "story_sha256": "b35d5040f751b18065d8b7ec3bcd05682f7b550c19dc8cbbea147d32b277e512",
+      "summaries": [
+        "After PR #141887, ESPHome devices with intermittent connections trigger repeated encryption re-auth prompts; member (bdraco) engages confirming likely mid-handshake drop. Behavior regression, narrow scope, attribution not drill-verified."
+      ],
+      "true_positive": true
+    },
+    {
+      "attribution_status": "correlation_only",
+      "candidate_ids": [
+        "v7candidate:b75b460a6b784d1deb2a1099"
+      ],
+      "earliest_candidate_ts": "2025-05-08T08:00:00Z",
+      "entity": "home-assistant/core",
+      "evidence_quotes": [
+        "I found an issue when HA cloud isn't loaded but we assume it to be there and because of that the error occurs. I already created a PR with a fix",
+        "after the update I can't see the backup settings (shows a blank screen)"
+      ],
+      "issue_numbers": [
+        144438
+      ],
+      "matched_incident_ids": [],
+      "matched_incident_row_ids": [],
+      "row_ids": [
+        "v4row:88c558988d07138a0ad8"
+      ],
+      "series": [
+        "issue_thread_activity"
+      ],
+      "severity": "medium",
+      "story_id": "v7story:5ed41cac29e66a63c5311529",
+      "story_key": "issue:144438",
+      "story_sha256": "61892ee313ae05cecf063554f3e8430eb9af5e648ec8c01343bb575995bb53b2",
+      "summaries": [
+        "After upgrading to core-2025.5.0 the backup settings page renders blank when HA Cloud isn't loaded; multiple users reproduce, maintainer identified root cause and opened a fix PR. Confirmed regression, workaround adding `cloud:`. Release cause named; drill unverified."
+      ],
+      "true_positive": false
+    },
+    {
+      "attribution_status": "correlation_only",
+      "candidate_ids": [
+        "v7candidate:b8df81ae75d128fe9646ff7b"
+      ],
+      "earliest_candidate_ts": "2025-05-08T16:00:00Z",
+      "entity": "home-assistant/core",
+      "evidence_quotes": [
+        "Failed to initialize c-ares channel",
+        "They cannot be setup as a result of this."
+      ],
+      "issue_numbers": [
+        144457
+      ],
+      "matched_incident_ids": [
+        "v4incident:fd085de21e7feaa2cda5"
+      ],
+      "matched_incident_row_ids": [
+        "v4row:fc4c8a54c4411c8993f2"
+      ],
+      "row_ids": [
+        "v4row:a61ccaf95ee5d7d731e3"
+      ],
+      "series": [
+        "issue_thread_activity"
+      ],
+      "severity": "medium",
+      "story_id": "v7story:282e9d0631ceaf4003f8935c",
+      "story_key": "issue:144457",
+      "story_sha256": "94ca93d0666671ae699069f686ec83fa1fe12328e06627addd852bd9be29ba10",
+      "summaries": [
+        "After core-2025.5.0, 'Failed to initialize c-ares channel' prevents setup of many integrations (Sonos, Forecast Solar, HA Alerts, etc.); multiple independent users across container/OS installs. Maintainer engaged. Broad DNS-resolver regression; release cause named, drill unverified."
+      ],
+      "true_positive": true
+    },
+    {
+      "attribution_status": "correlation_only",
+      "candidate_ids": [
+        "v7candidate:afb39d0ef186fa47814a3dd6"
+      ],
+      "earliest_candidate_ts": "2025-05-15T08:00:00Z",
+      "entity": "llvm/llvm-project",
+      "evidence_quotes": [
+        "This is a new clang crash, bisected to 6078f5eb214d4cbb74ca9b024b88ff88d963ffd2",
+        "the fix has been reverted due to issues with sanitizers"
+      ],
+      "issue_numbers": [
+        139779
+      ],
+      "matched_incident_ids": [],
+      "matched_incident_row_ids": [],
+      "row_ids": [
+        "v4row:b3ac9dd475f4ebd41550"
+      ],
+      "series": [
+        "issue_thread_activity"
+      ],
+      "severity": "low",
+      "story_id": "v7story:3ea70a9c3d583edf08486231",
+      "story_key": "issue:139779",
+      "story_sha256": "edf4dc2de0fb5322e89646ae56c7509f2f316bd8c35919580ac9ce0fc1a9c960",
+      "summaries": [
+        "Confirmed clang --analyze -ftime-trace regression, bisected to a specific commit; fix was reverted due to sanitizer use-after-poison. Real but narrow (specific flag combo), single-thread scope; commit named but drill unverified."
+      ],
+      "true_positive": false
+    },
+    {
+      "attribution_status": "correlation_only",
+      "candidate_ids": [
+        "v7candidate:010b32522a9794779dee4e1e"
+      ],
+      "earliest_candidate_ts": "2025-04-04T18:00:00Z",
+      "entity": "microsoft/PowerToys",
+      "evidence_quotes": [
+        "Command Palette error: The remote procedure call failed",
+        "Unregistered class error on logon: shell:AppsFolder\\Microsoft.CommandPalette_8wekyb3d8bbwe!App"
+      ],
+      "issue_numbers": [
+        38558,
+        38570,
+        38571,
+        38576,
+        38578,
+        38579
+      ],
+      "matched_incident_ids": [],
+      "matched_incident_row_ids": [],
+      "row_ids": [
+        "v4row:cbdb2bb8c70d1b23676e"
+      ],
+      "series": [
+        "repository_event_type_rate"
+      ],
+      "severity": "medium",
+      "story_id": "v7story:15e88153c26a632d202f223c",
+      "story_key": "microsoft-powertoys-0.90.0-command-palette-breakage",
+      "story_sha256": "34204291960e1fe3e12068d8d6ae8b8eecbc8b1c9e4f10265770c9b270f55ed6",
+      "summaries": [
+        "Cluster of independent human reports against PowerToys 0.90.0, concentrated in Command Palette: RPC failure, unregistered-class crash on logon, calculator defects. 7 events, 6 distinct actors, robust deviation. Version named but attribution drill not verified."
+      ],
+      "true_positive": false
+    },
+    {
+      "attribution_status": "correlation_only",
+      "candidate_ids": [
+        "v7candidate:ec7acee9bc11856840e03833",
+        "v7candidate:eeb29272294e8b02c6390181"
+      ],
+      "earliest_candidate_ts": "2025-04-01T10:00:00Z",
+      "entity": "microsoft/PowerToys",
+      "evidence_quotes": [
+        "Can't open PowerToys Settings",
+        "CmdPal does not open",
+        "Command Palette is not working in the latest update — shortcut inactive and cannot be changed",
+        "Command Palette settings bug"
+      ],
+      "issue_numbers": [
+        38369,
+        38370,
+        38376,
+        38377,
+        38385,
+        38390,
+        38427,
+        38440,
+        38441
+      ],
+      "matched_incident_ids": [
+        "v4incident:639223dd9fa19a3d0095"
+      ],
+      "matched_incident_row_ids": [
+        "v4row:0fb444cb94817bb69772"
+      ],
+      "row_ids": [
+        "v4row:0fb444cb94817bb69772",
+        "v4row:fc5c85597a4574d8cdc8"
+      ],
+      "series": [
+        "repository_event_type_rate"
+      ],
+      "severity": "medium",
+      "story_id": "v7story:47cab4038ef9b1df44aa0332",
+      "story_key": "powertoys-0.90.0-command-palette-breakage",
+      "story_sha256": "9a1a709e13f36c6cde68053e9ae0d7d60e5e11b6b56a7faf4dff93d1f3c79d8e",
+      "summaries": [
+        "Second repository-hour of the same PowerToys 0.90.0 post-update cluster: multiple distinct users reporting Command Palette/File Search settings failures, Settings crashes, and Run COM exceptions. Corroborated across many independent reports; attribution unverified so correlational.",
+        "Cluster of independent reports after PowerToys 0.90.0 auto-update: Command Palette failing to open/crashing and greyed-out shortcut across multiple distinct users. Multiple independently scoped reports support plausible release breakage; attribution drill unverified so causation is correlational."
+      ],
+      "true_positive": true
+    },
+    {
+      "attribution_status": "no_claim",
+      "candidate_ids": [
+        "v7candidate:ce18d1110fe88b03367edf9c"
+      ],
+      "earliest_candidate_ts": "2025-05-05T14:00:00Z",
+      "entity": "python/cpython",
+      "evidence_quotes": [
+        "But the leak in interpreters has not been fixed",
+        "test_create_many_threaded() failed on FreeBSD"
+      ],
+      "issue_numbers": [
+        109700
+      ],
+      "matched_incident_ids": [],
+      "matched_incident_row_ids": [],
+      "row_ids": [
+        "v4row:b1d5113e361a6094479a"
+      ],
+      "series": [
+        "issue_thread_activity"
+      ],
+      "severity": "low",
+      "story_id": "v7story:f26975e9b7319e93a8e414c6",
+      "story_key": "issue:109700",
+      "story_sha256": "3f40870c61b784786a30cc6cc983e0234295a4cc044ae13639fb594835224ab0",
+      "summaries": [
+        "Reopened issue: test_create_many_threaded fails on FreeBSD buildbot and an unfixed sub-interpreter creation leak reproduced locally with an assertion failure. Genuine test/infra breakage, narrow scope."
+      ],
+      "true_positive": false
+    },
+    {
+      "attribution_status": "correlation_only",
+      "candidate_ids": [
+        "v7candidate:22a9e1a10eb13125b33d0883"
+      ],
+      "earliest_candidate_ts": "2025-04-02T10:00:00Z",
+      "entity": "python/cpython",
+      "evidence_quotes": [
+        "I can reproduce the crash on Python 3.13.",
+        "I can reproduce the crash on a Python 3.13 release build (PGO+LTO)."
+      ],
+      "issue_numbers": [
+        131998
+      ],
+      "matched_incident_ids": [],
+      "matched_incident_row_ids": [],
+      "row_ids": [
+        "v4row:8d485dfd4d6ba80c6921"
+      ],
+      "series": [
+        "issue_thread_activity"
+      ],
+      "severity": "medium",
+      "story_id": "v7story:f5c2782974910f25946614e8",
+      "story_key": "issue:131998",
+      "story_sha256": "1b3e510987c37a3c60746153755419d13f153a5e801bc8063a6aaebda3a79119",
+      "summaries": [
+        "Interpreter segfault accessing ob->ob_type reproduced by multiple core members across 3.13/3.14 release builds. Confirmed crash with member corroboration; a genuine reliability defect though input is contrived."
+      ],
+      "true_positive": false
+    },
+    {
+      "attribution_status": "correlation_only",
+      "candidate_ids": [
+        "v7candidate:1abdc6f7c2ecdb9dcde3210f"
+      ],
+      "earliest_candidate_ts": "2025-05-08T18:00:00Z",
+      "entity": "python/cpython",
+      "evidence_quotes": [
+        "This change seems to fix your cases",
+        "surprising new behavior in inspect/annotationlib get_annotations as of 3.14.0b1, not in 3.14.0a7"
+      ],
+      "issue_numbers": [
+        133684
+      ],
+      "matched_incident_ids": [],
+      "matched_incident_row_ids": [],
+      "row_ids": [
+        "v4row:b9525ef00bc889cdcb4b"
+      ],
+      "series": [
+        "issue_thread_activity"
+      ],
+      "severity": "low",
+      "story_id": "v7story:d46531b6bed617cebcb2eeed",
+      "story_key": "issue:133684",
+      "story_sha256": "5267bc39279d316b3d3f9607e1cfd9f5b070579ff02710ea5bc73de88a574024",
+      "summaries": [
+        "Annotation-handling regression in 3.14.0b1 vs 3.14.0a7 affecting metaclass/subclass annotations; reproduced and confirmed by core member who proposed a fix diff. Beta pre-release, narrow library impact (SQLAlchemy)."
+      ],
+      "true_positive": false
+    },
+    {
+      "attribution_status": "correlation_only",
+      "candidate_ids": [
+        "v7candidate:32c4b9488fc831088d216261"
+      ],
+      "earliest_candidate_ts": "2025-05-14T12:00:00Z",
+      "entity": "python/cpython",
+      "evidence_quotes": [
+        "SyntaxError: cannot use except statement with name",
+        "This is a regression from my commit. Sorry! Fixing"
+      ],
+      "issue_numbers": [
+        133999
+      ],
+      "matched_incident_ids": [],
+      "matched_incident_row_ids": [],
+      "row_ids": [
+        "v4row:3f555cd91a23a7e8719a"
+      ],
+      "series": [
+        "issue_thread_activity"
+      ],
+      "severity": "low",
+      "story_id": "v7story:7b8b809b7ad18f0ece7d9bc4",
+      "story_key": "issue:133999",
+      "story_sha256": "5c3892f0aa18e338285c34de3d7d9e4400063ecde339a4a52c4201420b94a4e9",
+      "summaries": [
+        "Reporter shows an incorrect SyntaxError message for 'except ... raise from'; a CPython member confirms it is a regression from their own commit and is fixing it. Confirmed breakage but low absolute impact (cosmetic error-message regression on main/3.14)."
+      ],
+      "true_positive": false
+    },
+    {
+      "attribution_status": "correlation_only",
+      "candidate_ids": [
+        "v7candidate:39277b1237caaed3ddc8a8f9"
+      ],
+      "earliest_candidate_ts": "2025-04-02T01:00:00Z",
+      "entity": "pytorch/pytorch",
+      "evidence_quotes": [
+        "Security certificate expired on https://download.pytorch.org/whl/",
+        "the site's RSA security certificate Expired: Tuesday, April 1, 2025"
+      ],
+      "issue_numbers": [
+        150491
+      ],
+      "matched_incident_ids": [],
+      "matched_incident_row_ids": [],
+      "row_ids": [
+        "v4row:b6de07be70d41788d971"
+      ],
+      "series": [
+        "issue_thread_activity"
+      ],
+      "severity": "medium",
+      "story_id": "v7story:136a383e403cae4afc8da5bc",
+      "story_key": "issue:150491",
+      "story_sha256": "3da3390b852ab78292e58991378e0ef5831d7df75c0a811d6ff366a5aabd9010",
+      "summaries": [
+        "Expired TLS certificate on download.pytorch.org/whl breaks pip installs and CI pipelines. Six events from five independent users confirm within minutes, with a self-evident cause and a documented --trusted-host workaround. Broad, real infrastructure outage — a genuine finding."
+      ],
+      "true_positive": false
+    },
+    {
+      "attribution_status": "correlation_only",
+      "candidate_ids": [
+        "v7candidate:f5609d88f73bc50f8b4c871b"
+      ],
+      "earliest_candidate_ts": "2025-04-02T01:00:00Z",
+      "entity": "pytorch/pytorch",
+      "evidence_quotes": [
+        "Expired SSL breaking CI builds",
+        "certificate has expired"
+      ],
+      "issue_numbers": [
+        150492
+      ],
+      "matched_incident_ids": [],
+      "matched_incident_row_ids": [],
+      "row_ids": [
+        "v4row:b6de07be70d41788d971"
+      ],
+      "series": [
+        "issue_thread_activity"
+      ],
+      "severity": "medium",
+      "story_id": "v7story:edb5910dbdb06ca9784b5087",
+      "story_key": "issue:150492",
+      "story_sha256": "9640eb9abeddd51cb72e9dff52cfb3c2769ef510f987968a9ea6515f4862d9c1",
+      "summaries": [
+        "Confirmed breakage: download.pytorch.org SSL certificate expired (notAfter Apr 1) breaking pip/CI fetches, corroborated by four independent human actors including openssl enddate evidence. Transient infra outage with clear root cause."
+      ],
+      "true_positive": false
+    }
+  ],
+  "study_id": "sentinel-signal-scoped-stage2-v7.1",
+  "v7_1_correction": {
+    "classification": "election policy failed the pre-declared design spec; candidate unit and all other v7 components remain frozen",
+    "election_manifest_sha256": "759b84ce4c20ace8aeb8d589df13ef50f24306d0f6ae8b926ba019aa5f39bcd8",
+    "incremental_investigation_modeled_equivalent_cost_usd": 17.7988065,
+    "investigation_count": 442,
+    "label_blind": true,
+    "only_behavioral_delta": "election_policy",
+    "parent_v7_protocol_sha256": "dd5cf502cc62108d82792690be0d19a961e85307063c251f7e3c439e0f5f06e9",
+    "parent_v7_scorecard_sha256": "c2097f6ed1039f4295b1d26db2c71cc24472a0a6d98bda68fe68959e0578e19f",
+    "parent_v7_screen_request_bundle_sha256": "ea880012f9c4a23cabfce53bc1020a832e8cb7085d2d3fbeb8fd41fa74b97082",
+    "parent_v7_screen_verdict_bundle_sha256": "05e486df639c302ede86e5ef7fc63960de468109e82863b4eeccd530866dc839",
+    "screen_count": 4412,
+    "screen_runtime_inherited_modeled_equivalent_cost_usd": 36.617949499999995,
+    "screen_to_investigation_compression": 9.981900452488688
+  }
+}

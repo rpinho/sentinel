@@ -172,7 +172,7 @@ fallback are all visible and testable.
 
 ---
 
-## Signal-scoped v7 validation (2026-07-20) — FROZEN FAILURE
+## Signal-scoped v7 validation (2026-07-20) — FROZEN POLICY-SPEC FAILURE
 
 V7 changed the judged unit without changing the frozen v4 ranker, test split, or labels.
 The protocol, prompts, schemas, gates, and screen request census were committed at
@@ -208,7 +208,7 @@ committed at `be7a799` before the investigation judge ran.
 - Clean-source cut: 50.0% story precision and 1 / 156 = 0.641% incident recall.
 - Funnel: 16,221 generated → 4,412 screened → 4 investigated → 2 stories. The 1,103×
   gate-to-investigation compression is the failure: signal scoping corrected the unit,
-  but the election policy destroyed recall.
+  but the election violated the pre-declared funnel shape before labels were consulted.
 - The result was frozen without post-test prompt, threshold, cap, or label tuning.
 
 ### Runtime and provenance
@@ -229,6 +229,57 @@ Frozen identities:
 - Investigation verdicts: `1044b88d93159b66099494199b52bb49d4e0f7248e1f725d5474814af7c3d90e`
 - Scorecard: `c2097f6ed1039f4295b1d26db2c71cc24472a0a6d98bda68fe68959e0578e19f`
 
-**V7 verdict:** architecture study complete and honestly negative. Keep signal-scoped
-candidates and two-phase evidence, but calibrate election on training/validation data and
-test again on a fresh holdout; do not tune this frozen test result.
+**V7 verdict:** candidate-unit study complete; election policy failed its committed design
+spec. Keep signal-scoped candidates and two-phase evidence. Correct only the label-blind
+throttle, preserve v7 beside the correction, and do not tune either frozen result.
+
+---
+
+## Election-corrected v7.1 validation (2026-07-20) — FROZEN RESULT
+
+V7.1 reused the exact v7 candidate census, light-screen requests, and light-screen
+verdicts. Before any new investigation outcome existed, commit `1bdc10a` froze the sole
+behavioral delta: rank the existing screen outputs without labels and investigate
+`ceil(screened / 10)`. That selected 442 / 4,412 claims, or 9.982× compression.
+
+### Integrity and execution
+
+- V7 protocol, model, prompts, schemas, candidate gate, screen artifacts, batch cap,
+  evidence policy, attribution checks, evaluation, and labels were unchanged.
+- The deterministic election consumes only screen disposition, impact rank, reason code,
+  absolute magnitude, breadth, velocity, and stable candidate ID. Evaluation labels are
+  absent from the interface and from all 23 investigation request payloads.
+- All four original v7 investigations remain in the selected top 442.
+- The 442 heavy packs ran in 23 Claude Opus 4.8 subscription batches with API credentials
+  removed. All 23 completed, all 442 verdicts are present, and zero OpenAI calls were made.
+- Every finding retains at least one exact quote from its bounded pre-cutoff evidence;
+  verified attribution appears only where the deterministic attribution drill is true.
+- Replaying all cached verdicts and rebuilding the JSON/Markdown scorecard reproduced the
+  published artifacts byte-for-byte.
+
+### Frozen result
+
+- 35 investigation findings deduplicated to 33 published stories.
+- Eight stories were true positives under exact issue matching and 25 were false positives:
+  24.242% story precision. Seven distinct incidents were caught, for 7 / 287 = 2.439%
+  incident recall. Hour-mapped precision was 22.581% and median lead was 9.968h.
+- Relative to v7, v7.1 caught six additional incidents while story precision fell by
+  25.758 percentage points. The result is published as measured, without another change.
+- Clean-source cut: 15.152% story precision and 4 / 156 = 2.564% incident recall.
+- Funnel: 16,221 generated → 4,412 screened → 442 investigated → 33 stories. The corrected
+  election now matches the committed roughly-order-of-magnitude stage shape.
+- New investigation work used $17.7988 modeled-equivalent usage, not API billing. The
+  inherited v7 screen plus new investigation totals $54.4168 modeled-equivalent usage.
+
+Frozen identities:
+
+- Protocol: `bd7336d99fc9603c0ecb6913adb4159b64271484e0dfb3025e938c82973040f9`
+- Election manifest: `759b84ce4c20ace8aeb8d589df13ef50f24306d0f6ae8b926ba019aa5f39bcd8`
+- Investigation requests: `f773dabdb37e76b5b078ee975cea323a764b9fa2b314e5424f42657d7f9fc547`
+- Investigation verdicts: `93a0ce8ba15f93706e32e95327b00500e04c23c4a0949e9fc1229e16ce716a6d`
+- Scorecard: `1bba31c415856ff0eedfe6d68efccf36c6436e7e525f9af4d4302fd857083af5`
+
+**V7.1 verdict:** the one-knob correction is complete and frozen. It materially improves
+recall over the invalid v7 election while remaining far below a production paging bar.
+The next scientific step is a calibrated election rank learned away from this test and a
+fresh holdout—not another label-informed adjustment to v7.1.

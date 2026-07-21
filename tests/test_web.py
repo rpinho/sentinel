@@ -100,12 +100,16 @@ def test_scorecard_publishes_v1_to_v71_and_complete_v6_miss_ledger() -> None:
     assert view["v7_funnel"]["screen_elected_investigations"] == 4
     assert view["signal_scoped_runs"][0]["status"] == "policy_failed"
     assert "ELECTION POLICY FAILED SPEC" in response.text
-    if view["signal_scoped_runs"][1]["status"] == "pending":
-        assert "CORRECTED RUN IN PROGRESS" in response.text
-        assert "awaiting frozen artifact" in response.text
-    else:
-        assert view["signal_scoped_runs"][1]["status"] == "complete"
-        assert "CORRECTED RUN FROZEN" in response.text
+    v71 = view["signal_scoped_runs"][1]
+    assert v71["status"] == "complete"
+    assert v71["alerts"] == 33
+    assert v71["precision"] == 8 / 33
+    assert v71["incident_recall"] == 7 / 287
+    assert v71["funnel"]["screen_elected_investigations"] == 442
+    assert v71["hash"] == (
+        "1bba31c415856ff0eedfe6d68efccf36c6436e7e525f9af4d4302fd857083af5"
+    )
+    assert "CORRECTED RUN FROZEN" in response.text
     assert response.text.count("MISS · STAGE") == 125
     for firing in view["v1_firings"]:
         assert firing["url"] in response.text
