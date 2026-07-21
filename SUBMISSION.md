@@ -91,8 +91,8 @@ personal prose from `HANDOFF.md`. No code, data, or hash-recorded artifact
 bytes changed; frozen artifacts are preserved byte-for-byte. Commit ids recorded *inside*
 those artifacts therefore refer to the pre-publication history. Anchor map (old → published):
 
-- `928f681cd82c` → `5e1544697201`
-- `a90f276e0cc6` → `8f4d96941d5c`
-- `dca2f815b86b` → `fcdef339fd59`
-- `e2ee6717c6ab` → `e8689c1237e9`
-- `fa96bee27a9e` → `b3cfcd0984ad`
+- `928f681cd82c` → `2145bea74893`
+- `a90f276e0cc6` → `cd4e67018ab9`
+- `dca2f815b86b` → `5d968906efbe`
+- `e2ee6717c6ab` → `85dbf4813c43`
+- `fa96bee27a9e` → `82f4a85d8945`
