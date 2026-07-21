@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 {% block content %}
   <section class="hero scorecard-hero scorecard-v6-hero">
-    <div class="eyebrow"><span>V1 → V6</span><span>FROZEN RESULTS</span></div>
+    <div class="eyebrow"><span>V1 → V7</span><span>FROZEN RESULTS</span></div>
     <p class="kicker">The product is the scorecard</p>
     <h1>88% of incidents.<br>13 hours early.</h1>
-    <p class="lede">A learned coherence ranker surfaces 88% of maintainer-confirmed incidents a median 13.4 hours before confirmation. Adding an LLM triage stage at repository-hour granularity does not work—we measured why.</p>
+    <p class="lede">A learned coherence ranker surfaces 88% of maintainer-confirmed incidents a median 13.4 hours before confirmation. Repository-hour judging failed in v5–v6; signal-scoped v7 fixed the unit but over-filtered at election. We froze all three failures.</p>
   </section>
 
   <section class="metric-row five-up" aria-label="V4 learned ranker headline metrics">
@@ -37,9 +37,25 @@
       <div class="stage-row" role="row"><b>Stage 1 / v4</b><span>{{ scorecard.stage1.alerts }}</span><span>{{ scorecard.stage1.precision|percentage }}</span><span>{{ scorecard.stage1.incident_recall|percentage }}</span><span>—</span></div>
       <div class="stage-row" role="row"><b>V5 / one-event evidence</b><span>1,228 est.</span><span>16.6%</span><span>77.0%</span><span>31</span></div>
       <div class="stage-row selected" role="row"><b>V6 / rich evidence</b><span>{{ "%.0f"|format(scorecard.end_to_end.estimated_alerts) }} est.</span><span>{{ scorecard.end_to_end.precision|percentage }}</span><span>{{ scorecard.end_to_end.incident_recall|percentage }}</span><span>{{ scorecard.end_to_end.true_positive_hours_killed }}</span></div>
+      <div class="stage-row" role="row"><b>V7 / signal-scoped stories</b><span>{{ scorecard.v7.published_stories }}</span><span>{{ scorecard.v7.hour_mapped_precision|percentage }}</span><span>{{ scorecard.v7.incident_recall|percentage }}</span><span>{{ scorecard.v7.true_positive_hours_killed }}</span></div>
     </div>
     <p class="truth-note"><b>Frozen finding:</b> {{ scorecard.v6_finding.conclusion }} The repository-hour is a mixed bag; richer context made the judge more confident about routine activity, not more accurate about the issue thread inside it.</p>
+    <p class="truth-note nuance-note"><b>V7 finding:</b> {{ scorecard.v7_finding.conclusion }} Signal scoping made candidates adjudicable, but the compact screen elected only {{ scorecard.v7_funnel.screen_elected_investigations }} of {{ scorecard.v7_funnel.deterministic_gate_survivors }} claims and caught {{ scorecard.v7.incidents_caught }} / {{ scorecard.v7.incidents }} labeled incidents.</p>
     <p class="truth-note nuance-note"><b>Label-noise nuance:</b> stage two rejected {{ scorecard.automation.stage2_rejected }} / {{ scorecard.automation.candidates }} automation-suspect sampled rows and {{ scorecard.known_llvmbot.stage2_rejected_rows }} / {{ scorecard.known_llvmbot.stage1_alert_rows }} known llvmbot-poisoned rows. Some measured recall loss is rejection against known-noisy labels—but the clean-source cut shows that does not explain the failure away.</p>
+  </section>
+
+  <section class="section-shell evidence-section">
+    <div class="section-heading">
+      <div><p class="kicker">WHAT CHANGED IN V7</p><h2>One claim at a time. Too few investigations.</h2></div>
+      <p>Every generated signal has a disposition. Automation dies before the judge, all eligible claims are screened compactly, and only elected claims receive bounded, self-documenting evidence.</p>
+    </div>
+    <div class="evidence-stats">
+      <article><span>SCOPED CLAIMS</span><strong>{{ scorecard.v7_funnel.scoped_candidates_generated }}</strong><p>from {{ scorecard.v7_funnel.stage1_alert_hours }} stage-one hours</p></article>
+      <article><span>SCREENED</span><strong>{{ scorecard.v7_funnel.deterministic_gate_survivors }}</strong><p>{{ scorecard.v7_automation.dismissed }} automation claims removed upstream</p></article>
+      <article><span>INVESTIGATED</span><strong>{{ scorecard.v7_funnel.screen_elected_investigations }}</strong><p>one bounded heavy-evidence batch</p></article>
+      <article><span>PUBLISHED STORIES</span><strong>{{ scorecard.v7.published_stories }}</strong><p>{{ scorecard.v7.incidents_caught }} matched labeled incident</p></article>
+    </div>
+    <p class="truth-note"><b>Failure mode:</b> a 1,103× gate-to-investigation compression is not rate discipline—it is recall destruction. The architecture is preserved as a negative result; no threshold or prompt was tuned after scoring.</p>
   </section>
 
   <section class="section-shell evidence-section">
@@ -57,39 +73,39 @@
 
   <section class="section-shell cut-section">
     <div class="section-heading">
-      <div><p class="kicker">HONEST CUTS</p><h2>The cleaner labels look worse.</h2></div>
-      <p>The full label set is descriptive: the maintainer-comment source failed its frozen noise audit. The clean cut retains only completed bug closures and merged fixing PRs.</p>
+      <div><p class="kicker">V7 · HONEST CUTS</p><h2>Precision rose by almost stopping.</h2></div>
+      <p>The full label set remains descriptive because one source failed its frozen noise audit. The clean cut retains only completed bug closures and merged fixing PRs; both expose the same recall collapse.</p>
     </div>
     <div class="cut-grid">
       <article>
         <span>FULL LABEL SET</span>
-        <strong>{{ scorecard.end_to_end.precision|percentage }}</strong>
-        <p>precision · {{ scorecard.end_to_end.incident_recall|percentage }} incident recall</p>
+        <strong>{{ scorecard.v7.story_precision|percentage }}</strong>
+        <p>story precision · {{ scorecard.v7.incident_recall|percentage }} incident recall</p>
       </article>
       <article class="selected">
         <span>CLEAN-SOURCE CUT</span>
-        <strong>{{ scorecard.clean_source.precision|percentage }}</strong>
-        <p>precision · {{ scorecard.clean_source.incident_recall|percentage }} incident recall</p>
+        <strong>{{ scorecard.v7_clean_source.story_precision|percentage }}</strong>
+        <p>story precision · {{ scorecard.v7_clean_source.incident_recall|percentage }} incident recall</p>
       </article>
       <article>
         <span>AUTOMATION SUSPECTS</span>
-        <strong>{{ scorecard.automation.rejection_rate|percentage }}</strong>
-        <p>{{ scorecard.automation.stage2_rejected }} / {{ scorecard.automation.candidates }} rejected by stage two</p>
+        <strong>100.0%</strong>
+        <p>{{ scorecard.v7_automation.dismissed }} / {{ scorecard.v7_automation.dismissed }} automation candidates dismissed before screening</p>
       </article>
     </div>
   </section>
 
   <section class="section-shell table-section progression-section">
     <div class="section-heading">
-      <div><p class="kicker">ITERATION TRAIL</p><h2>Six frozen versions. No erased failures.</h2></div>
-      <p>V1–v2 and v3–v6 use different studies, so their absolute metrics are not treated as a single leaderboard.</p>
+      <div><p class="kicker">ITERATION TRAIL</p><h2>Seven frozen versions. No erased failures.</h2></div>
+      <p>V1–v2 and v3–v7 use different studies, so their absolute metrics are not treated as a single leaderboard. V7 precision is story-level; its hour mapping is reported above.</p>
     </div>
     <div class="table-wrap">
       <table class="progression-table">
         <thead><tr><th>Version / architecture</th><th>Alerts</th><th>Precision</th><th>Incident recall</th><th>Misses</th><th>Frozen identity</th></tr></thead>
         <tbody>
           {% for row in scorecard.progression %}
-            <tr {% if row.version == 'v6' %}class="current-row"{% endif %}>
+            <tr {% if row.version == 'v7' %}class="current-row"{% endif %}>
               <td><b>{{ row.version|upper }} · {{ row.architecture }}</b><span class="cell-detail">{{ row.note }}</span></td>
               <td>{{ row.alerts }}</td>
               <td>{{ row.precision|percentage }}</td>
@@ -152,12 +168,14 @@
   </section>
 
   <section class="integrity-strip">
-    <p class="kicker">V6 FROZEN IDENTITIES</p>
+    <p class="kicker">V7 FROZEN IDENTITIES</p>
     <div class="integrity-grid two-up">
-      <div><span>protocol sha256</span><a href="/artifacts/v6"><code>{{ scorecard.v6_identities.protocol_sha256 }}</code></a></div>
-      <div><span>request bundle sha256</span><a href="/artifacts/v6"><code>{{ scorecard.v6_identities.request_bundle_sha256 }}</code></a></div>
-      <div><span>verdict bundle sha256</span><a href="/artifacts/v6"><code>{{ scorecard.v6_identities.verdict_bundle_sha256 }}</code></a></div>
-      <div><span>scorecard sha256</span><a href="/artifacts/v6"><code>{{ scorecard.progression[-1].hash }}</code></a></div>
+      <div><span>protocol sha256</span><a href="/artifacts/v7"><code>{{ scorecard.v7_identities.protocol_sha256 }}</code></a></div>
+      <div><span>screen request sha256</span><a href="/artifacts/v7"><code>{{ scorecard.v7_identities.screen_request_bundle_sha256 }}</code></a></div>
+      <div><span>screen verdict sha256</span><a href="/artifacts/v7"><code>{{ scorecard.v7_identities.screen_verdict_bundle_sha256 }}</code></a></div>
+      <div><span>investigation request sha256</span><a href="/artifacts/v7"><code>{{ scorecard.v7_identities.investigation_request_bundle_sha256 }}</code></a></div>
+      <div><span>investigation verdict sha256</span><a href="/artifacts/v7"><code>{{ scorecard.v7_identities.investigation_verdict_bundle_sha256 }}</code></a></div>
+      <div><span>scorecard sha256</span><a href="/artifacts/v7"><code>{{ scorecard.v7_identities.scorecard_sha256 }}</code></a></div>
     </div>
   </section>
 {% endblock %}

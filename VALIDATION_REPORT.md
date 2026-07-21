@@ -169,3 +169,66 @@ not from seed or temperature.
 **Final verdict:** ready for handoff as an honest, reproducible two-stage research product.
 The negative result, label caveat, automation behavior, misses, and API compatibility
 fallback are all visible and testable.
+
+---
+
+## Signal-scoped v7 validation (2026-07-20) — FROZEN FAILURE
+
+V7 changed the judged unit without changing the frozen v4 ranker, test split, or labels.
+The protocol, prompts, schemas, gates, and screen request census were committed at
+`6dc3d82` before any judge output. Screen results and elected heavy requests were then
+committed at `be7a799` before the investigation judge ran.
+
+### Candidate and evidence integrity
+
+- Generated 16,221 stable `series × segment × window` claims from the 1,724 stage-one
+  alert-hours: 10,975 issue-thread claims, 5,172 repository event-type rates, and 74
+  release-adjacency claims.
+- Deterministically dismissed 11,809 candidates with explicit reasons, including 1,583
+  automation candidates. No automation-classified candidate reached Claude.
+- Screened all 4,412 survivors as compact rows in 23 exact batches of up to 200. The
+  largest request was 235,666 characters. One full 200-claim batch completed in 206.5s,
+  meeting the under-five-minute live-cycle target.
+- The screen elected four investigations. Only those four received a single 37,615-
+  character heavy request with normalized excerpts, embedded methodology, baseline
+  caveats, sibling pointers, and attribution drills. Raw event dumps and post-cutoff
+  evidence were excluded.
+- Every one of the 16,221 generated candidates has a recorded deterministic, screen, or
+  investigation disposition. Finding quotes were exact-grounded; issue numbers not
+  present in bounded evidence and unverified causal attribution are dropped or downgraded.
+
+### Frozen result
+
+- Two stories published: one exact issue-matched true positive and one strict false
+  positive under the frozen label rule.
+- Story precision: 50.0%; hour-mapped precision: 50.0%.
+- Incident recall: 1 / 287 = 0.348%; hour recall: 0.375%.
+- V7 killed 234 of the 235 true stage-one alert-hours. Median lead for the lone matched
+  incident was 19.613h.
+- Clean-source cut: 50.0% story precision and 1 / 156 = 0.641% incident recall.
+- Funnel: 16,221 generated → 4,412 screened → 4 investigated → 2 stories. The 1,103×
+  gate-to-investigation compression is the failure: signal scoping corrected the unit,
+  but the election policy destroyed recall.
+- The result was frozen without post-test prompt, threshold, cap, or label tuning.
+
+### Runtime and provenance
+
+- 23 Claude Opus 4.8 subscription screen invocations plus one investigation invocation.
+- $36.8913 modeled-equivalent usage, not API billing. Claude ran under `claude.ai` Max
+  subscription authentication with Anthropic and OpenAI API credentials removed.
+- OpenAI calls during the v7 study: zero.
+- All 24 batches attribute actual model usage to `claude-opus-4-8` (Claude Code also
+  reports its internal Haiku accounting).
+
+Frozen identities:
+
+- Protocol: `dd5cf502cc62108d82792690be0d19a961e85307063c251f7e3c439e0f5f06e9`
+- Screen requests: `ea880012f9c4a23cabfce53bc1020a832e8cb7085d2d3fbeb8fd41fa74b97082`
+- Screen verdicts: `05e486df639c302ede86e5ef7fc63960de468109e82863b4eeccd530866dc839`
+- Investigation requests: `9e3384794c4be092fb81443e21b89f4a595766929967515e75d045269f81b611`
+- Investigation verdicts: `1044b88d93159b66099494199b52bb49d4e0f7248e1f725d5474814af7c3d90e`
+- Scorecard: `c2097f6ed1039f4295b1d26db2c71cc24472a0a6d98bda68fe68959e0578e19f`
+
+**V7 verdict:** architecture study complete and honestly negative. Keep signal-scoped
+candidates and two-phase evidence, but calibrate election on training/validation data and
+test again on a fresh holdout; do not tune this frozen test result.

@@ -16,6 +16,7 @@ from sentinel.web.app import (
     V4_SCORECARD_PATH,
     V5_SCORECARD_PATH,
     V6_SCORECARD_PATH,
+    V7_SCORECARD_PATH,
     app,
     build_replay_view,
     build_scorecard_view,
@@ -64,7 +65,7 @@ def test_replay_recomputes_offline_from_source_and_fixture(monkeypatch: Any) -> 
     assert legacy.headers["location"] == "/replay/webpack"
 
 
-def test_scorecard_publishes_v1_to_v6_and_complete_v6_miss_ledger() -> None:
+def test_scorecard_publishes_v1_to_v7_and_complete_v6_miss_ledger() -> None:
     response = client.get("/scorecard")
     view = build_scorecard_view()
 
@@ -74,6 +75,8 @@ def test_scorecard_publishes_v1_to_v6_and_complete_v6_miss_ledger() -> None:
     assert "13.4h" in response.text
     assert "All 125 labeled misses are here" in response.text
     assert "repository-hour is a mixed bag" in response.text
+    assert "Too few investigations" in response.text
+    assert "1,103×" in response.text
     assert [row["version"] for row in view["progression"]] == [
         "v1",
         "v2",
@@ -81,6 +84,7 @@ def test_scorecard_publishes_v1_to_v6_and_complete_v6_miss_ledger() -> None:
         "v4",
         "v5",
         "v6",
+        "v7",
     ]
     assert len(view["v1_firings"]) == 20
     assert len(view["v1_misses"]) == 3
@@ -88,19 +92,29 @@ def test_scorecard_publishes_v1_to_v6_and_complete_v6_miss_ledger() -> None:
     assert len(view["v6_misses"]) == 125
     assert view["v6_stage1_miss_count"] == 34
     assert view["v6_stage2_miss_count"] == 91
+    assert view["v7"]["published_stories"] == 2
+    assert view["v7"]["incidents_caught"] == 1
+    assert view["v7_funnel"]["screen_elected_investigations"] == 4
     assert response.text.count("MISS · STAGE") == 125
     for firing in view["v1_firings"]:
         assert firing["url"] in response.text
     for miss in view["v6_misses"]:
         assert miss["url"] in response.text
-    for key in ("protocol_sha256", "request_bundle_sha256", "verdict_bundle_sha256"):
-        assert view["v6_identities"][key] in response.text
+    for key in (
+        "protocol_sha256",
+        "screen_request_bundle_sha256",
+        "screen_verdict_bundle_sha256",
+        "investigation_request_bundle_sha256",
+        "investigation_verdict_bundle_sha256",
+        "scorecard_sha256",
+    ):
+        assert view["v7_identities"][key] in response.text
     assert view["v4_headline"]["roc_auc"] == 0.8406730100071403
     assert view["v4_headline"]["incident_recall"] == 0.8815331010452961
 
 
 def test_scorecard_artifacts_are_directly_downloadable() -> None:
-    for version in ("v1", "v2", "v3", "v4", "v5", "v6"):
+    for version in ("v1", "v2", "v3", "v4", "v5", "v6", "v7"):
         response = client.get(f"/artifacts/{version}")
         assert response.status_code == 200
         assert response.headers["content-type"].startswith(
@@ -109,7 +123,7 @@ def test_scorecard_artifacts_are_directly_downloadable() -> None:
         assert f"sentinel-{version}-scorecard.json" in response.headers[
             "content-disposition"
         ]
-    assert client.get("/artifacts/v7").status_code == 404
+    assert client.get("/artifacts/v8").status_code == 404
 
 
 def test_packaged_scorecards_are_exact_holdout_copies() -> None:
@@ -121,6 +135,7 @@ def test_packaged_scorecards_are_exact_holdout_copies() -> None:
     assert V4_SCORECARD_PATH == Path.cwd() / "holdout/v4/scorecard.json"
     assert V5_SCORECARD_PATH == Path.cwd() / "holdout/v5/scorecard.json"
     assert V6_SCORECARD_PATH == Path.cwd() / "holdout/v6/scorecard.json"
+    assert V7_SCORECARD_PATH == Path.cwd() / "holdout/v7/scorecard.json"
     fixture_name = (
         "42978ab2a88d53b077361e8749d54c3c5f63f3c54f9672be390c4308a10f3b4c.json"
     )

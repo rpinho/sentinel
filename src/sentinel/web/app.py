@@ -50,7 +50,7 @@ TRIAGE_FIXTURE_DIR = (
 TRIAGE_CACHE_DIR = STATE_DIR / "web-triage"
 V1_SCORECARD_PATH = PACKAGE_DIR / "data" / "holdout-v1-scorecard.json"
 V2_SCORECARD_PATH = PACKAGE_DIR / "data" / "holdout-v2-scorecard.json"
-SCORECARD_BUNDLE_PATH = PACKAGE_DIR / "data" / "holdout-v6-web.json.gz"
+SCORECARD_BUNDLE_PATH = PACKAGE_DIR / "data" / "holdout-v7-web.json.gz"
 V3_SCORECARD_PATH = PROJECT_ROOT / "holdout" / "v3" / "scorecard.json"
 V4_SCORECARD_PATH = PROJECT_ROOT / "holdout" / "v4" / "scorecard.json"
 V4_MODEL_PATH = PROJECT_ROOT / "holdout" / "v4" / "model.json"
@@ -59,6 +59,12 @@ V5_SCORECARD_PATH = PROJECT_ROOT / "holdout" / "v5" / "scorecard.json"
 V6_SCORECARD_PATH = PROJECT_ROOT / "holdout" / "v6" / "scorecard.json"
 V6_PROTOCOL_PATH = PROJECT_ROOT / "holdout" / "v6" / "protocol.json"
 V6_VERDICTS_PATH = PROJECT_ROOT / "holdout" / "v6" / "verdicts.json.gz"
+V7_SCORECARD_PATH = PROJECT_ROOT / "holdout" / "v7" / "scorecard.json"
+V7_PROTOCOL_PATH = PROJECT_ROOT / "holdout" / "v7" / "protocol.json"
+V7_SCREEN_REQUESTS_PATH = PROJECT_ROOT / "holdout" / "v7" / "requests-screen.json.gz"
+V7_SCREEN_VERDICTS_PATH = PROJECT_ROOT / "holdout" / "v7" / "verdicts-screen.json.gz"
+V7_INVESTIGATION_REQUESTS_PATH = PROJECT_ROOT / "holdout" / "v7" / "requests-investigation.json.gz"
+V7_INVESTIGATION_VERDICTS_PATH = PROJECT_ROOT / "holdout" / "v7" / "verdicts-investigation.json.gz"
 LIVE_STAGE2_CACHE_DIR = STATE_DIR / "live" / "claude-stage2"
 PACKAGED_ARTIFACT_DIR = PACKAGE_DIR / "data" / "artifacts"
 LIVE_CACHE_DIR = STATE_DIR / "live" / "gharchive"
@@ -86,6 +92,11 @@ ARTIFACT_PATHS = {
         V6_SCORECARD_PATH
         if V6_SCORECARD_PATH.is_file()
         else PACKAGED_ARTIFACT_DIR / "scorecard-v6.json.gz"
+    ),
+    "v7": (
+        V7_SCORECARD_PATH
+        if V7_SCORECARD_PATH.is_file()
+        else PACKAGED_ARTIFACT_DIR / "scorecard-v7.json.gz"
     ),
 }
 
@@ -360,6 +371,12 @@ def build_scorecard_view_from_sources() -> dict[str, Any]:
     v4 = _read_json(V4_SCORECARD_PATH)
     v5 = _read_json(V5_SCORECARD_PATH)
     v6 = _read_json(V6_SCORECARD_PATH)
+    v7 = _read_json(V7_SCORECARD_PATH)
+    v7_protocol = _read_json(V7_PROTOCOL_PATH)
+    v7_screen_requests = _read_gzip_json(V7_SCREEN_REQUESTS_PATH)
+    v7_screen_verdicts = _read_gzip_json(V7_SCREEN_VERDICTS_PATH)
+    v7_investigation_requests = _read_gzip_json(V7_INVESTIGATION_REQUESTS_PATH)
+    v7_investigation_verdicts = _read_gzip_json(V7_INVESTIGATION_VERDICTS_PATH)
     verdicts = _read_gzip_json(V6_VERDICTS_PATH)
 
     firing_rows = []
@@ -459,6 +476,18 @@ def build_scorecard_view_from_sources() -> dict[str, Any]:
             "artifact_url": "/artifacts/v6",
             "note": "Precision stayed roughly flat while 91 labeled incidents were filtered out.",
         },
+        {
+            "version": "v7",
+            "architecture": "Signal-scoped screen → selective investigation",
+            "alerts": v7["end_to_end"]["published_stories"],
+            "precision": v7["end_to_end"]["story_precision"],
+            "incident_recall": v7["end_to_end"]["incident_recall"],
+            "misses": v7["end_to_end"]["incidents"]
+            - v7["end_to_end"]["incidents_caught"],
+            "hash": v7["scorecard_sha256"],
+            "artifact_url": "/artifacts/v7",
+            "note": "Correct candidate unit, failed election policy: only 4 of 4,412 screened claims were investigated.",
+        },
     ]
 
     return {
@@ -489,6 +518,31 @@ def build_scorecard_view_from_sources() -> dict[str, Any]:
         "v6_requests": v6["requests"],
         "v6_finding": v6["finding"],
         "v6_identities": v6["frozen_identities"],
+        "v7": v7["end_to_end"],
+        "v7_clean_source": v7["clean_source_cut"],
+        "v7_funnel": v7["funnel"],
+        "v7_runtime": v7["runtime"],
+        "v7_finding": v7["finding"],
+        "v7_automation": v7["automation_candidate_stage"],
+        "v7_dispositions": v7["candidate_dispositions"],
+        "v7_stories": v7["stories"],
+        "v7_identities": {
+            "protocol_sha256": v7["protocol_sha256"],
+            "screen_request_bundle_sha256": v7_screen_requests[
+                "request_bundle_sha256"
+            ],
+            "screen_verdict_bundle_sha256": v7_screen_verdicts[
+                "verdict_bundle_sha256"
+            ],
+            "investigation_request_bundle_sha256": v7_investigation_requests[
+                "request_bundle_sha256"
+            ],
+            "investigation_verdict_bundle_sha256": v7_investigation_verdicts[
+                "verdict_bundle_sha256"
+            ],
+            "scorecard_sha256": v7["scorecard_sha256"],
+            "model": v7_protocol["stage2"]["model"],
+        },
         "label_audit": v4["label_audit"],
         "v6_misses": sorted(
             [*stage1_misses, *stage2_misses], key=lambda row: row["ts"]
