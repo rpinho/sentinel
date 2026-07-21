@@ -30,7 +30,7 @@ Responses API, Claude Code, GH Archive, npm, Docker, Render.
 
 **Hosted demo:** https://sentinel-nrd1.onrender.com (free instance — first request after 15 idle minutes takes ~a minute to wake)
 
-**Public YouTube demo:** `[paste the public video URL]`
+**Public YouTube demo:** https://youtu.be/symJRcphytE
 
 **Codex session ID:** `019f7bbe-1df8-7a61-b236-51a38404e1b2` — session shared via `/feedback`
 (confirmed 2026-07-21; the dialog returned the same ID).
