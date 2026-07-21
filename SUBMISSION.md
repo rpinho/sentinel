@@ -28,7 +28,7 @@ Responses API, Claude Code, GH Archive, npm, Docker, Render.
 
 **Repository:** https://github.com/rpinho/sentinel
 
-**Hosted demo:** `[paste the onrender.com URL after deployment]`
+**Hosted demo:** https://sentinel-nrd1.onrender.com (free instance — first request after 15 idle minutes takes ~a minute to wake)
 
 **Public YouTube demo:** `[paste the public video URL]`
 
