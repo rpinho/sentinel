@@ -64,6 +64,19 @@ uv run pytest -q
 uv run sentinel --help
 ```
 
+## Supported platforms
+
+- Python 3.11 or newer on macOS or Linux. The release wheel is validated in a clean,
+  isolated environment on macOS arm64; the included Dockerfile is the Linux deployment
+  path. Native Windows has not been validated.
+- `/replay` and `/scorecard` need neither a model key nor a network call. They run from
+  committed source data and exact-response fixtures.
+- `/live` needs network access for GH Archive. Claude triage is optional and requires a
+  locally authenticated Claude Code subscription; without it, the page reports the
+  deterministic candidates instead of inventing a verdict.
+- The convenience scripts use POSIX shell. Every frozen study step they wrap also has a
+  direct `uv run python ...` command documented below.
+
 ## Judge-facing web surfaces
 
 ```bash
