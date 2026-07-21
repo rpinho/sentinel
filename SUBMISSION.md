@@ -32,9 +32,8 @@ Responses API, Claude Code, GH Archive, npm, Docker, Render.
 
 **Public YouTube demo:** `[paste the public video URL]`
 
-**Primary Codex thread:** `019f7bbe-1df8-7a61-b236-51a38404e1b2`. In that thread, run
-`/feedback`, choose to share the existing session, and submit it. Use the session ID the
-dialog returns in the form if it differs from the technical thread ID shown here.
+**Codex session ID:** `019f7bbe-1df8-7a61-b236-51a38404e1b2` — session shared via `/feedback`
+(confirmed 2026-07-21; the dialog returned the same ID).
 
 ### Description / project story
 
