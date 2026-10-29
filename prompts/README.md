@@ -23,4 +23,4 @@ Notes:
   referenced by path, never inline.
 - Recurring instruction across all sessions: *if real data contradicts the brief, stop and
   report it rather than working around it.* Session 2 did exactly that when GPT-5.6 rejected
-  `temperature: 0` (see the resolved-contradiction note in `HANDOFF.md`).
+  `temperature: 0`.

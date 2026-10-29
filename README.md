@@ -421,7 +421,7 @@ uv run python scripts/verify_detector_v2_acceptance.py \
 - Both committed fixtures replay offline, omit temperature and the rejected seed, and
   exclude the later acknowledgment and PR `#19398`.
 
-See `HANDOFF.md` for the product brief, `TRIAGE.md` for the implemented agent contract,
+See `TRIAGE.md` for the implemented agent contract,
 and `FEEDBACK_LOOP.md` for the learning-loop rationale.
 
 ## How Codex was used
