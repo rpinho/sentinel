@@ -56,6 +56,11 @@ prompts, models, schemas, evidence, and evaluation, changes only the label-blind
 to 9.98×, and catches seven of 287 labeled incidents. Every frozen identity is visible at
 `/scorecard`.
 
+Live, no-key judge path: [replay](https://sentinel-nrd1.onrender.com/replay/webpack)
+and [scorecard](https://sentinel-nrd1.onrender.com/scorecard) on a free instance, which
+takes about a minute to wake after 15 idle minutes. Short demo video:
+[youtu.be/symJRcphytE](https://youtu.be/symJRcphytE).
+
 ## Install and test
 
 ```bash
